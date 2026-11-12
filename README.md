@@ -27,3 +27,7 @@ Drag to turn a scene, scroll to zoom. Built with three.js 0.160 loaded from unpk
 ## Kaiku
 
 `kaiku/index.html` is a complete scrolling site for a made-up acoustics studio. One cloud of 110,000 grains sits behind the page and takes a new form per section: a ringing sphere, sand on a vibrating plate (pick the mode), two interfering waves, a cochlea, and the wordmark. No library; the grains are moved in a vertex shader.
+
+## Halden
+
+`halden/index.html` is a product page for a made-up hand-wound watch movement. The movement is built from code (plate, barrel, spoked gear train, escapement, balance with hairspring, striped bridges, rubies, blued screws) and runs at true tooth ratios. Scrolling takes it apart by layer with callouts, moves in on the escapement, shows the train from above and puts it back together. Uses three.js.

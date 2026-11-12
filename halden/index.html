@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Halden Calibre 01</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@200;300;400;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a product page for one object. The movement is fixed behind the page and the scroll
+   takes it apart and puts it back; copy sits on the side the object is not. The only colour
+   that is not metal or paper is the ruby of the jewels. */
+:root {
+  --bg: #e9eaec;
+  --bg2: #f6f6f7;
+  --fg: #121316;
+  --muted: #5e616a;
+  --line: rgba(18, 19, 22, 0.14);
+  --ruby: #b3122f;
+  --display: "Sora", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0d0e10; --bg2: #1b1d21; --fg: #eeeef0; --muted: #9a9da6; --line: rgba(238, 238, 240, 0.16); --ruby: #ff5270; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0d0e10; --bg2: #1b1d21; --fg: #eeeef0; --muted: #9a9da6; --line: rgba(238, 238, 240, 0.16); --ruby: #ff5270; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--display); font-weight: 300; font-size: 16px; line-height: 1.6; }
+.glow { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(60% 55% at 50% 48%, var(--bg2), var(--bg) 75%); }
+canvas#stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.wrap { position: relative; padding-left: max(32px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); }
+
+nav.bar { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding-block: 20px; padding-left: max(32px, env(safe-area-inset-left, 0px)); padding-right: max(32px, env(safe-area-inset-right, 0px)); }
+.logo { font-weight: 600; font-size: 14px; letter-spacing: 0.32em; text-transform: uppercase; }
+.steps { display: flex; gap: 4px; align-items: center; }
+.steps button { font: 400 12px var(--mono); letter-spacing: 0.06em; color: var(--muted); background: none; border: 0; padding: 8px 10px; cursor: pointer; }
+.steps button.on { color: var(--fg); }
+.steps button.buy { color: var(--bg); background: var(--fg); border-radius: 2px; padding: 9px 14px; margin-left: 8px; }
+button:focus-visible { outline: 2px solid var(--ruby); outline-offset: 3px; }
+
+section { min-height: 100vh; box-sizing: border-box; display: flex; align-items: center; padding-block: 100px 64px; }
+section > div { max-width: 500px; min-width: 0; }
+section.right { justify-content: flex-end; }
+section.end { justify-content: center; align-items: flex-end; }
+section.end > div { max-width: 760px; width: 100%; }
+.tag { font: 500 12px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ruby); margin: 0 0 20px; }
+h1, h2 { font-weight: 200; letter-spacing: -0.045em; line-height: 1.02; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(48px, 7vw, 100px); }
+h2 { font-size: clamp(36px, 4.8vw, 66px); }
+p.lede { margin: 26px 0 0; font-size: 17px; color: var(--muted); max-width: 29em; }
+.acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 32px; }
+.acts button { font: 400 14px var(--display); padding: 13px 22px; border-radius: 2px; cursor: pointer; border: 1px solid var(--line); background: none; color: var(--fg); }
+.acts button.solid { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+dl.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin: 34px 0 0; padding-top: 22px; border-top: 1px solid var(--line); }
+dl.facts.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+dl.facts div { display: flex; flex-direction: column-reverse; gap: 4px; }
+dl.facts dt { font: 400 11px var(--mono); letter-spacing: 0.04em; color: var(--muted); }
+dl.facts dd { margin: 0; font-weight: 200; font-size: 32px; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+table.train { width: 100%; border-collapse: collapse; margin-top: 30px; font: 400 13px var(--mono); font-variant-numeric: tabular-nums; }
+table.train th { text-align: left; font-weight: 400; color: var(--muted); padding: 0 0 10px; }
+table.train td { padding: 10px 0; border-top: 1px solid var(--line); }
+table.train td:last-child, table.train th:last-child { text-align: right; }
+.fine { font: 400 12px var(--mono); color: var(--muted); margin: 18px 0 0; }
+footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding-block: 22px; border-top: 1px solid var(--line); font: 400 12px var(--mono); color: var(--muted); }
+footer p { margin: 0; }
+
+.labels { position: fixed; inset: 0; pointer-events: none; transition: opacity 0.4s; opacity: 0; }
+.labels.on { opacity: 1; }
+.label { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 10px; white-space: nowrap; font: 400 11px var(--mono); letter-spacing: 0.04em; color: var(--muted); will-change: transform; }
+.label b { font-weight: 500; color: var(--fg); }
+.label::after { content: ""; order: 2; width: var(--len, 46px); height: 1px; background: var(--line); }
+.label::before { content: ""; order: 3; width: 5px; height: 5px; border-radius: 50%; background: var(--ruby); }
+.label span { order: 1; text-align: right; }
+.fail { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+@media (max-width: 820px) {
+  .steps button:not(.buy) { display: none; }
+  .labels { display: none; }
+  section, section.right { align-items: flex-end; justify-content: flex-start; padding-block: 84px 40px; }
+  p.lede { font-size: 15px; margin-top: 16px; }
+  dl.facts dd { font-size: 24px; }
+  dl.facts.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+</style>
+
+<div class="glow"></div>
+<canvas id="stage" aria-hidden="true"></canvas>
+<div class="labels" id="labels"></div>
+
+<nav class="bar" aria-label="Main">
+  <span class="logo">Halden</span>
+  <div class="steps" id="steps">
+    <button type="button" data-go="1">01 Layers</button>
+    <button type="button" data-go="2">02 Heartbeat</button>
+    <button type="button" data-go="3">03 Train</button>
+    <button type="button" class="buy" data-go="4">Reserve</button>
+  </div>
+</nav>
+
+<main class="wrap">
+  <section>
+    <div>
+      <p class="tag">Calibre 01 · hand-wound</p>
+      <h1>Time, taken apart.</h1>
+      <p class="lede">A mechanical movement, 31 millimetres across, that runs on a spring and nothing else. Scroll, and it comes apart in the order a watchmaker would build it.</p>
+      <div class="acts"><button type="button" class="solid" data-go="1">See inside</button><button type="button" data-go="4">Reserve one</button></div>
+    </div>
+  </section>
+
+  <section class="right">
+    <div>
+      <p class="tag">01 · Layers</p>
+      <h2>Five layers, nothing hidden.</h2>
+      <p class="lede">The plate carries everything. The barrel stores the energy, the train passes it on, the balance spends it evenly, and the bridges hold every pivot in a ruby.</p>
+    </div>
+  </section>
+
+  <section>
+    <div>
+      <p class="tag">02 · Heartbeat</p>
+      <h2>Four swings a second.</h2>
+      <p class="lede">The balance swings, the fork rocks, and the escape wheel is let through one tooth at a time. Every tick you hear is a tooth landing on a ruby.</p>
+      <dl class="facts">
+        <div><dt>frequency</dt><dd>4 Hz</dd></div>
+        <div><dt>beats per hour</dt><dd>28,800</dd></div>
+        <div><dt>escape teeth</dt><dd>15</dd></div>
+      </dl>
+      <p class="fine">Shown at quarter speed so the eye can follow it.</p>
+    </div>
+  </section>
+
+  <section class="right">
+    <div>
+      <p class="tag">03 · Train</p>
+      <h2>Four wheels between force and time.</h2>
+      <p class="lede">Each wheel drives the small pinion of the next, so every step turns faster and pushes more gently than the one before.</p>
+      <table class="train">
+        <thead><tr><th>Wheel</th><th>Teeth</th><th>Drives a pinion of</th></tr></thead>
+        <tbody>
+          <tr><td>Barrel</td><td>80</td><td>12</td></tr>
+          <tr><td>Centre</td><td>64</td><td>8</td></tr>
+          <tr><td>Third</td><td>60</td><td>8</td></tr>
+          <tr><td>Fourth</td><td>56</td><td>7</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="end">
+    <div>
+      <p class="tag">Reserve</p>
+      <h2>And back together.</h2>
+      <p class="lede">Built in small batches. Write to us and we will tell you when the next one starts.</p>
+      <p class="fine" style="font-size:14px;color:var(--fg);user-select:all">atelier@halden.example</p>
+      <dl class="facts four">
+        <div><dt>diameter</dt><dd>31 mm</dd></div>
+        <div><dt>frequency</dt><dd>4 Hz</dd></div>
+        <div><dt>rubies in this model</dt><dd id="n-jewels">0</dd></div>
+        <div><dt>parts drawn</dt><dd id="n-parts">0</dd></div>
+      </dl>
+    </div>
+  </section>
+  <footer><p>Halden is made up, as a design study.</p><p>Tooth counts are those of this model, not of a real calibre.</p></footer>
+</main>
+
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script>
+(function () {
+  var sections = document.querySelectorAll('main section');
+  var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll('[data-go]').forEach(function (b) { b.addEventListener('click', function () { sections[+b.dataset.go].scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' }); }); });
+  function fail(msg) { var d = document.createElement('div'); d.className = 'fail'; d.textContent = msg; document.body.appendChild(d); }
+  if (!window.THREE) { fail('The 3D library did not load. Check the connection and reload.'); return; }
+  var T = THREE, canvas = document.getElementById('stage'), renderer;
+  try { renderer = new T.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true, powerPreference: 'high-performance' }); } catch (e) { return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.92; renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+  var scene = new T.Scene(), camera = new T.PerspectiveCamera(24, 1, 1, 400);
+
+  (function () { // a small photo studio for the metal to reflect
+    var s = new T.Scene(); s.background = new T.Color(0x191a1d);
+    [[0, 14, 4, 22, 0.2, 9, 4.2], [-16, 3, 6, 0.2, 12, 8, 3.2], [16, 0, 2, 0.2, 8, 10, 1.6], [5, -2, 16, 7, 12, 0.2, 2.4], [-9, 2, 16, 3, 10, 0.2, 1.2], [0, -12, 0, 30, 0.2, 30, 0.35]].forEach(function (b) {
+      var m = new T.Mesh(new T.BoxGeometry(b[3], b[4], b[5]), new T.MeshBasicMaterial({ color: new T.Color(0xffffff).multiplyScalar(b[6]) })); m.position.set(b[0], b[1], b[2]); s.add(m); });
+    var p = new T.PMREMGenerator(renderer); scene.environment = p.fromScene(s, 0.035).texture; p.dispose();
+  })();
+  var sun = new T.DirectionalLight(0xfff4e6, 3.2); sun.position.set(-14, 16, 34); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+  var sc = sun.shadow.camera; sc.left = -30; sc.right = 30; sc.top = 30; sc.bottom = -30; sc.near = 1; sc.far = 110; sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.06; sun.shadow.radius = 5; scene.add(sun);
+
+  /* ---------- finishes ---------- */
+  var stripes = (function () { var c = document.createElement('canvas'); c.width = 256; c.height = 8; var x = c.getContext('2d');
+    for (var i = 0; i < 256; i++) { var v = 70 + 70 * Math.pow(Math.abs(Math.sin(i / 256 * Math.PI * 4)), 0.6); x.fillStyle = 'rgb(' + v + ',' + v + ',' + v + ')'; x.fillRect(i, 0, 1, 8); }
+    var t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(0.15, 0.15); t.rotation = 0.6; return t; })();
+  var M = {
+    gold: new T.MeshStandardMaterial({ color: 0xc99a4a, metalness: 0.86, roughness: 0.3 }),
+    steel: new T.MeshStandardMaterial({ color: 0xaeb3bc, metalness: 0.88, roughness: 0.3 }),
+    bridge: new T.MeshStandardMaterial({ color: 0xa9aeb8, metalness: 0.84, roughness: 1, roughnessMap: stripes }),
+    plate: new T.MeshStandardMaterial({ color: 0x484c56, metalness: 0.7, roughness: 0.5 }),
+    polished: new T.MeshStandardMaterial({ color: 0xc6cad2, metalness: 0.95, roughness: 0.24 }),
+    blued: new T.MeshStandardMaterial({ color: 0x0d2079, metalness: 0.8, roughness: 0.3 }),
+    ruby: new T.MeshPhysicalMaterial({ color: 0xb3122f, metalness: 0, roughness: 0.06, clearcoat: 1, emissive: 0x33000c })
+  };
+
+  /* ---------- parts ---------- */
+  var MOD = 0.17, model = new T.Group(), parts = [], meshes = 0, jewels = 0;
+  function add(obj, layer, into) { (into || model).add(obj); if (!into) { obj.userData.layer = layer; obj.userData.z0 = obj.position.z; parts.push(obj); } return obj; }
+  function count(o) { o.traverse(function (m) { if (m.isMesh) meshes++; }); return o; }
+  function ext(shape, depth, mat, bevel, seg) {
+    var b = bevel === undefined ? 0.04 : bevel;
+    return new T.Mesh(new T.ExtrudeGeometry(shape, { depth: depth, bevelEnabled: b > 0, bevelSize: b, bevelThickness: b, bevelSegments: 3, curveSegments: seg || 40 }), mat); }
+  function cyl(r, h, mat, seg) { var m = new T.Mesh(new T.CylinderGeometry(r, r, h, seg || 40), mat); m.rotation.x = Math.PI / 2; m.position.z = h / 2; return m; }
+  function gearShape(teeth, spokes, hub) {
+    var rp = MOD * teeth / 2, ro = rp + 0.13, rr = rp - 0.16, s = 2 * Math.PI / teeth, sh = new T.Shape();
+    for (var i = 0; i < teeth; i++) { var a = i * s;
+      [[rr, a - 0.28 * s], [ro, a - 0.11 * s], [ro, a + 0.11 * s], [rr, a + 0.28 * s]].forEach(function (p, k) { var x = p[0] * Math.cos(p[1]), y = p[0] * Math.sin(p[1]); if (i === 0 && k === 0) sh.moveTo(x, y); else sh.lineTo(x, y); }); }
+    sh.closePath();
+    if (spokes) { var r1 = hub, r2 = rr - 0.5, gap = 0.2 / ((r1 + r2) / 2) + 0.12;   // windows between the spokes
+      for (var k = 0; k < spokes; k++) { var a0 = k * 2 * Math.PI / spokes + gap, a1 = (k + 1) * 2 * Math.PI / spokes - gap, h = new T.Path();
+        h.absarc(0, 0, r2, a0, a1, false); h.absarc(0, 0, r1, a1, a0, true); h.closePath(); sh.holes.push(h); } }
+    return sh; }
+  function wheel(x, y, z, teeth, mat, pinion, pinionZ) { // a spoked wheel, its small pinion and the arbor they share
+    var g = new T.Group(); g.position.set(x, y, z);
+    add(ext(gearShape(teeth, 5, 0.75), 0.34, mat), 0, g);
+    if (pinion) { var p = ext(gearShape(pinion, 0, 0), 0.95, M.steel, 0.02); p.position.z = pinionZ; add(p, 0, g); }
+    var ar = cyl(0.2, 3.4, M.steel, 16); ar.position.z = -1.2 + 1.7; add(ar, 0, g);
+    return count(g); }
+  function bar(x1, y1, x2, y2, w, depth, mat) { // a finger bridge: a rounded bar from an anchor to a pivot
+    var len = Math.hypot(x2 - x1, y2 - y1), sh = new T.Shape(), r = w / 2;
+    sh.absarc(0, 0, r, Math.PI / 2, -Math.PI / 2, false); sh.absarc(len, 0, r * 0.8, -Math.PI / 2, Math.PI / 2, false); sh.closePath();
+    var m = ext(sh, depth, mat); m.position.set(x1, y1, 0); m.rotation.z = Math.atan2(y2 - y1, x2 - x1); return m; }
+  function jewel(x, y, z, into) { var g = new T.Group(); g.position.set(x, y, z);
+    var ch = new T.Mesh(new T.TorusGeometry(0.56, 0.13, 12, 40), M.gold); g.add(ch);
+    var st = new T.Mesh(new T.SphereGeometry(0.46, 28, 16), M.ruby); st.scale.z = 0.45; g.add(st);
+    into.add(g); jewels++; meshes += 2; }
+  function screw(x, y, z, into, r) { r = r || 0.55; var g = new T.Group(); g.position.set(x, y, z);
+    g.add(cyl(r, 0.28, M.blued, 28)); var slot = new T.Mesh(new T.BoxGeometry(r * 1.9, 0.14, 0.12), M.plate); slot.position.z = 0.28; slot.rotation.z = x * 1.7 + y; g.add(slot);
+    into.add(g); meshes += 2; }
+
+  // layer 0: case ring and mainplate
+  var base = new T.Group();
+  var ring = new T.Shape(); ring.absarc(0, 0, 17.4, 0, Math.PI * 2, false); var hole = new T.Path(); hole.absarc(0, 0, 15.75, 0, Math.PI * 2, true); ring.holes.push(hole);
+  var caseRing = ext(ring, 4.2, M.polished, 0.35, 220); caseRing.position.z = -1.3; base.add(caseRing);
+  var plateShape = new T.Shape(); plateShape.absarc(0, 0, 15.6, 0, Math.PI * 2, false);
+  var mainplate = ext(plateShape, 0.9, M.plate, 0.04, 160); mainplate.position.z = -0.9; base.add(mainplate);
+  var PIV = { centre: [0, 0], barrel: [-7.35, -2.67], third: [3.06, 5.3], fourth: [7.79, 1.98], escape: [6.86, -3.3], pallet: [4.5, -6.1], balance: [1.5, -9.0] };
+  Object.keys(PIV).forEach(function (k) { jewel(PIV[k][0], PIV[k][1], 0.02, base); });
+  add(count(base), 0);
+
+  // layer 1: mainspring barrel
+  var barrel = new T.Group(); barrel.position.set(PIV.barrel[0], PIV.barrel[1], 1.0);
+  barrel.add(ext(gearShape(80, 0, 0), 0.45, M.gold)); var drum = cyl(6.25, 1.7, M.gold, 80); drum.position.z += 0.45; barrel.add(drum);
+  var lid = cyl(5.6, 0.12, M.steel, 80); lid.position.z += 2.15; barrel.add(lid); barrel.add(cyl(0.6, 3.2, M.steel, 24));
+  add(count(barrel), 1);
+  // layers 2 to 4: the going train
+  var centre = add(wheel(0, 0, 1.75, 64, M.gold, 12, -0.6), 1.7);
+  var third = add(wheel(PIV.third[0], PIV.third[1], 2.45, 60, M.gold, 8, -0.75), 2.4);
+  var fourth = add(wheel(PIV.fourth[0], PIV.fourth[1], 3.15, 56, M.gold, 8, -0.75), 3.1);
+  var esc = new T.Group(); esc.position.set(PIV.escape[0], PIV.escape[1], 2.45);
+  (function () { var sh = new T.Shape(), n = 15, s = 2 * Math.PI / n, ro = 2.25, rr = 1.55;
+    for (var i = 0; i < n; i++) { var a = i * s; [[rr, a], [ro, a + 0.52 * s], [ro - 0.12, a + 0.62 * s], [rr, a + 0.7 * s]].forEach(function (p, k) { var x = p[0] * Math.cos(p[1]), y = p[0] * Math.sin(p[1]); if (i === 0 && k === 0) sh.moveTo(x, y); else sh.lineTo(x, y); }); }
+    sh.closePath();
+    for (var k = 0; k < 4; k++) { var a0 = k * Math.PI / 2 + 0.3, a1 = (k + 1) * Math.PI / 2 - 0.3, h = new T.Path(); h.absarc(0, 0, 1.2, a0, a1, false); h.absarc(0, 0, 0.5, a1, a0, true); h.closePath(); sh.holes.push(h); }
+    esc.add(ext(sh, 0.26, M.steel, 0.02)); var p = ext(gearShape(7, 0, 0), 0.9, M.steel, 0.02); p.position.z = 0.4; esc.add(p); var ar = cyl(0.16, 3, M.steel, 16); ar.position.z = 0.2; esc.add(ar); })();
+  add(count(esc), 2.4);
+  var fork = new T.Group(); fork.position.set(PIV.pallet[0], PIV.pallet[1], 2.5);
+  (function () { var toEsc = Math.atan2(PIV.escape[1] - PIV.pallet[1], PIV.escape[0] - PIV.pallet[0]), toBal = Math.atan2(PIV.balance[1] - PIV.pallet[1], PIV.balance[0] - PIV.pallet[0]);
+    var arm = bar(0, 0, 3.2 * Math.cos(toBal), 3.2 * Math.sin(toBal), 0.5, 0.22, M.steel); fork.add(arm);
+    [-0.55, 0.55].forEach(function (o) { var a = toEsc + o, b = bar(0, 0, 1.9 * Math.cos(a), 1.9 * Math.sin(a), 0.42, 0.22, M.steel); fork.add(b);
+      var st = new T.Mesh(new T.BoxGeometry(0.62, 0.26, 0.3), M.ruby); st.position.set(2.0 * Math.cos(a), 2.0 * Math.sin(a), 0.14); st.rotation.z = a; fork.add(st); jewels++; });
+    fork.add(cyl(0.16, 1.8, M.steel, 16)); })();
+  add(count(fork), 2.4);
+  // layer 5: balance and hairspring
+  var balance = new T.Group(); balance.position.set(PIV.balance[0], PIV.balance[1], 3.5);
+  (function () { var rim = new T.Mesh(new T.TorusGeometry(3.75, 0.27, 20, 120), M.gold); rim.position.z = 0.27; balance.add(rim);
+    for (var i = 0; i < 3; i++) { var a = i * 2 * Math.PI / 3, s = bar(0, 0, 3.7 * Math.cos(a), 3.7 * Math.sin(a), 0.5, 0.3, M.gold); s.position.z = 0.1; balance.add(s); }
+    for (i = 0; i < 12; i++) { a = i * Math.PI / 6 + 0.26; var w = cyl(0.2, 0.3, M.steel, 16); w.rotation.set(0, 0, 0); w.rotation.z = a; w.rotation.y = Math.PI / 2; w.position.set(4.08 * Math.cos(a), 4.08 * Math.sin(a), 0.27); w.lookAt(0, 0, 0.27); balance.add(w); }
+    var pts = []; for (i = 0; i <= 720; i++) { var th = i / 720 * 2 * Math.PI * 10.5, r = 0.45 + th * 0.034; pts.push(new T.Vector3(r * Math.cos(th), r * Math.sin(th), 0.75)); }
+    balance.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 1400, 0.028, 5), M.blued));
+    balance.add(cyl(0.42, 1.0, M.steel, 24)); var st = cyl(0.17, 2.6, M.steel, 16); st.position.z = 0.2; balance.add(st); })();
+  add(count(balance), 3.9);
+  // layer 6: bridges, with their jewels and screws
+  var bridges = new T.Group(); bridges.position.z = 4.25;
+  (function () { var sh = new T.Shape(), a0 = 152 * Math.PI / 180, a1 = 258 * Math.PI / 180; sh.absarc(0, 0, 15.3, a0, a1, false); sh.absarc(0, 0, 2.6, a1, a0, true); sh.closePath();
+    bridges.add(ext(sh, 0.85, M.bridge, 0.07, 120));
+    [[-13.2, -2.2], [-5.4, -12.6], [-9.9, 6.4 - 3.4], [-2.6, -4.6]].forEach(function (p) { screw(p[0], p[1], 0.9, bridges); });
+    jewel(PIV.barrel[0], PIV.barrel[1], 0.9, bridges);
+    var A1 = [11.2, 7.9], A2 = [13.0, -4.9], A3 = [3.7, -13.6], A4 = [-9.3, 9.6], A5 = [10.3, -9.6];
+    [[A1, PIV.third, 2.3], [A1, PIV.fourth, 2.3], [A2, PIV.escape, 2.0], [A4, PIV.centre, 2.6], [A5, PIV.pallet, 1.8]].forEach(function (b) {
+      bridges.add(bar(b[0][0], b[0][1], b[1][0], b[1][1], b[2], 0.85, M.bridge)); jewel(b[1][0], b[1][1], 0.9, bridges); });
+    var cock = bar(A3[0], A3[1], PIV.balance[0], PIV.balance[1], 2.6, 0.85, M.bridge); cock.position.z = 0.35; bridges.add(cock); jewel(PIV.balance[0], PIV.balance[1], 1.25, bridges);
+    [A1, A2, A4, A5].forEach(function (p) { screw(p[0], p[1], 0.9, bridges); }); screw(A3[0], A3[1], 1.25, bridges); })();
+  add(count(bridges), 5.0);
+  // layer 7: winding wheels on top
+  var ratchet = add(count(wheel(PIV.barrel[0], PIV.barrel[1], 5.3, 44, M.steel, 0, 0)), 6.0); screw(0, 0, 0.36, ratchet, 0.8);
+  var crown = add(count(wheel(PIV.barrel[0] + 5.44 * Math.cos(2.62), PIV.barrel[1] + 5.44 * Math.sin(2.62), 5.3, 20, M.steel, 0, 0)), 6.0); screw(0, 0, 0.36, crown, 0.5);
+  document.getElementById('n-jewels').textContent = jewels; document.getElementById('n-parts').textContent = meshes;
+
+  model.traverse(function (m) { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+  (function () { var c = document.createElement('canvas'); c.width = c.height = 256; var x = c.getContext('2d'), g = x.createRadialGradient(128, 128, 92, 128, 128, 128);
+    g.addColorStop(0, 'rgba(0,0,0,0.3)'); g.addColorStop(0.45, 'rgba(0,0,0,0.1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+    var m = new T.Mesh(new T.PlaneGeometry(47, 47), new T.MeshBasicMaterial({ map: new T.CanvasTexture(c), transparent: true, depthWrite: false, toneMapped: false })); m.position.z = -1.75; base.add(m); })();
+  var pivot = new T.Group(); pivot.add(model); scene.add(pivot);
+
+  /* ---------- callouts for the exploded view ---------- */
+  var CALL = [
+    { part: base, r: 17.4, at: [0, 0, 0], name: 'Mainplate', note: '01' },
+    { part: barrel, r: 6.9, at: [0, 0, 1], name: 'Barrel', note: '02' },
+    { part: centre, r: 5.6, at: [0, 0, 0.2], name: 'Going train', note: '03' },
+    { part: balance, r: 4.1, at: [0, 0, 0.3], name: 'Balance', note: '04' },
+    { part: bridges, r: 15.3, at: [0, 0, 0.4], name: 'Bridges', note: '05' }
+  ];
+  var labelBox = document.getElementById('labels');
+  CALL.forEach(function (c) { var d = document.createElement('div'); d.className = 'label'; var s = document.createElement('span'), b = document.createElement('b');
+    s.appendChild(document.createTextNode(c.note + '\u2002')); b.textContent = c.name; s.appendChild(b); d.appendChild(s); c.span = s; labelBox.appendChild(d); c.el = d; });
+
+  /* ---------- how each section frames the object ---------- */
+  var POSE = [
+    { tilt: -0.92, spin: 1, fixed: 0, dist: 128, ox: 0.21, oy: 0, focus: [0, 0, 2], explode: 0 },
+    { tilt: -1.2, spin: 0.25, fixed: 0.5, dist: 150, ox: -0.17, oy: 0, focus: [0, 0, 11], explode: 1 },
+    { tilt: -0.66, spin: 0, fixed: -1.75, dist: 72, ox: 0.17, oy: 0.02, focus: [1.5, -9.0, 4.4], explode: 0.14, nd: 2.5 },
+    { tilt: -0.3, spin: 0, fixed: -0.5, dist: 135, ox: -0.22, oy: 0, focus: [1.5, 1.2, 4], explode: 0.26 },
+    { tilt: -0.85, spin: 1, fixed: 0, dist: 190, ox: 0, oy: -0.2, focus: [0, 0, 2], explode: 0 }
+  ];
+  var target = 0, pos = 0;
+  function readScroll() { var y = window.scrollY, k = 0;
+    for (var i = 0; i < sections.length - 1; i++) if (y >= sections[i].offsetTop) k = i;
+    var a = sections[k].offsetTop, b = sections[k + 1].offsetTop; target = Math.max(0, Math.min(sections.length - 1, k + (y - a) / Math.max(1, b - a))); }
+  window.addEventListener('scroll', readScroll, { passive: true }); readScroll(); pos = target;
+  var W = 1, H = 1;
+  function size() { W = canvas.clientWidth || 1; H = canvas.clientHeight || 1; renderer.setSize(W, H, false); camera.aspect = W / H; }
+  window.addEventListener('resize', size); size();
+  var look = { x: 0, y: 0, tx: 0, ty: 0 };
+  window.addEventListener('pointermove', function (e) { if (e.pointerType === 'touch') return; look.tx = e.clientX / window.innerWidth - 0.5; look.ty = e.clientY / window.innerHeight - 0.5; });
+  var stepBtns = document.querySelectorAll('#steps button:not(.buy)'), v = new T.Vector3();
+
+  var last = performance.now(), t0 = last;
+  function frame(now) {
+    var dt = Math.min(0.1, (now - last) / 1000); last = now; var time = calm ? 0.3 : (now - t0) / 1000;
+    pos += (target - pos) * Math.min(1, dt * (calm ? 60 : 3));
+    look.x += (look.tx - look.x) * Math.min(1, dt * 2.5); look.y += (look.ty - look.y) * Math.min(1, dt * 2.5);
+    var i = Math.max(0, Math.min(POSE.length - 2, Math.floor(pos))), f = pos - i; f = f * f * (3 - 2 * f);
+    var A = POSE[i], B = POSE[i + 1]; function mix(k) { return A[k] + (B[k] - A[k]) * f; }
+    var narrow = W < 820, ex = mix('explode'), free = ((time * 0.11 + Math.PI) % (2 * Math.PI)) - Math.PI;
+
+    // the works: balance, fork, escape wheel, then every wheel back to the barrel at its true ratio
+    var beats = time * 2, n = Math.floor(beats), fr = beats - n, snap = Math.min(1, fr * 5); snap = snap * snap * (3 - 2 * snap);
+    balance.rotation.z = 3.6 * Math.sin(beats * Math.PI + 0.4);
+    fork.rotation.z = (n % 2 ? 1 : -1) * 0.13 * (2 * snap - 1) * -1;
+    var ea = (n + snap) * (2 * Math.PI / 30);
+    esc.rotation.z = ea; fourth.rotation.z = -ea * 7 / 56; third.rotation.z = ea * 7 / 56 * 8 / 60; centre.rotation.z = -ea * 7 / 56 * 8 / 60 * 8 / 64;
+    barrel.rotation.z = ea * 7 / 56 * 8 / 60 * 8 / 64 * 12 / 80; ratchet.rotation.z = barrel.rotation.z; crown.rotation.z = -barrel.rotation.z * 44 / 20;
+
+    for (var p = 0; p < parts.length; p++) parts[p].position.z = parts[p].userData.z0 + parts[p].userData.layer * 3.3 * ex;
+    var fo = [mix2(0), mix2(1), mix2(2)]; function mix2(k) { return A.focus[k] + (B.focus[k] - A.focus[k]) * f; }
+    model.position.set(-fo[0], -fo[1], -fo[2]);
+    pivot.rotation.set(mix('tilt') + look.y * 0.08, 0, 0);
+    model.rotation.z = 0; pivot.rotation.z = 0;
+    pivot.rotateZ(mix('fixed') + free * mix('spin') + look.x * 0.12);
+    var dist = mix('dist') * (narrow ? (A.nd || 1.75) + ((B.nd || 1.75) - (A.nd || 1.75)) * f : 1);
+    camera.position.set(0, 0, dist); camera.lookAt(0, 0, 0);
+    camera.setViewOffset(W, H, -(narrow ? 0 : mix('ox')) * W, -(narrow ? -0.2 : mix('oy')) * H, W, H);
+    camera.updateProjectionMatrix();
+    renderer.render(scene, camera);
+
+    var show = !narrow && Math.abs(pos - 1) < 0.3; labelBox.classList.toggle('on', show);
+    if (show) { base.localToWorld(v.set(0, 0, 0)); v.x -= 20.5; v.project(camera); var colX = (v.x * 0.5 + 0.5) * W;
+      CALL.forEach(function (c) {
+        c.part.localToWorld(v.set(c.at[0], c.at[1], c.at[2])); v.x -= c.r; v.project(camera);
+        var x = (v.x * 0.5 + 0.5) * W, y = (-v.y * 0.5 + 0.5) * H;
+        c.el.style.setProperty('--len', Math.max(14, x - colX - 25) + 'px');
+        c.el.style.transform = 'translate(' + (colX - c.span.offsetWidth) + 'px,' + (y - c.el.offsetHeight / 2) + 'px)'; }); }
+    var k = Math.round(pos); for (var q = 0; q < stepBtns.length; q++) stepBtns[q].classList.toggle('on', +stepBtns[q].dataset.go === k);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
