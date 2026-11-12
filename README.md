@@ -19,3 +19,7 @@ Drag to turn a scene, scroll to zoom. Built with three.js 0.160 loaded from unpk
 ## Mercury
 
 `mercury/index.html` is ten drops of liquid metal that merge into one surface. Press and hold to pull them toward the pointer, let go and they fall and pool. It uses no library: the picture is ray-marched in a fragment shader, so there are no polygons.
+
+## Vuorokausi
+
+`vuorokausi/index.html` is a scroll-driven film through a generated northern landscape: five scenes from first light to the northern lights, each with its own palette, sun and camera position. The land, forest, sea and sky are ray-marched in one fragment shader with no library.
