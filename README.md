@@ -15,3 +15,7 @@ Drag to turn a scene, scroll to zoom. Built with three.js 0.160 loaded from unpk
 ## Drape
 
 `drape/index.html` is a real-time cloth simulation: 6,561 points joined by 38,558 threads, held by its corners over a sphere. Drag the cloth to pull it, press Let go to drop it, Lift to pick it back up.
+
+## Mercury
+
+`mercury/index.html` is ten drops of liquid metal that merge into one surface. Press and hold to pull them toward the pointer, let go and they fall and pool. It uses no library: the picture is ray-marched in a fragment shader, so there are no polygons.
