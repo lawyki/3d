@@ -11,3 +11,7 @@ One page, three scenes, switched from the top bar:
 - **126** (`#pulse`): a floor of 1,600 bars that ripples at 126 BPM, with an optional G♯ minor synth made in the browser.
 
 Drag to turn a scene, scroll to zoom. Built with three.js 0.160 loaded from unpkg.
+
+## Drape
+
+`drape/index.html` is a real-time cloth simulation: 6,561 points joined by 38,558 threads, held by its corners over a sphere. Drag the cloth to pull it, press Let go to drop it, Lift to pick it back up.
