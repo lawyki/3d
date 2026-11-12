@@ -23,3 +23,7 @@ Drag to turn a scene, scroll to zoom. Built with three.js 0.160 loaded from unpk
 ## Vuorokausi
 
 `vuorokausi/index.html` is a scroll-driven film through a generated northern landscape: five scenes from first light to the northern lights, each with its own palette, sun and camera position. The land, forest, sea and sky are ray-marched in one fragment shader with no library.
+
+## Kaiku
+
+`kaiku/index.html` is a complete scrolling site for a made-up acoustics studio. One cloud of 110,000 grains sits behind the page and takes a new form per section: a ringing sphere, sand on a vibrating plate (pick the mode), two interfering waves, a cochlea, and the wordmark. No library; the grains are moved in a vertex shader.
