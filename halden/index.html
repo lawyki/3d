@@ -217,25 +217,51 @@ h1 em, h2 em { font-style: italic; }
   function place(t, rep, rot, off) { t.repeat.set(rep, rep); t.rotation = rot || 0; if (off) { t.offset.set(0.5, 0.5); t.wrapS = t.wrapT = T.ClampToEdgeWrapping; } return t; }
   function metal(o) { return new T.MeshStandardMaterial(o); }
   function place(t, rep, rot, off) { t.repeat.set(rep, rep); t.rotation = rot || 0; if (off) { t.offset.set(0.5, 0.5); t.wrapS = t.wrapT = T.ClampToEdgeWrapping; } return t; }
-  function metal(o) { return new T.MeshStandardMaterial(o); }
-  function hdr(r, g, b) { return new T.MeshBasicMaterial({ color: new T.Color(r, g, b), fog: false }); }
+  function relief(src, k) { // turn a grey height drawing into a normal map
+    var c = src.image, w = c.width, h = c.height, a = c.getContext('2d').getImageData(0, 0, w, h).data, o = document.createElement('canvas'); o.width = w; o.height = h;
+    var x2 = o.getContext('2d'), img = x2.createImageData(w, h), d = img.data;
+    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) { var l = a[(y * w + (x + w - 1) % w) * 4], r = a[(y * w + (x + 1) % w) * 4], u = a[(((y + h - 1) % h) * w + x) * 4], b = a[(((y + 1) % h) * w + x) * 4];
+      var nx = (l - r) / 255 * k, ny = (b - u) / 255 * k, n = 1 / Math.hypot(nx, ny, 1), i = (y * w + x) * 4; d[i] = (nx * n * 0.5 + 0.5) * 255; d[i + 1] = (ny * n * 0.5 + 0.5) * 255; d[i + 2] = (n * 0.5 + 0.5) * 255; d[i + 3] = 255; }
+    x2.putImageData(img, 0, 0); var t = new T.CanvasTexture(o); t.wrapS = src.wrapS; t.wrapT = src.wrapT; t.anisotropy = ANISO; return t; }
+  function wearTex(lo, hi) { return tex(512, 512, function (x, w) { // hairline scratches, specks and soft smudges
+    x.fillStyle = grey((lo + hi) / 2); x.fillRect(0, 0, w, w); var i, g;
+    for (i = 0; i < 9; i++) { var cx = rnd() * w, cy = rnd() * w, r = 40 + rnd() * 110; g = x.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, 'rgba(255,255,255,' + (0.1 + rnd() * 0.16) + ')'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(cx - r, cy - r, r * 2, r * 2); }
+    for (i = 0; i < 900; i++) { var a = rnd() * 6.2832, l = 4 + rnd() * rnd() * 90, px = rnd() * w, py = rnd() * w; x.strokeStyle = grey(rnd() < 0.5 ? hi : lo); x.globalAlpha = 0.12 + rnd() * 0.4; x.lineWidth = 0.4 + rnd() * 0.7; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a) * l, py + Math.sin(a) * l); x.stroke(); }
+    for (i = 0; i < 2600; i++) { x.globalAlpha = 0.25 + rnd() * 0.5; x.fillStyle = grey(rnd() < 0.5 ? hi : lo); x.fillRect(rnd() * w, rnd() * w, 1, 1); } x.globalAlpha = 1; }); }
+  function brushTex(lo, hi) { return tex(512, 512, function (x, w) { // long parallel brushing
+    x.fillStyle = grey((lo + hi) / 2); x.fillRect(0, 0, w, w);
+    for (var i = 0; i < 2600; i++) { var y = rnd() * w, l = 60 + rnd() * 400, px = rnd() * w - 100; x.strokeStyle = grey(lo + (hi - lo) * rnd()); x.globalAlpha = 0.2 + rnd() * 0.5; x.lineWidth = 0.5 + rnd() * 1.1; x.beginPath(); x.moveTo(px, y); x.lineTo(px + l, y + (rnd() - 0.5) * 1.5); x.stroke(); } x.globalAlpha = 1; }); }
+  function grainTex(lo, hi) { return tex(256, 256, function (x, w) { var img = x.createImageData(w, w), d = img.data; for (var i = 0; i < d.length; i += 4) { var v = lo + (hi - lo) * rnd(); d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; } x.putImageData(img, 0, 0); }); }
+  function ringDir(tangential) { return tex(256, 256, function (x, w) { var img = x.createImageData(w, w), d = img.data, c = w / 2; // per-pixel brushing direction around a centre
+    for (var py = 0; py < w; py++) for (var px = 0; px < w; px++) { var X = px - c + 0.5, Y = c - py - 0.5, r = Math.hypot(X, Y) || 1, dx = tangential ? -Y / r : X / r, dy = tangential ? X / r : Y / r, i = (py * w + px) * 4; d[i] = (dx * 0.5 + 0.5) * 255; d[i + 1] = (dy * 0.5 + 0.5) * 255; d[i + 2] = 255; d[i + 3] = 255; }
+    x.putImageData(img, 0, 0); }); }
+  function rep2(t, u, v) { t = t.clone(); t.repeat.set(u, v); t.needsUpdate = true; return t; }
+  var wear = wearTex(70, 235), wearN = relief(wear, 1.4), brush = brushTex(95, 235), brushN = relief(brush, 2.2), grain = grainTex(150, 255), grainN = relief(grain, 1.2);
+  function phys(o) { return new T.MeshPhysicalMaterial(o); }
+  function polished(color, rough, rep) { return phys({ color: color, metalness: 1, roughness: rough, roughnessMap: rep2(wear, rep, rep), normalMap: rep2(wearN, rep, rep), normalScale: new T.Vector2(0.12, 0.12) }); }
+  function finished(color, mk, lo, hi, rep, rot, off, bump, extra) { var h = mk(lo, hi), o = { color: color, metalness: 1, roughness: 1, map: place(mk(165, 255, true), rep, rot, off), roughnessMap: place(h, rep, rot, off), normalMap: place(relief(h, bump), rep, rot, off), normalScale: new T.Vector2(0.55, 0.55) };
+    for (var k in extra) o[k] = extra[k]; return phys(o); }
   var M = {
-    bridgeTop: metal({ color: 0x3a3d44, metalness: 0.95, roughness: 1, map: place(stripeTex(150, 255, true), 1 / 13, 0.52), roughnessMap: place(stripeTex(60, 130), 1 / 13, 0.52) }),
-    bridgeEdge: metal({ color: 0x9da1ab, metalness: 1, roughness: 0.1 }),
-    plateTop: metal({ color: 0x24262b, metalness: 0.9, roughness: 1, map: place(pearlTex(140, 255, true), 1 / 11), roughnessMap: place(pearlTex(70, 140), 1 / 11) }),
-    plateEdge: metal({ color: 0x55585f, metalness: 1, roughness: 0.18 }),
-    goldTop: metal({ color: 0xc07a52, metalness: 0.95, roughness: 1, map: place(sunTex(180, 255, true), 1 / 16, 0, true), roughnessMap: place(sunTex(70, 125), 1 / 16, 0, true) }),
-    goldEdge: metal({ color: 0xdb9468, metalness: 1, roughness: 0.14 }),
-    steelTop: metal({ color: 0x6a6e77, metalness: 0.95, roughness: 1, map: place(sunTex(165, 255, true), 1 / 10, 0, true), roughnessMap: place(sunTex(50, 110), 1 / 10, 0, true) }),
-    steel: metal({ color: 0xb4b8c0, metalness: 1, roughness: 0.14 }),
-    blued: metal({ color: 0x0c2a9c, metalness: 0.85, roughness: 0.2 }),
-    dark: metal({ color: 0x050506, metalness: 0.4, roughness: 0.6 }),
-    ruby: new T.MeshPhysicalMaterial({ color: 0xa30d2d, metalness: 0, roughness: 0.05, clearcoat: 1, clearcoatRoughness: 0.04, emissive: 0xff1040, emissiveIntensity: 0.35 }),
-    caseM: metal({ color: 0x101012, metalness: 1, roughness: 0.3, side: T.DoubleSide }),
-    casePol: metal({ color: 0x2a2b2f, metalness: 1, roughness: 0.08 }),
-    lume: hdr(0.55, 1.5, 1.05), ember: hdr(2.4, 0.62, 0.12),
-    crystal: metal({ color: 0xffffff, metalness: 1, roughness: 0.02, transparent: true, opacity: 0.085, depthWrite: false, envMapIntensity: 1.6 })
+    bridgeTop: finished(0x3d4047, stripeTex, 62, 132, 1 / 13, 0.52, false, 2.5),
+    bridgeEdge: polished(0xa3a7b1, 0.2, 0.35),
+    plateTop: finished(0x26282d, pearlTex, 70, 145, 1 / 11, 0, false, 1.6),
+    plateEdge: polished(0x595c64, 0.3, 0.3),
+    goldTop: finished(0xbe7850, sunTex, 70, 125, 1 / 16, 0, true, 3, { anisotropy: 0.75, anisotropyMap: place(ringDir(true), 1 / 16, 0, true) }),
+    goldEdge: polished(0xdb9468, 0.24, 0.5),
+    steelTop: finished(0x6c7079, sunTex, 50, 112, 1 / 10, 0, true, 3, { anisotropy: 0.75, anisotropyMap: place(ringDir(true), 1 / 10, 0, true) }),
+    steel: polished(0xb7bbc3, 0.22, 0.6),
+    blued: phys({ color: 0x0a2390, metalness: 1, roughness: 0.3, roughnessMap: rep2(wear, 0.8, 0.8), iridescence: 0.22, iridescenceIOR: 1.6, iridescenceThicknessRange: [330, 390] }),
+    dark: phys({ color: 0x050506, metalness: 0.4, roughness: 0.6 }),
+    ruby: phys({ color: 0x9a0b2a, metalness: 0, roughness: 0.04, ior: 1.77, clearcoat: 1, clearcoatRoughness: 0.03, specularIntensity: 1, emissive: 0xff1040, emissiveIntensity: 0.3 }),
+    // black-coated steel: a brushed base under a thin hard gloss
+    caseM: phys({ color: 0x121214, metalness: 1, roughness: 0.62, roughnessMap: rep2(brush, 3, 2), normalMap: rep2(brushN, 3, 2), normalScale: new T.Vector2(0.35, 0.35), anisotropy: 0.6, anisotropyRotation: Math.PI / 2, clearcoat: 0.45, clearcoatRoughness: 0.16, side: T.DoubleSide }),
+    casePol: polished(0x2a2b2f, 0.16, 0.5),
+    lume: new T.MeshBasicMaterial({ color: new T.Color(0.55, 1.5, 1.05), map: rep2(grain, 0.5, 0.5), fog: false }),
+    ember: new T.MeshBasicMaterial({ color: new T.Color(2.4, 0.62, 0.12), fog: false }),
+    crystal: phys({ color: 0xe9f0ff, metalness: 1, roughness: 0.015, roughnessMap: rep2(wear, 1, 1), transparent: true, opacity: 1, depthWrite: false, envMapIntensity: 1.5 })
   };
+  M.crystal.onBeforeCompile = function (sh) { // glass: nearly clear face-on, mirror-like at a glancing angle
+    sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', 'float fres = pow(1.0 - clamp(abs(dot(normalize(vViewPosition), normal)), 0.0, 1.0), 2.6); diffuseColor.a = mix(0.035, 0.62, fres);\n#include <opaque_fragment>'); };
   var GOLD = [M.goldTop, M.goldEdge], STEELW = [M.steelTop, M.steel], BRIDGE = [M.bridgeTop, M.bridgeEdge], PLATE = [M.plateTop, M.plateEdge];
 
   /* ---------- geometry helpers ---------- */
@@ -430,7 +456,7 @@ h1 em, h2 em { font-style: italic; }
       function line(s, y, px, sp, f) { x.font = f + ' ' + px + 'px "Helvetica Neue", Helvetica, Arial, sans-serif'; var tw = 0, i; for (i = 0; i < s.length; i++) tw += x.measureText(s[i]).width + sp; var cx = c - (tw - sp) / 2; for (i = 0; i < s.length; i++) { x.fillText(s[i], cx, y); cx += x.measureText(s[i]).width + sp; } }
       line('HALDEN', c - 330, 62, 26, '500'); x.fillStyle = '#8d8a82'; line('CALIBRE 01', c + 318, 27, 12, '400'); line('HAND-WOUND', c + 364, 22, 10, '400'); }, true);
     dt.wrapS = dt.wrapT = T.ClampToEdgeWrapping; dt.repeat.set(1, 1);
-    face.add(new T.Mesh(new T.CircleGeometry(16.1, 128), new T.MeshStandardMaterial({ map: dt, metalness: 0.6, roughness: 0.5, envMapIntensity: 0.5 })));
+    face.add(new T.Mesh(new T.CircleGeometry(16.1, 128), phys({ map: dt, metalness: 0.55, roughness: 0.62, roughnessMap: rep2(grain, 14, 14), normalMap: rep2(grainN, 14, 14), normalScale: new T.Vector2(0.18, 0.18), clearcoat: 0.25, clearcoatRoughness: 0.3, envMapIntensity: 0.55 })));
     for (var i = 0; i < 12; i++) { var a = i * Math.PI / 6, L = i % 3 ? 2.5 : 3.5, R = 13.9 - L / 2;
       (i ? [0] : [-0.62, 0.62]).forEach(function (off) { var g = new T.Group(); g.rotation.z = -a; var b = new T.Mesh(new T.BoxGeometry(0.72, L, 0.3), M.steel); b.position.set(off, R, 0.15); g.add(b);
         var l = new T.Mesh(new T.BoxGeometry(0.4, L - 0.4, 0.05), M.lume); l.position.set(off, R, 0.32); g.add(l); face.add(g); }); }
