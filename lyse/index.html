@@ -18,7 +18,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px
 *{box-sizing:border-box}
 #film{position:fixed;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity 1.4s ease}
 #film.on{opacity:1}
-#track{height:940vh}
+#track{height:1080vh}
 .scrim{position:fixed;inset:0;pointer-events:none;background:
   linear-gradient(to top, rgba(5,6,7,.82) 0%, rgba(5,6,7,.38) 26%, rgba(5,6,7,0) 52%),
   linear-gradient(to bottom, rgba(5,6,7,.55) 0%, rgba(5,6,7,0) 16%)}
@@ -75,7 +75,7 @@ dd{margin:0;color:var(--fg);text-align:right;font-variant-numeric:tabular-nums}
   .scale,.hint{display:none}
   .ch{bottom:calc(28px + env(safe-area-inset-bottom, 0px))}
   dl div:nth-child(n+3){display:none}
-  #c6 dl div:nth-child(n+3){display:flex}
+  #c7 dl div:nth-child(n+3){display:flex}
 }
 @media (max-height:620px){ dl{display:none} }
 @media (prefers-reduced-motion:reduce){ .go span{animation:none} #film{transition:none} }
@@ -95,46 +95,49 @@ dd{margin:0;color:var(--fg);text-align:right;font-variant-numeric:tabular-nums}
 
 <main>
   <section class="ch" id="c0">
-    <p class="eyebrow"><b>Cinema primes</b><i></i>Since 1961</p>
-    <h1>Light, before it is a picture.</h1>
-    <p>Every Lyse lens starts as a parallel beam on a steel table in Bergen. Follow one through the glass, from the source to the image.</p>
-    <div class="go"><span></span>Scroll to follow the beam</div>
+    <p class="eyebrow"><b>Cinema primes</b><i></i>Bergen, since 1961</p>
+    <h1>Watch what glass does to light.</h1>
+    <p>Nothing here is drawn. Every grain is a ray, and the glass bends it for real. Move through the stream.</p>
+    <div class="go"><span></span>Scroll</div>
   </section>
   <section class="ch" id="c1">
-    <p class="eyebrow"><b>01</b><i></i>Singlet</p>
-    <h2>One element bends everything.</h2>
-    <p>A single lens pulls a parallel beam down to a point, and gets it slightly wrong at the edges. That error is where our work starts.</p>
-    <dl><div><dt>Blank</dt><dd>Fluor crown, FPL 53</dd></div><div><dt>Surface</dt><dd>λ/10 at 633 nm</dd></div><div><dt>Centring</dt><dd>under 30 arcsec</dd></div></dl>
+    <p class="eyebrow"><b>01</b><i></i>First surface</p>
+    <h2>It starts with a mistake.</h2>
+    <p>A curved surface pulls the stream inward, and pulls the edges a little too hard. Everything we do afterwards is about that error.</p>
   </section>
   <section class="ch" id="c2">
     <p class="eyebrow"><b>02</b><i></i>Focus</p>
     <h2>The colours disagree about where.</h2>
-    <p>Blue comes to focus a little before red. Left alone, that gap is the purple edge on every bright window. We measure it in microns and close it with a second glass.</p>
-    <dl><div><dt>Axial colour</dt><dd>under 8 µm</dd></div><div><dt>Spherical</dt><dd>0.02 λ RMS</dd></div></dl>
+    <p>Blue arrives a little before red. Left alone, that gap is the purple edge on every bright window.</p>
+    <dl><div><dt>Axial colour</dt><dd>under 8 µm</dd></div></dl>
   </section>
   <section class="ch" id="c3">
-    <p class="eyebrow"><b>03</b><i></i>Dispersion</p>
-    <h2>White is a crowd.</h2>
-    <p>Send the beam through a prism and it separates into everything it was carrying. We choose each glass by how hard it pulls the spectrum apart.</p>
-    <dl><div><dt>Abbe number</dt><dd>ν 94.9 to 25.4</dd></div><div><dt>Anneal</dt><dd>11 days per melt</dd></div></dl>
+    <p class="eyebrow"><b>03</b><i></i>Release</p>
+    <h2>Past the crossing, it opens again.</h2>
+    <p>A second glass catches the spread and lays it flat. Calm, parallel, and upside down.</p>
   </section>
   <section class="ch" id="c4">
-    <p class="eyebrow"><b>04</b><i></i>The stack</p>
-    <h2>Five elements, each correcting the last.</h2>
-    <p>Crown, flint, air. Every surface undoes a mistake made by the one before it, until the beam leaves cleaner than it arrived.</p>
-    <dl><div><dt>Design</dt><dd>5 elements, 3 groups</dd></div><div><dt>Coating</dt><dd>9 layers, 0.2 % loss</dd></div><div><dt>Spacing</dt><dd>held to 5 µm</dd></div></dl>
+    <p class="eyebrow"><b>04</b><i></i>Dispersion</p>
+    <h2>White is a crowd.</h2>
+    <p>Through a prism it comes apart into everything it was carrying. We choose each glass by how hard it pulls.</p>
+    <dl><div><dt>Abbe number</dt><dd>ν 94.9 to 25.4</dd></div></dl>
   </section>
   <section class="ch" id="c5">
-    <p class="eyebrow"><b>05</b><i></i>Iris</p>
-    <h2>Eleven blades, one circle.</h2>
-    <p>The iris decides how much of the beam gets through. Ours stays round from T1.4 to T16, so the highlights behind your subject stay round too.</p>
-    <dl><div><dt>Blades</dt><dd>11, blued steel</dd></div><div><dt>Range</dt><dd>T1.4 to T16</dd></div><div><dt>Ring</dt><dd>stepless, 0.8 mod</dd></div></dl>
+    <p class="eyebrow"><b>05</b><i></i>The stack</p>
+    <h2>Five elements, each correcting the last.</h2>
+    <p>Crown, flint, air. The stream leaves cleaner than it arrived.</p>
+    <dl><div><dt>Coating</dt><dd>9 layers, 0.2 % loss</dd></div></dl>
   </section>
   <section class="ch" id="c6">
-    <p class="eyebrow"><b>06</b><i></i>Image</p>
+    <p class="eyebrow"><b>06</b><i></i>Iris</p>
+    <h2>Eleven blades, one circle.</h2>
+    <p>What does not fit is stopped here. The rest goes on, round from T1.4 to T16.</p>
+  </section>
+  <section class="ch" id="c7">
+    <p class="eyebrow"><b>07</b><i></i>Image</p>
     <h2>And then it is the moon.</h2>
-    <p>Every grain of light lands where it belongs. Lyse 50 mm T1.4, shipping in sets of four.</p>
-    <dl><div><dt>Image circle</dt><dd>46.3 mm</dd></div><div><dt>Close focus</dt><dd>0.45 m</dd></div><div><dt>Front</dt><dd>95 mm</dd></div><div><dt>Weight</dt><dd>1.42 kg</dd></div></dl>
+    <p>Every grain lands where it belongs. Lyse 50 mm T1.4, in sets of four.</p>
+    <dl><div><dt>Image circle</dt><dd>46.3 mm</dd></div><div><dt>Close focus</dt><dd>0.45 m</dd></div><div><dt>Weight</dt><dd>1.42 kg</dd></div></dl>
     <div class="cta"><button class="btn" id="reserve" type="button">Reserve a set</button><span class="note" id="note" hidden>The list opens 2 March 2027.</span></div>
   </section>
 </main>
@@ -158,13 +161,13 @@ const calm = matchMedia('(prefers-reduced-motion:reduce)').matches;
 const SIM = coarse ? 384 : 512, NP = SIM*SIM;
 
 /* ------------------------------------------------------------------ the bench (world units: 1 = 10 cm) */
-const AY = 1.2, SX = 7, IX = 3.6, C0 = 1.6;
+const AY = 1.2, SX = 7, IX = 3.6, C0 = 1.6, SRC = -9.6;
 const LENS = [
   {x:-7,  f:2.4,  a:1.0, o:1.10, m:1, tc:.42, s1:.16,  s2:.16,  str:.20},
   {x:-3,  f:1,    a:.62, o:.72,  m:2, tc:.30, s1:.11,  s2:.11,  str:.16},
   {x:2.4, f:2.4,  a:.46, o:.52,  m:0, tc:.20, s1:.08,  s2:.05,  str:.12},
-  {x:3.0, f:-1.8, a:.36, o:.42,  m:0, tc:.06, s1:-.05, s2:-.05, str:.10},
-  {x:4.2, f:-.8,  a:.36, o:.42,  m:0, tc:.05, s1:-.07, s2:-.04, str:.11},
+  {x:3.0, f:-1.8, a:.36, o:.42,  m:0, tc:.05, s1:-.03, s2:-.03, str:.10},
+  {x:4.2, f:-.8,  a:.36, o:.42,  m:0, tc:.05, s1:-.04, s2:-.03, str:.11},
   {x:4.8, f:1.4,  a:.56, o:.62,  m:0, tc:.24, s1:.06,  s2:.12,  str:.13},
   {x:5.3, f:1,    a:.58, o:.64,  m:3, tc:.20, s1:.10,  s2:.02,  str:.12},
 ];
@@ -173,7 +176,7 @@ const garr = k => `float[7](${LENS.map(l => fl(l[k])).join(',')})`;
 const D2R = Math.PI/180;
 const PRISM = { cx:-.5, cy:.937, s:1.2, hz:.42, a1:130.5*D2R, a2:10.5*D2R };
 const COMMON = `
-const float AY=${fl(AY)}, SX=${fl(SX)}, IX=${fl(IX)}, C0=${fl(C0)}, SRCX=-11.25, R0=.5, R1=.333, DUST=.14;
+const float AY=${fl(AY)}, SX=${fl(SX)}, IX=${fl(IX)}, C0=${fl(C0)}, R0=.5, R1=.333, DUST=.14;
 const int SIM=${SIM};
 const float LX[7]=${garr('x')}; const float LF[7]=${garr('f')}; const float LR[7]=${garr('a')}; const float LO[7]=${garr('o')};
 const int LM[7]=int[7](${LENS.map(l=>l.m).join(',')});
@@ -265,18 +268,21 @@ const FSV = `out vec2 vUv; void main(){ vec2 p = vec2(gl_VertexID==1?3.:-1., gl_
 /* ------------------------------------------------------------------ simulation: grains are light, and the glass really bends them */
 const pSim = prog(FSV, `
 uniform sampler2D tPos, tVel;
-uniform float uDt, uTime, uInit, uKillX, uPrismZ, uIris, uPush, uBurst;
+uniform float uDt, uTime, uInit, uKillX, uPrismZ, uIris, uPush, uBurst, uSrcX;
 uniform vec3 uRayO, uRayD, uDustC, uShare;
 layout(location=0) out vec4 oPos; layout(location=1) out vec4 oVel;
 ${COMMON}
 void spawn(out vec4 P, out vec4 V, vec4 h1, vec4 h2, vec4 r, float wait){
-  float rr = pow(r.x, .52), th = 6.2831853*r.y; vec2 d = vec2(cos(th), sin(th))*rr;
-  float x = SRCX, R = R0, e = h2.z;
+  float rr = pow(r.x, .52), th = 6.2831853*r.y;
+  th += .55*sin(3.*th+uTime*.37); rr *= .74+.26*sin(th*5.+uTime*.9+rr*4.);
+  if (h1.y < .07) rr = .6+r.x*1.1;
+  vec2 d = vec2(cos(th), sin(th))*rr;
+  float x = uSrcX, R = R0, e = h2.z;
   if (e < uShare.z && rr*.4375 < 1.75*uIris){ x = 4.86; R = .4375; }
   else if (e < uShare.z+uShare.y){ x = 2.2; R = R1; }
   else if (e < uShare.z+uShare.y+uShare.x){ x = -2.94; R = R1; }
   P = vec4(x, AY+d.x*R, d.y*R, -wait);
-  V = vec4(C0*(.9+.2*h1.y), 0., 0., 4.);
+  V = vec4(C0*(.78+.44*h1.y), (r.z-.5)*.02, (r.w-.5)*.02, 4.);
 }
 void main(){
   ivec2 id = ivec2(gl_FragCoord.xy);
@@ -302,10 +308,11 @@ void main(){
   if (st > 3.5 && st < 4.5){ age += uDt; if (age >= 0.){ st = 0.; age = 0.; } oPos = vec4(P.xyz, age); oVel = vec4(V.xyz, st); return; }
   if (st > 1.5){ age += uDt; if (age >= 0.) spawn(P, V, h1, h2, r, r.w*.5); else P.w = age; oPos = P; oVel = V; return; }
 
-  float spd = C0*(.9+.2*h1.y), lam = h1.x;
+  float spd = C0*(.78+.44*h1.y), lam = h1.x;
   vec3 p0 = P.xyz, v = V.xyz;
   vec3 w = p0-uRayO; vec3 dl = w-uRayD*dot(w,uRayD);
-  v += normalize(dl+1e-5)*exp(-dot(dl,dl)/.09)*(uPush*1.6+uBurst*16.)*uDt;
+  v += normalize(dl+1e-5)*exp(-dot(dl,dl)/.09)*(uPush*2.6+uBurst*18.)*uDt;
+  if (p0.x < 5.3){ float tt = uTime*.6; v.yz += vec2(sin(p0.x*2.1+p0.z*3.3+tt)+sin(p0.y*5.1-tt*1.7), cos(p0.x*1.7-p0.y*3.1+tt*1.3)+cos(p0.z*4.7+tt))*.022*uDt; }
   v = normalize(v)*spd;
   vec3 p1 = p0+v*uDt;
   float nst = st, nage = age+uDt; bool done = false;
@@ -314,8 +321,7 @@ void main(){
     float lx = LX[i];
     if (p0.x < lx && p1.x >= lx){
       float tf = (lx-p0.x)/max(v.x, 1e-4); vec3 ph = p0+v*tf; vec2 h = ph.yz-vec2(AY,0.); float rr = length(h);
-      if (rr > LR[i]){ if (rr < LO[i]){ p1 = ph; v = vec3(0.); nst = 3.; nage = -.3; done = true; } }
-      else {
+      if (rr <= LR[i]){
         vec2 u = v.yz/max(v.x, 1e-4); int m = LM[i];
         if (m == 2) u = vec2(0.);
         else if (m == 3){ float mr = sqrt(h2.x)*.27, ma = 6.2831853*h2.y; vec3 dd = vec3(SX, AY+sin(ma)*mr, cos(ma)*mr)-ph; u = dd.yz/dd.x; }
@@ -327,7 +333,7 @@ void main(){
   }
   if (!done && p0.x < IX && p1.x >= IX){
     vec3 ph = p0+v*((IX-p0.x)/max(v.x,1e-4)); float rr = length(ph.yz-vec2(AY,0.));
-    if (rr > uIris && rr < .40){ p1 = ph; v = vec3(0.); nst = 3.; nage = -.45; done = true; }
+    if (rr > uIris && rr < .318){ p1 = ph; v = vec3(0.); nst = 3.; nage = -.45; done = true; }
   }
   if (!done){
     vec2 q0 = p0.xy-PC, q1 = p1.xy-PC;
@@ -358,7 +364,7 @@ void main(){
     }
   }
   /* grains left upstream of where the film now needs them are recycled */
-  float ex = h2.z < uShare.z ? 4.86 : (h2.z < uShare.z+uShare.y ? 2.2 : (h2.z < uShare.z+uShare.y+uShare.x ? -2.94 : SRCX));
+  float ex = h2.z < uShare.z ? 4.86 : (h2.z < uShare.z+uShare.y ? 2.2 : (h2.z < uShare.z+uShare.y+uShare.x ? -2.94 : uSrcX));
   if (!done && p1.x < ex-.2 && r.x < uDt*3.) nage = 99.;
   if (!done && (p1.x > 9.5 || abs(p1.z) > 4. || p1.y > 4. || nage > 40. || (p1.x > uKillX+1. && r.w < uDt*4.))){
     spawn(P, V, h1, h2, r, r.z*.5); oPos = P; oVel = V; return;
@@ -406,7 +412,7 @@ void main(){
     if (st < 1.5){
       float x = P.x; col = st < .5 ? white : mix(white, sp*2.1, 1.-smoothstep(.6, 1.02, P.y));
       b = (x < -3. ? uZone.x : (x < 2.2 ? uZone.y : (x < 4.85 ? uZone.z : 1.)))*uTail;
-      b *= 1.-smoothstep(uKillX, uKillX+1., x);
+      b *= (1.-smoothstep(uKillX, uKillX+1., x))*smoothstep(0., .7, age)*(h1.y < .07 ? .55 : 1.)*(.75+.5*h2.w);
       b *= 1.+3.*exp(-pow((x-uWaveX)/.35, 2.));
       float rr = length(P.yz-vec2(AY,0.)), g = 0.;
       for (int i=0;i<7;i++) g += (1.-smoothstep(.02,.17,abs(x-LX[i])))*step(rr, LR[i]);
@@ -528,7 +534,7 @@ void main(){
 }`);
 const pGlass = prog(MV, `
 in vec3 vW; in vec3 vN; out vec4 o;
-uniform vec3 uCam, uTint; uniform vec2 uRes; uniform mat3 uViewR; uniform sampler2D tA, tGD; uniform float uStr, uBack, uMilk, uScat, uCoat;
+uniform vec3 uCam, uTint; uniform vec2 uRes; uniform mat3 uViewR; uniform sampler2D tA, tGD; uniform float uStr, uBack, uMilk, uScat, uCoat, uEdge;
 ${COMMON}
 ${LFIELD}
 ${ENV}
@@ -543,13 +549,23 @@ void main(){
   float F = .04+.96*pow(1.-ndv, 5.);
   vec3 refl = env(reflect(-V,N), .03)*coat(ndv)*F*1.25+lightField(vW)*uScat+vec3(uMilk);
   /* only the glass nearest the eye bends the background; anything behind it keeps its reflections */
+  /* ground edges: frosted, and they light up when the stream passes */
+  float edge = (1.-smoothstep(.25, .6, abs(N.x)))*uEdge;
+  if (edge > .5){
+    vec3 toAx = vec3(0., AY-vW.y, -vW.z);
+    vec3 fr = lightField(vW+toAx*.7)*.05+lightField(vW+toAx*.3)*.05+lightField(vW)*.25+env(N, .5)*.006;
+    o = vec4(fr*(.6+.4*F)+refl*.2, .4); return;
+  }
   if (gl_FragCoord.z > texelFetch(tGD, ivec2(gl_FragCoord.xy), 0).r+3e-5){ o = vec4(refl, 1.); return; }
   vec3 Nv = uViewR*N; vec2 suv = gl_FragCoord.xy/uRes;
   vec2 off = -Nv.xy*uStr*clamp(2.6/dist, .15, 1.6); off.x *= uRes.y/uRes.x;
   vec3 base = texture(tA, suv).rgb;
-  vec3 rf = vec3(texture(tA, suv+off*.985).r, texture(tA, suv+off).g, texture(tA, suv+off*1.02).b);
-  float T = mix(1., .22, pow(1.-ndv, 3.));
-  o = vec4(refl+T*(uTint*rf-base), T);
+  float k = .010+.045*pow(1.-ndv, 1.5);
+  vec3 rf = vec3(texture(tA, suv+off*(1.-k)).r, texture(tA, suv+off).g, texture(tA, suv+off*(1.+k)).b);
+  /* a faint second image, bounced once inside the element */
+  vec3 ghost = texture(tA, suv-off*1.7).rgb*vec3(.5,.8,1.)*.07*uCoat;
+  float T = mix(1., .16, pow(1.-ndv, 2.6));
+  o = vec4(refl+ghost+T*(uTint*rf-base), T);
 }`);
 
 const pDepth = prog(MV, `void main(){}`);
@@ -574,7 +590,7 @@ vec3 aces(vec3 x){ return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14), 0., 1.); 
 void main(){
   vec4 g = texture(tG, vUv);
   vec3 c = max(texture(tA, vUv).rgb*g.a+g.rgb, 0.)+texture(tB, vUv).rgb*uBloom;
-  vec2 d = vUv-.5; c *= 1.-dot(d,d)*.9;
+  vec2 d = vUv-.5; c *= 1.-dot(d,d)*1.5;
   c = aces(c*uExp); c = pow(c, vec3(1./2.2));
   c += (hash42(gl_FragCoord.xy+fract(uTime)*211.).x-.5)*.018;
   o = vec4(c, 1.);
@@ -629,30 +645,7 @@ const mark = () => VB.length/7;
 const range = fn => { const s = mark(); fn(); return { s, n: mark()-s }; };
 
 const gTable = range(() => { const u = [0,1,0]; quad([-70,0,-70],[70,0,-70],[70,0,70],[-70,0,70], u,u,u,u, 0); });
-const gMetal = range(() => {
-  lathe(-12.45, ringProf(.56,.66,1.2), 72, 0, true);
-  lathe(-11.3, ringProf(.66,.77,.05), 72, 0, true);
-  lathe(-13.4, [[0,0],[0,.57]], 48, 2, false);
-  for (const x of [-13.1,-11.7]){ cylY(x,0,.04,AY-.65,.045,20,1); box(x,.02,0,.36,.04,.6,0); }
-  LENS.forEach((l, i) => {
-    const te = l.tc-l.s1-l.s2, stack = i >= 2;
-    lathe(l.x, ringProf(l.a-.012, l.o, stack ? Math.max(te/2+.03, .045) : te/2+.05), 72, 0, true);
-    cylY(l.x,0,.04,AY-l.o+.01,stack ? .034 : .045,20,1); box(l.x,.02,0,stack ? .26 : .34,.04,stack ? .44 : .56,0);
-  });
-  lathe(IX, ringProf(.312,.40,.04), 72, 0, true);
-  cylY(IX,0,.04,AY-.39,.034,20,1); box(IX,.02,0,.26,.04,.44,0);
-  const fx = SX+.016;
-  box(fx,AY+.53,0,.05,.05,1.11,2); box(fx,AY-.53,0,.05,.05,1.11,2); box(fx,AY,.53,.05,1.01,.05,2); box(fx,AY,-.53,.05,1.01,.05,2);
-  cylY(fx,0,.04,AY-.55,.045,20,1); box(fx,.02,0,.34,.04,.56,0);
-  box(-.6,.03,-.75,.2,.06,2.7,0);
-});
 const prismV = [70.5,190.5,310.5].map(a => [PRISM.cx+PRISM.s/Math.sqrt(3)*Math.cos(a*D2R), PRISM.cy+PRISM.s/Math.sqrt(3)*Math.sin(a*D2R)]);
-const bis = [Math.cos(70.5*D2R), Math.sin(70.5*D2R)], apo = PRISM.s/(2*Math.sqrt(3));
-const padC = [PRISM.cx-bis[0]*(apo+.016), PRISM.cy-bis[1]*(apo+.016)];
-const gCarrier = range(() => {
-  box(padC[0],padC[1],0,.6,.03,.7,0,-19.5*D2R);
-  cylY(-.6,0,.1,padC[1]-.02,.04,20,1); box(-.6,.085,0,.3,.05,.3,0);
-});
 const gIris = range(() => { const n = [-1,0,0]; quad([IX,AY-.32,-.32],[IX,AY+.32,-.32],[IX,AY+.32,.32],[IX,AY-.32,.32], n,n,n,n, 0); });
 const glass = LENS.map(l => ({ r: range(() => lathe(l.x, lensProf(l), 72, 0, false)), c:[l.x,AY,0], str:l.str, tint:[.97,.985,1], milk:0, sc:.03, coat:.7, mov:0 }));
 glass.push({ r: range(() => {
@@ -737,14 +730,17 @@ function mul(o, a, b){ for (let c=0;c<4;c++) for (let r=0;r<4;r++) o[c*4+r] = a[
 
 /* ------------------------------------------------------------------ the take */
 const KEYS = [
-  { t:0,   p:[-7.0,1.0,8.9],    q:[-7.0,.28,0],    fov:30, ap:.35, ex:1.50 },
-  { t:1,   p:[-9.5,1.55,2.1],   q:[-5.6,1.12,0],   fov:32, ap:.70, ex:1.00 },
-  { t:2,   p:[-5.05,1.14,1.45], q:[-4.35,1.2,0],   fov:30, ap:1.0, ex:.80 },
-  { t:3,   p:[.9,.6,3.7],       q:[-.1,.62,0],     fov:33, ap:.80, ex:1.05 },
-  { t:4,   p:[1.0,1.75,2.3],    q:[3.7,1.1,0],     fov:30, ap:.85, ex:1.05 },
-  { t:5,   p:[3.05,1.5,.9],     q:[3.62,1.2,0],    fov:28, ap:1.1, ex:1.10 },
-  { t:5.5, p:[6.1,1.95,2.5],    q:[6.2,1.2,0],     fov:28, ap:.80, ex:1.10 },
-  { t:6,   p:[9.3,1.22,.02],    q:[7.0,1.2,0],     fov:24, ap:.90, ex:1.15 },
+  { t:0,    p:[-8.25,1.3,1.3],   q:[-6.75,.92,0],   fov:30, ap:1.2, ex:.95 },
+  { t:1,    p:[-7.95,1.52,.8],   q:[-6.9,1.17,0],   fov:32, ap:1.3, ex:.85 },
+  { t:2,    p:[-5.05,1.14,1.3],  q:[-4.4,1.2,0],    fov:30, ap:1.1, ex:.80 },
+  { t:3,    p:[-3.8,1.0,.98],    q:[-2.9,1.22,0],   fov:31, ap:1.2, ex:.90 },
+  { t:4,    p:[.8,.78,1.6],      q:[-.2,.85,0],     fov:32, ap:1.0, ex:1.00 },
+  { t:4.5,  p:[1.95,.17,1.3],    q:[.95,.1,0],      fov:32, ap:1.3, ex:1.00 },
+  { t:5,    p:[1.85,1.42,.8],    q:[3.3,1.18,0],    fov:30, ap:1.1, ex:1.00 },
+  { t:6,    p:[3.05,1.5,.9],     q:[3.62,1.2,0],    fov:28, ap:1.2, ex:1.05 },
+  { t:6.5,  p:[6.35,1.5,.8],     q:[6.95,1.2,.05],  fov:28, ap:1.2, ex:1.05 },
+  { t:6.75, p:[7.7,1.5,1.0],     q:[7.0,1.2,0],     fov:26, ap:1.0, ex:1.10 },
+  { t:7,    p:[8.9,1.2,.02],     q:[7.0,1.12,-.1],  fov:22, ap:.9,  ex:1.15 },
 ];
 const cr = (a,b,c,d,u) => .5*((2*b)+(-a+c)*u+(2*a-5*b+4*c-d)*u*u+(-a+3*b-3*c+d)*u*u*u);
 const cam = { p:[0,0,0], q:[0,0,0], fov:30, ap:.5, ex:1 };
@@ -757,12 +753,12 @@ function sampleCam(T){
   cam.fov = k1.fov+(k2.fov-k1.fov)*e; cam.ap = k1.ap+(k2.ap-k1.ap)*e; cam.ex = k1.ex+(k2.ex-k1.ex)*e;
 }
 function stage(T){
-  const a = ss(1.6,2.6,T), b = ss(3.6,4.0,T), c = ss(5.2,5.7,T);
+  const a = ss(2.5,3.3,T), b = ss(4.6,5.0,T), c = ss(6.2,6.7,T);
   const e1 = .85*a-.5*b-.15*c, e2 = .5*b-.2*c, e3 = .4*c, e0 = 1-e1-e2-e3;
   return {
     share:[e1,e2,e3], zone:[Math.min(1/e0,3), Math.min(1/(e0+e1),3), Math.min(1/(e0+e1+e2),3)],
-    killX: -2.6+12.1*ss(1.8,2.4,T), prismZ: -1.7*ss(3.25,3.9,T),
-    iris: .30-.225*ss(4.45,5.1,T)+.115*ss(5.25,5.8,T), sat: .07+.4*ss(1.3,1.9,T)*(1-ss(2.2,2.8,T)),
+    killX: -2.6+12.1*ss(2.5,3.0,T), prismZ: -1.7*ss(4.55,5.0,T),
+    iris: .30-.225*ss(5.5,6.1,T)+.115*ss(6.3,6.8,T), sat: .07+.4*ss(1.3,1.9,T)*(1-ss(2.3,2.9,T)),
   };
 }
 
@@ -777,8 +773,8 @@ $('#reserve').addEventListener('click', () => { $('#note').hidden = false; waveT
 
 /* ------------------------------------------------------------------ copy and focus scale */
 const chs = [...document.querySelectorAll('.ch')], chO = chs.map(() => -1);
-const scaleEl = $('#scale'), stops = ['∞','10','4','2','1.2','0.7','0.45'];
-stops.forEach((s,i) => { const el = document.createElement('span'); el.textContent = s; el.style.top = (i/6*100)+'%'; scaleEl.appendChild(el); });
+const scaleEl = $('#scale'), stops = ['∞','10','4','2','1.2','0.8','0.6','0.45'], TMAX = 7;
+stops.forEach((s,i) => { const el = document.createElement('span'); el.textContent = s; el.style.top = (i/TMAX*100)+'%'; scaleEl.appendChild(el); });
 const idx = document.createElement('em'); scaleEl.appendChild(idx);
 const stopEls = [...scaleEl.querySelectorAll('span')]; let atStop = -1;
 function updateUI(T){
@@ -788,7 +784,7 @@ function updateUI(T){
     const s = chs[k].style; s.opacity = o; s.visibility = o > 0 ? 'visible' : 'hidden'; s.transform = `translate3d(0,${((T-k)*-26).toFixed(1)}px,0)`;
     chs[k].classList.toggle('live', o > .5);
   }
-  idx.style.top = (T/6*100).toFixed(2)+'%';
+  idx.style.top = (T/TMAX*100).toFixed(2)+'%';
   const near = Math.round(T); if (near !== atStop){ atStop = near; stopEls.forEach((el,i) => el.classList.toggle('at', i === near)); }
   hintEl.style.opacity = Math.max(0, 1-T*2.2);
 }
@@ -832,14 +828,14 @@ let last = performance.now()*.001, Tc = 0, Tv = 0, frame = 0, first = true, sx =
 document.addEventListener('visibilitychange', () => { visible = !document.hidden; last = performance.now()*.001; });
 function scrollT(){
   const max = document.documentElement.scrollHeight-innerHeight; if (max <= 0) return 0;
-  const raw = Math.min(1, Math.max(0, scrollY/max))*6, k = Math.min(5, Math.floor(raw)), fr = raw-k;
+  const raw = Math.min(1, Math.max(0, scrollY/max))*TMAX, k = Math.min(TMAX-1, Math.floor(raw)), fr = raw-k;
   return k+fr-Math.sin(fr*Math.PI*2)/(Math.PI*2)*.62;
 }
 function simStep(dt, st, rayO, rayD, dustX){
   const a = simT[simI], b = simT[1-simI];
   gl.bindFramebuffer(gl.FRAMEBUFFER, b.f); gl.viewport(0,0,SIM,SIM);
   use(pSim, { tPos:a.p, tVel:a.v, uDt:dt, uTime:time, uInit:first ? 1 : 0, uKillX:st.killX, uPrismZ:st.prismZ, uIris:st.iris, uPush:push, uBurst:burst,
-    uRayO:rayO, uRayD:rayD, uDustC:[dustX,0,0], uShare:st.share });
+    uSrcX:SRC, uRayO:rayO, uRayD:rayD, uDustC:[dustX,0,0], uShare:st.share });
   gl.drawArrays(gl.TRIANGLES, 0, 3); simI = 1-simI; first = false;
 }
 const camP = [0,0,0], rayD = [0,0,1];
@@ -870,7 +866,7 @@ function render(now){
   rayD[0] = rd[0]; rayD[1] = rd[1]; rayD[2] = rd[2];
   push += (pushT*.55-push)*(1-Math.exp(-dt*3)); burst *= Math.exp(-dt*6);
   const q = TIERS[tier], count = Math.floor(NP*q.frac/SIM)*SIM, gain = .42/q.frac, proj = H/(2*th);
-  const pu = { uFocus:dist, uAp:cam.ap, uGain:gain, uKillX:st.killX, uWaveX:-11.25+C0*(time-waveT), uZone:st.zone, uDustK:2.4, uSat:st.sat, uTail:1-.88*ss(5.45,5.95,Tc) };
+  const pu = { uFocus:dist, uAp:cam.ap, uGain:gain, uKillX:st.killX, uWaveX:SRC+C0*(time-waveT), uZone:st.zone, uDustK:2.4, uSat:st.sat, uTail:1-.88*ss(6.5,6.95,Tc) };
 
   const timing = extT && !query && frame%4 === 0; let qy = null;
   if (timing){ qy = gl.createQuery(); gl.beginQuery(extT.TIME_ELAPSED_EXT, qy); }
@@ -905,9 +901,6 @@ function render(now){
   const res = [W,H], off0 = [0,0,0], offP = [0,0,st.prismZ];
   use(pTable, { uVP:mVP, uOff:off0, uCam:camP, uRes:res, tLF:lfTex, tRefl:r.reflTex, uReflOn:q.refl });
   gl.drawArrays(gl.TRIANGLES, gTable.s, gTable.n);
-  use(pMetal, { uVP:mVP, uOff:off0, uCam:camP, tLF:lfTex });
-  gl.drawArrays(gl.TRIANGLES, gMetal.s, gMetal.n);
-  gl.uniform3fv(pMetal.u.uOff.loc, offP); gl.drawArrays(gl.TRIANGLES, gCarrier.s, gCarrier.n);
   if (r.ms) gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE);
   use(pIris, { uVP:mVP, uOff:off0, uCam:camP, tLF:lfTex, uIris:st.iris*.985, uRot:.3+st.iris*2.4 });
   gl.drawArrays(gl.TRIANGLES, gIris.s, gIris.n);
@@ -929,7 +922,7 @@ function render(now){
   /* grains behind the glass, or clear of it */
   gl.bindFramebuffer(gl.FRAMEBUFFER, r.aF); gl.viewport(0,0,W,H); gl.bindVertexArray(vaoNone);
   gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE); gl.depthMask(false);
-  const pv = { tPos:S.p, tVel:S.v, tLF:lfTex, tGD:r.gdTex, uVP:mVP, uMode:0, uProj:proj, uMaxPx:30*scale, uThinPx:4.5*scale, ...pu };
+  const pv = { tPos:S.p, tVel:S.v, tLF:lfTex, tGD:r.gdTex, uVP:mVP, uMode:0, uProj:proj, uMaxPx:24*scale, uThinPx:4.5*scale, ...pu };
   pv.uPass = 0; use(pPart, pv);
   gl.drawArrays(gl.POINTS, 0, count);
 
@@ -940,7 +933,7 @@ function render(now){
   gl.blendFuncSeparate(gl.ONE, gl.SRC_ALPHA, gl.ZERO, gl.SRC_ALPHA);
   use(pGlass, { uVP:mVP, uCam:camP, uRes:res, uViewR:mR3, tA:r.aTex, tLF:lfTex, tGD:r.gdTex });
   for (const g of glass){
-    gl.uniform3fv(pGlass.u.uOff.loc, g.mov ? offP : off0); gl.uniform1f(pGlass.u.uStr.loc, g.str); gl.uniform3fv(pGlass.u.uTint.loc, g.tint); gl.uniform1f(pGlass.u.uMilk.loc, g.milk); gl.uniform1f(pGlass.u.uScat.loc, g.sc); gl.uniform1f(pGlass.u.uCoat.loc, g.coat);
+    gl.uniform3fv(pGlass.u.uOff.loc, g.mov ? offP : off0); gl.uniform1f(pGlass.u.uStr.loc, g.str); gl.uniform3fv(pGlass.u.uTint.loc, g.tint); gl.uniform1f(pGlass.u.uMilk.loc, g.milk); gl.uniform1f(pGlass.u.uScat.loc, g.sc); gl.uniform1f(pGlass.u.uCoat.loc, g.coat); gl.uniform1f(pGlass.u.uEdge.loc, g.mov ? 0 : 1);
     gl.cullFace(gl.FRONT); gl.uniform1f(pGlass.u.uBack.loc, 1); gl.drawArrays(gl.TRIANGLES, g.r.s, g.r.n);
     gl.cullFace(gl.BACK); gl.uniform1f(pGlass.u.uBack.loc, 0); gl.drawArrays(gl.TRIANGLES, g.r.s, g.r.n);
   }
