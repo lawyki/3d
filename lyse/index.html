@@ -2,82 +2,81 @@
 <title>Lyse Optikk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one fixed film canvas. Copy sits in a single column anchored bottom left; a lens focus scale runs down the right edge as the scroll index. */
+/* Layout: one fixed film canvas on black. One statement at a time sits bottom left; the light path runs down the right edge and doubles as the navigation. */
 :root{
-  --bg:#050607; --fg:#ECE9E3; --muted:#A3A19A; --faint:#6B6A65; --line:rgba(236,233,227,.16);
-  --amber:#E7A23C; --panel:rgba(5,6,7,.62);
+  --bg:#020304; --fg:#EFEDE8; --muted:#A5A39C; --faint:#6A6964; --line:rgba(239,237,232,.14);
+  --accent:#F2B866; --panel:rgba(2,3,4,.66);
   --sans:'Geist','Helvetica Neue',Helvetica,Arial,sans-serif;
   --mono:'Geist Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
-  --gut:max(24px, env(safe-area-inset-left, 0px)); --gutr:max(24px, env(safe-area-inset-right, 0px));
+  --gut:max(28px, env(safe-area-inset-left, 0px)); --gutr:max(28px, env(safe-area-inset-right, 0px));
   color-scheme:dark;
 }
 html{background:var(--bg)}
 body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 *{box-sizing:border-box}
-#film{position:fixed;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity 1.4s ease}
+#film{position:fixed;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity 1.6s ease}
 #film.on{opacity:1}
 #track{height:1080vh}
 .scrim{position:fixed;inset:0;pointer-events:none;background:
-  linear-gradient(to top, rgba(5,6,7,.82) 0%, rgba(5,6,7,.38) 26%, rgba(5,6,7,0) 52%),
-  linear-gradient(to bottom, rgba(5,6,7,.55) 0%, rgba(5,6,7,0) 16%)}
+  radial-gradient(110% 80% at 0% 100%, rgba(2,3,4,.86) 0%, rgba(2,3,4,.5) 30%, rgba(2,3,4,0) 62%),
+  linear-gradient(to bottom, rgba(2,3,4,.5) 0%, rgba(2,3,4,0) 13%)}
 
 header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:24px;
-  padding:calc(20px + env(safe-area-inset-top, 0px)) var(--gutr) 0 var(--gut);z-index:5}
-.mark{font-weight:600;font-size:13px;letter-spacing:.34em;text-transform:uppercase;color:var(--fg);text-decoration:none;display:flex;align-items:baseline;gap:12px;background:none;border:0;padding:0;cursor:pointer;font-family:var(--sans)}
-.mark small{font-family:var(--mono);font-weight:400;font-size:10px;letter-spacing:.1em;color:var(--faint)}
-nav{display:flex;align-items:center;gap:26px;font-size:13px}
-nav a{color:var(--muted);text-decoration:none;transition:color .2s}
-nav a:hover{color:var(--fg)}
-.pill{color:var(--fg)!important;border:1px solid var(--line);border-radius:999px;padding:7px 14px}
-:focus-visible{outline:1px solid var(--amber);outline-offset:4px;border-radius:3px}
+  padding:calc(22px + env(safe-area-inset-top, 0px)) var(--gutr) 0 var(--gut);z-index:5}
+.mark{font-weight:500;font-size:12.5px;letter-spacing:.38em;text-transform:uppercase;color:var(--fg);display:flex;align-items:baseline;gap:14px;background:none;border:0;padding:0;cursor:pointer;font-family:var(--sans)}
+.mark small{font-family:var(--mono);font-weight:400;font-size:10px;letter-spacing:.12em;color:var(--faint)}
+.pill{font-family:var(--sans);font-size:12.5px;color:var(--fg);background:rgba(239,237,232,.04);border:1px solid var(--line);border-radius:999px;padding:8px 15px;cursor:pointer;transition:border-color .2s, background .2s;backdrop-filter:blur(8px)}
+.pill:hover{border-color:rgba(239,237,232,.4);background:rgba(239,237,232,.08)}
+:focus-visible{outline:1px solid var(--accent);outline-offset:4px;border-radius:3px}
 
-.ch{position:fixed;left:var(--gut);bottom:calc(46px + env(safe-area-inset-bottom, 0px));width:min(440px, calc(100vw - var(--gut) - var(--gutr)));
+.ch{position:fixed;left:var(--gut);bottom:calc(52px + env(safe-area-inset-bottom, 0px));width:min(430px, calc(100vw - var(--gut) - var(--gutr)));
   opacity:0;visibility:hidden;pointer-events:none;will-change:opacity,transform;z-index:3}
 .ch.live{pointer-events:auto}
-#c0{width:min(600px, calc(100vw - var(--gut) - var(--gutr)));opacity:1;visibility:visible}
-.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);display:flex;gap:12px;align-items:center;margin:0 0 16px}
-.eyebrow b{font-weight:500;color:var(--amber)}
-.eyebrow i{display:block;width:28px;height:1px;background:var(--line)}
-h1,h2{font-weight:500;letter-spacing:-.028em;line-height:1.06;margin:0;text-wrap:balance}
-h1{font-size:clamp(34px,4.5vw,62px)}
-h2{font-size:clamp(26px,2.7vw,38px)}
-.ch p:not(.eyebrow){color:var(--muted);margin:16px 0 0;max-width:46ch;text-wrap:pretty}
-#c0 p:not(.eyebrow){font-size:16px;max-width:44ch}
-dl{margin:22px 0 0;border-top:1px solid var(--line)}
-dl div{display:flex;justify-content:space-between;gap:20px;padding:8px 0;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.03em}
-dt{color:var(--faint);text-transform:uppercase;letter-spacing:.1em;font-size:10px;padding-top:1px}
-dd{margin:0;color:var(--fg);text-align:right;font-variant-numeric:tabular-nums}
-.go{display:flex;align-items:center;gap:12px;margin-top:26px;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
-.go span{display:block;width:1px;height:30px;background:linear-gradient(var(--amber),transparent);animation:drop 2.4s ease-in-out infinite;transform-origin:top}
+#c0{width:min(560px, calc(100vw - var(--gut) - var(--gutr)));opacity:1;visibility:visible}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);display:flex;gap:12px;align-items:center;margin:0 0 18px}
+.eyebrow b{font-weight:400;color:var(--accent);font-variant-numeric:tabular-nums}
+.eyebrow b span{color:var(--faint)}
+.eyebrow i{display:block;width:24px;height:1px;background:var(--line)}
+h1,h2{font-weight:400;letter-spacing:-.032em;line-height:1.05;margin:0;text-wrap:balance}
+h1{font-size:clamp(32px,3.9vw,56px)}
+h2{font-size:clamp(27px,2.9vw,42px)}
+h1 em{font-style:normal;font-variant-numeric:tabular-nums;color:var(--accent)}
+.ch p:not(.eyebrow){color:var(--muted);margin:18px 0 0;max-width:42ch;text-wrap:pretty}
+#c0 p:not(.eyebrow){font-size:16px;max-width:40ch}
+dl{margin:26px 0 0;display:grid;grid-template-columns:repeat(3,auto);justify-content:start;gap:0 34px}
+dt{font-family:var(--mono);color:var(--faint);text-transform:uppercase;letter-spacing:.12em;font-size:9.5px}
+dd{margin:5px 0 0;color:var(--fg);font-size:15px;font-variant-numeric:tabular-nums}
+.go{display:flex;align-items:center;gap:12px;margin-top:30px;font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.go span{display:block;width:1px;height:30px;background:linear-gradient(var(--accent),transparent);animation:drop 2.4s ease-in-out infinite;transform-origin:top}
 @keyframes drop{0%{transform:scaleY(0)}50%{transform:scaleY(1)}100%{transform:scaleY(1);opacity:0}}
-.cta{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:22px}
+.cta{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:28px}
 .btn{font-family:var(--sans);font-weight:500;font-size:13.5px;color:#0b0b0a;background:var(--fg);border:0;border-radius:999px;padding:11px 20px;cursor:pointer;transition:background .2s}
 .btn:hover{background:#fff}
 .note{font-family:var(--mono);font-size:11px;color:var(--muted)}
 
-/* focus scale: seven engraved stops, one per shot */
-.scale{position:fixed;right:var(--gutr);top:50%;transform:translateY(-50%);height:min(46vh,380px);width:64px;z-index:3;pointer-events:none}
-.scale::before{content:"";position:absolute;right:0;top:0;bottom:0;width:1px;background:var(--line)}
-.scale span{position:absolute;right:0;transform:translateY(-50%);display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;color:var(--faint);font-variant-numeric:tabular-nums;transition:color .3s}
-.scale span::after{content:"";display:block;width:9px;height:1px;background:currentColor}
-.scale span.at{color:var(--fg)}
-.scale em{position:absolute;right:-1px;width:18px;height:1px;background:var(--amber);font-style:normal}
-.scale em::before{content:"m";position:absolute;right:26px;top:-7px;font-family:var(--mono);font-size:9px;color:var(--amber);opacity:0}
-.hint{position:fixed;right:var(--gutr);bottom:calc(46px + env(safe-area-inset-bottom, 0px));font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--faint);z-index:3;pointer-events:none;text-align:right}
+/* the light path: seven stations, lamp to image. The marker shows where in the instrument the camera is. */
+.path{position:fixed;right:var(--gutr);top:50%;transform:translateY(-50%);z-index:4}
+.path ol{list-style:none;margin:0;padding:0 18px 0 0;position:relative}
+.path ol::before{content:"";position:absolute;right:3px;top:17px;bottom:17px;width:1px;background:var(--line)}
+.path li{height:34px;display:flex;align-items:center;justify-content:flex-end}
+.path button{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);background:none;border:0;padding:6px 0;cursor:pointer;transition:color .3s}
+.path button:hover{color:var(--muted)}
+.path button.at{color:var(--fg)}
+.path em{position:absolute;right:0;top:0;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px 2px rgba(242,184,102,.55);will-change:transform}
+.hint{position:fixed;right:var(--gutr);bottom:calc(52px + env(safe-area-inset-bottom, 0px));font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);z-index:3;pointer-events:none;text-align:right;line-height:1.9}
 #hud{position:fixed;left:var(--gut);top:calc(64px + env(safe-area-inset-top, 0px));font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px;z-index:9;white-space:pre;font-variant-numeric:tabular-nums}
-.fallback{display:none;position:fixed;inset:0;align-items:center;justify-content:center;text-align:center;padding:0 var(--gutr) 0 var(--gut);color:var(--muted);background:radial-gradient(60% 40% at 50% 45%, #1a1712, var(--bg))}
-.nogl .fallback{display:flex}.nogl #film,.nogl .ch:not(#c0),.nogl .scale,.nogl .hint{display:none}
+.fallback{display:none;position:fixed;inset:0;align-items:center;justify-content:center;text-align:center;padding:0 var(--gutr) 0 var(--gut);color:var(--muted);background:radial-gradient(60% 40% at 50% 45%, #14120e, var(--bg))}
+.nogl .fallback{display:flex}.nogl #film,.nogl .ch:not(#c0),.nogl .path,.nogl .hint{display:none}
 
 @media (max-width:760px){
-  nav a:not(.pill){display:none}
-  .scale,.hint{display:none}
-  .ch{bottom:calc(28px + env(safe-area-inset-bottom, 0px))}
-  dl div:nth-child(n+3){display:none}
-  #c7 dl div:nth-child(n+3){display:flex}
+  .path,.hint{display:none}
+  .mark small{display:none}
+  .ch{bottom:calc(30px + env(safe-area-inset-bottom, 0px))}
+  dl{gap:0 22px}
 }
-@media (max-height:620px){ dl{display:none} }
+@media (max-height:560px){ dl{display:none} }
 @media (prefers-reduced-motion:reduce){ .go span{animation:none} #film{transition:none} }
 </style>
 
@@ -87,63 +86,65 @@ dd{margin:0;color:var(--fg);text-align:right;font-variant-numeric:tabular-nums}
 
 <header>
   <button class="mark" id="home" type="button">Lyse <small>Optikk · Bergen</small></button>
-  <nav aria-label="Primary">
-    <a href="#primes">Primes</a><a href="#glass">Glass</a><a href="#atelier">Atelier</a>
-    <a class="pill" href="#reserve">Reserve a set</a>
-  </nav>
+  <button class="pill" id="demo" type="button">Reserve a set</button>
 </header>
 
 <main>
   <section class="ch" id="c0">
-    <p class="eyebrow"><b>Cinema primes</b><i></i>Bergen, since 1961</p>
-    <h1>Watch what glass does to light.</h1>
-    <p>Nothing here is drawn. Every grain is a ray, and the glass bends it for real. Move through the stream.</p>
+    <p class="eyebrow"><b>Lyse Optikk</b><i></i>Cinema lenses, Bergen</p>
+    <h1>Follow the light.</h1>
+    <p>Twenty-five rays leave one lamp. Each is six colours travelling together as white, and only glass can change where they go.</p>
     <div class="go"><span></span>Scroll</div>
   </section>
   <section class="ch" id="c1">
-    <p class="eyebrow"><b>01</b><i></i>First surface</p>
-    <h2>It starts with a mistake.</h2>
-    <p>A curved surface pulls the stream inward, and pulls the edges a little too hard. Everything we do afterwards is about that error.</p>
+    <p class="eyebrow"><b>01 <span>/ 07</span></b><i></i>Beam</p>
+    <h2>A first lens lines it up.</h2>
+    <p>Light leaves the lamp as a cone. One curve turns the cone into a beam.</p>
   </section>
   <section class="ch" id="c2">
-    <p class="eyebrow"><b>02</b><i></i>Focus</p>
-    <h2>The colours disagree about where.</h2>
-    <p>Blue arrives a little before red. Left alone, that gap is the purple edge on every bright window.</p>
-    <dl><div><dt>Axial colour</dt><dd>under 8 µm</dd></div></dl>
+    <p class="eyebrow"><b>02 <span>/ 07</span></b><i></i>Focus</p>
+    <h2>A simple lens cannot agree with itself.</h2>
+    <p>It bends blue harder than red, so each colour crosses at its own point.</p>
   </section>
   <section class="ch" id="c3">
-    <p class="eyebrow"><b>03</b><i></i>Release</p>
-    <h2>Past the crossing, it opens again.</h2>
-    <p>A second glass catches the spread and lays it flat. Calm, parallel, and upside down.</p>
+    <p class="eyebrow"><b>03 <span>/ 07</span></b><i></i>Correction</p>
+    <h2>Two elements make it white again.</h2>
+    <p>The first steers each colour back onto its ray. The second straightens them out.</p>
   </section>
   <section class="ch" id="c4">
-    <p class="eyebrow"><b>04</b><i></i>Dispersion</p>
-    <h2>White is a crowd.</h2>
-    <p>Through a prism it comes apart into everything it was carrying. We choose each glass by how hard it pulls.</p>
-    <dl><div><dt>Abbe number</dt><dd>ν 94.9 to 25.4</dd></div></dl>
+    <p class="eyebrow"><b>04 <span>/ 07</span></b><i></i>Prism</p>
+    <h2>A prism takes white apart on purpose.</h2>
+    <p>Every ray opens into the six colours it was carrying.</p>
   </section>
   <section class="ch" id="c5">
-    <p class="eyebrow"><b>05</b><i></i>The stack</p>
-    <h2>Five elements, each correcting the last.</h2>
-    <p>Crown, flint, air. The stream leaves cleaner than it arrived.</p>
-    <dl><div><dt>Coating</dt><dd>9 layers, 0.2 % loss</dd></div></dl>
+    <p class="eyebrow"><b>05 <span>/ 07</span></b><i></i>Lanes</p>
+    <h2>A second prism holds them in lanes.</h2>
+    <p>Parallel again, side by side, every colour on its own line.</p>
   </section>
   <section class="ch" id="c6">
-    <p class="eyebrow"><b>06</b><i></i>Iris</p>
-    <h2>Eleven blades, one circle.</h2>
-    <p>What does not fit is stopped here. The rest goes on, round from T1.4 to T16.</p>
+    <p class="eyebrow"><b>06 <span>/ 07</span></b><i></i>White</p>
+    <h2>Two more put them back.</h2>
+    <p>The lanes close, the colours meet, and the beam is white again.</p>
   </section>
   <section class="ch" id="c7">
-    <p class="eyebrow"><b>07</b><i></i>Image</p>
-    <h2>And then it is the moon.</h2>
-    <p>Every grain lands where it belongs. Lyse 50 mm T1.4, in sets of four.</p>
-    <dl><div><dt>Image circle</dt><dd>46.3 mm</dd></div><div><dt>Close focus</dt><dd>0.45 m</dd></div><div><dt>Weight</dt><dd>1.42 kg</dd></div></dl>
+    <p class="eyebrow"><b>07 <span>/ 07</span></b><i></i>Point</p>
+    <h2>Three elements, one point.</h2>
+    <p>One opens the beam, one straightens it, and the last sends every colour to the same place. That is the whole job of a lens. Lyse primes, made in Bergen.</p>
     <div class="cta"><button class="btn" id="reserve" type="button">Reserve a set</button><span class="note" id="note" hidden>The list opens 2 March 2027.</span></div>
   </section>
 </main>
 
-<div class="scale" aria-hidden="true" id="scale"></div>
-<div class="hint" id="hint">Move through the beam<br>Click to fire the shutter</div>
+<nav class="path" aria-label="Light path" id="path"><ol>
+  <li><button type="button" data-k="0">Lamp</button></li>
+  <li><button type="button" data-k="1">Beam</button></li>
+  <li><button type="button" data-k="2">Focus</button></li>
+  <li><button type="button" data-k="3">Correction</button></li>
+  <li><button type="button" data-k="4">Prism</button></li>
+  <li><button type="button" data-k="5">Lanes</button></li>
+  <li><button type="button" data-k="6">White</button></li>
+  <li><button type="button" data-k="7">Point</button></li>
+</ol><em aria-hidden="true"></em></nav>
+<div class="hint" id="hint">Click to send a pulse</div>
 <pre id="hud" hidden></pre>
 <div id="track"></div>
 
@@ -158,34 +159,57 @@ gl.getExtension('OES_texture_float_linear');
 const extT = gl.getExtension('EXT_disjoint_timer_query_webgl2');
 const coarse = matchMedia('(pointer:coarse)').matches;
 const calm = matchMedia('(prefers-reduced-motion:reduce)').matches;
-const SIM = coarse ? 384 : 512, NP = SIM*SIM;
+const SIM = coarse ? 256 : 384, NP = SIM*SIM;
 
 /* ------------------------------------------------------------------ the bench (world units: 1 = 10 cm) */
-const AY = 1.2, SX = 7, IX = 3.6, C0 = 1.6, SRC = -9.6;
+const AY = 1.2, C0 = .3, SRC = -10, FX = 6.6, END = 8.3, LIFE = (END+.15-SRC)/C0, IX = 0, SX = 0, R2 = .08;
+/* the line of glass. m: 2 collimate, 0 simple lens (bends blue harder than red), 8 corrector (sends every colour of a ray to the same spot on the next element, at x = f),
+   6 direct vision prism (spreads colour, f is how hard), 7 the last element, which sends everything to one point */
 const LENS = [
-  {x:-7,  f:2.4,  a:1.0, o:1.10, m:1, tc:.42, s1:.16,  s2:.16,  str:.20},
-  {x:-3,  f:1,    a:.62, o:.72,  m:2, tc:.30, s1:.11,  s2:.11,  str:.16},
-  {x:2.4, f:2.4,  a:.46, o:.52,  m:0, tc:.20, s1:.08,  s2:.05,  str:.12},
-  {x:3.0, f:-1.8, a:.36, o:.42,  m:0, tc:.05, s1:-.03, s2:-.03, str:.10},
-  {x:4.2, f:-.8,  a:.36, o:.42,  m:0, tc:.05, s1:-.04, s2:-.03, str:.11},
-  {x:4.8, f:1.4,  a:.56, o:.62,  m:0, tc:.24, s1:.06,  s2:.12,  str:.13},
-  {x:5.3, f:1,    a:.58, o:.64,  m:3, tc:.20, s1:.10,  s2:.02,  str:.12},
+  {x:-8.8, f:1,    a:.62, m:2, tc:.20, s1:.02,  s2:.14,  str:0.060},
+  {x:-7.2, f:2.2,  a:.72, m:0, tc:.34, s1:.14,  s2:.14,  str:0.080},
+  {x:-3.9, f:-3.0, a:.50, m:8, tc:.16, s1:-.05, s2:.11,  str:0.052},
+  {x:-3.0, f:1,    a:.28, m:2, tc:.12, s1:.05,  s2:.01,  str:0.040},
+  {x:-1.9, f:.8,   a:1.3, m:6},
+  {x:-.6,  f:-.8,  a:1.3, m:6},
+  {x:.7,   f:-.8,  a:1.3, m:6},
+  {x:2.0,  f:.8,   a:1.3, m:6},
+  {x:3.0,  f:-.35, a:.30, m:0, tc:.06, s1:-.06, s2:-.06, str:0.040},
+  {x:3.9,  f:1,    a:.50, m:2, tc:.16, s1:.02,  s2:.11,  str:0.048},
+  {x:4.4,  f:1,    a:.50, m:7, tc:.18, s1:.10,  s2:.04,  str:0.048},
 ];
+const NL = LENS.length;
 const fl = v => { const s = String(v); return /[.e]/.test(s) ? s : s + '.'; };
-const garr = k => `float[7](${LENS.map(l => fl(l[k])).join(',')})`;
+const garr = k => `float[${NL}](${LENS.map(l => fl(l[k])).join(',')})`;
 const D2R = Math.PI/180;
-const PRISM = { cx:-.5, cy:.937, s:1.2, hz:.42, a1:130.5*D2R, a2:10.5*D2R };
 const COMMON = `
-const float AY=${fl(AY)}, SX=${fl(SX)}, IX=${fl(IX)}, C0=${fl(C0)}, R0=.5, R1=.333, DUST=.14;
-const int SIM=${SIM};
-const float LX[7]=${garr('x')}; const float LF[7]=${garr('f')}; const float LR[7]=${garr('a')}; const float LO[7]=${garr('o')};
-const int LM[7]=int[7](${LENS.map(l=>l.m).join(',')});
-const vec2 PC=vec2(${fl(PRISM.cx)},${fl(PRISM.cy)});
-const vec2 PN1=vec2(${Math.cos(PRISM.a1).toFixed(5)},${Math.sin(PRISM.a1).toFixed(5)});
-const vec2 PN2=vec2(${Math.cos(PRISM.a2).toFixed(5)},${Math.sin(PRISM.a2).toFixed(5)});
-const float PA=${(PRISM.s/(2*Math.sqrt(3))).toFixed(5)}, PS=${fl(PRISM.s/2)}, PHZ=${fl(PRISM.hz)};
-const vec3 BG=vec3(.0030,.0034,.0042);
+const float AY=${fl(AY)}, C0=${fl(C0)}, SRC=${fl(SRC)}, FX=${fl(FX)}, END=${fl(END)}, LIFE=${fl(+LIFE.toFixed(4))}, DUST=.14, IX=0.;
+const int SIM=${SIM}, NL=${NL}, NC=6, NS=12, NRAY=25, NSLOT=27;
+const float R2=${fl(R2)};
+const float LX[${NL}]=${garr('x')}; const float LF[${NL}]=${garr('f')}; const float LR[${NL}]=${garr('a')};
+const int LM[${NL}]=int[${NL}](${LENS.map(l=>l.m).join(',')});
+const vec3 BG=vec3(0.);
 vec4 hash42(vec2 p){ vec4 p4 = fract(vec4(p.xyxy)*vec4(.1031,.1030,.0973,.1099)); p4 += dot(p4, p4.wzxy+33.33); return fract((p4.xxyz+p4.yzzw)*p4.zywx); }
+/* photons come in groups of six, one per colour, that ride the same ray at the same place: together they read as white.
+   A ray is a slot: the axis, then two rings of twelve. The last two slots of every 27 are dust. */
+vec2 rayE(int ray){ if (ray == 0) return vec2(0.); int k = ray-1, ring = k/NS;
+  float th = 6.2831853*(float(k%NS)+.5*float(ring))/float(NS); return (ring == 0 ? .55 : 1.)*vec2(cos(th), sin(th)); }
+/* where a ray of one colour is at x: straight lines, bent only at the glass */
+vec3 trace(int ray, float lam, float x, out vec2 u){
+  vec2 e = rayE(ray), h = vec2(0.); u = e*.45; float xc = SRC;
+  for (int i=0;i<NL;i++){
+    float lx = LX[i]; if (x <= lx) break;
+    h += u*(lx-xc); xc = lx;
+    if (length(h) > LR[i]) continue;
+    int m = LM[i];
+    if (m == 2) u = vec2(0.);
+    else if (m == 0) u -= h/(LF[i]*(1.+.11*(lam-.5)));
+    else if (m == 6) u.x += LF[i]*(lam-.5);
+    else if (m == 8) u = (e*R2-h)/(LF[i]-lx);
+    else u = -h/(FX-lx);
+  }
+  h += u*(x-xc); return vec3(x, AY+h.x, h.y);
+}
 `;
 const LFIELD = `
 uniform sampler2D tLF;
@@ -265,111 +289,37 @@ function rb(w, h, fmt, samples){
 }
 const FSV = `out vec2 vUv; void main(){ vec2 p = vec2(gl_VertexID==1?3.:-1., gl_VertexID==2?3.:-1.); vUv = p*.5+.5; gl_Position = vec4(p,0.,1.); }`;
 
-/* ------------------------------------------------------------------ simulation: grains are light, and the glass really bends them */
+/* ------------------------------------------------------------------ simulation: ordered rays. Nothing is random after the lamp; only glass changes a photon's direction. */
 const pSim = prog(FSV, `
 uniform sampler2D tPos, tVel;
-uniform float uDt, uTime, uInit, uKillX, uPrismZ, uIris, uPush, uBurst, uSrcX;
-uniform vec3 uRayO, uRayD, uDustC, uShare;
+uniform float uDt, uTime, uInit, uPush, uBurst, uK;
+uniform vec3 uRayO, uRayD, uDustC;
 layout(location=0) out vec4 oPos; layout(location=1) out vec4 oVel;
 ${COMMON}
-void spawn(out vec4 P, out vec4 V, vec4 h1, vec4 h2, vec4 r, float wait){
-  float rr = pow(r.x, .52), th = 6.2831853*r.y;
-  th += .55*sin(3.*th+uTime*.37); rr *= .74+.26*sin(th*5.+uTime*.9+rr*4.);
-  if (h1.y < .07) rr = .6+r.x*1.1;
-  vec2 d = vec2(cos(th), sin(th))*rr;
-  float x = uSrcX, R = R0, e = h2.z;
-  if (e < uShare.z && rr*.4375 < 1.75*uIris){ x = 4.86; R = .4375; }
-  else if (e < uShare.z+uShare.y){ x = 2.2; R = R1; }
-  else if (e < uShare.z+uShare.y+uShare.x){ x = -2.94; R = R1; }
-  P = vec4(x, AY+d.x*R, d.y*R, -wait);
-  V = vec4(C0*(.78+.44*h1.y), (r.z-.5)*.02, (r.w-.5)*.02, 4.);
-}
 void main(){
-  ivec2 id = ivec2(gl_FragCoord.xy);
+  ivec2 id = ivec2(gl_FragCoord.xy); int n = id.x+id.y*SIM;
   vec4 P = texelFetch(tPos, id, 0), V = texelFetch(tVel, id, 0);
-  vec4 h1 = hash42(gl_FragCoord.xy), h2 = hash42(gl_FragCoord.xy+71.3);
+  int g = n/NC, slot = g%NSLOT; vec4 h2 = hash42(gl_FragCoord.xy+71.3);
   vec4 r = hash42(gl_FragCoord.xy + vec2(mod(uTime,61.)*131.7, mod(uTime,47.)*71.9));
-  if (h1.w < DUST){
+  if (slot >= NRAY){
     float life = 9.+9.*h2.x;
-    if (uInit > .5 || P.w > life || abs(P.x-uDustC.x) > 7.5){
-      P = vec4(uDustC.x+(r.x-.5)*14., .05+r.y*r.y*3.2, (r.z-.5)*7., uInit > .5 ? r.w*life : 0.); V = vec4(0.);
+    if (uInit > .5 || P.w > life || abs(P.x-uDustC.x) > 5.){
+      P = vec4(uDustC.x+(r.x-.5)*10., AY-1.9+r.y*3.8, (r.z-.5)*6., uInit > .5 ? r.w*life : 0.); V = vec4(0.);
     }
     vec3 p = P.xyz; float t = uTime*.12;
-    vec3 f = vec3(sin(p.y*1.3+t)+cos(p.z*1.1-t), sin(p.z*1.2-t)+cos(p.x*.9+t), sin(p.x*1.4+t)+cos(p.y-t))*.035;
-    f.y -= .004;
+    vec3 f = vec3(sin(p.y*1.3+t)+cos(p.z*1.1-t), sin(p.z*1.2-t)+cos(p.x*.9+t), sin(p.x*1.4+t)+cos(p.y-t))*.03;
     vec3 w = p-uRayO; vec3 dl = w-uRayD*dot(w,uRayD);
     f += normalize(dl+1e-5)*exp(-dot(dl,dl)/.25)*(uPush*.5+uBurst*5.);
     V.xyz = mix(V.xyz, f, 1.-exp(-uDt*1.6));
-    P.xyz += V.xyz*uDt; P.w += uDt; P.y = max(P.y, .02);
+    P.xyz += V.xyz*uDt; P.w += uDt;
     oPos = P; oVel = V; return;
   }
-  if (uInit > .5){ spawn(P, V, h1, h2, r, r.w*7.); oPos = P; oVel = V; return; }
-  float st = V.w, age = P.w;
-  if (st > 3.5 && st < 4.5){ age += uDt; if (age >= 0.){ st = 0.; age = 0.; } oPos = vec4(P.xyz, age); oVel = vec4(V.xyz, st); return; }
-  if (st > 1.5){ age += uDt; if (age >= 0.) spawn(P, V, h1, h2, r, r.w*.5); else P.w = age; oPos = P; oVel = V; return; }
-
-  float spd = C0*(.78+.44*h1.y), lam = h1.x;
-  vec3 p0 = P.xyz, v = V.xyz;
-  vec3 w = p0-uRayO; vec3 dl = w-uRayD*dot(w,uRayD);
-  v += normalize(dl+1e-5)*exp(-dot(dl,dl)/.09)*(uPush*2.6+uBurst*18.)*uDt;
-  if (p0.x < 5.3){ float tt = uTime*.6; v.yz += vec2(sin(p0.x*2.1+p0.z*3.3+tt)+sin(p0.y*5.1-tt*1.7), cos(p0.x*1.7-p0.y*3.1+tt*1.3)+cos(p0.z*4.7+tt))*.022*uDt; }
-  v = normalize(v)*spd;
-  vec3 p1 = p0+v*uDt;
-  float nst = st, nage = age+uDt; bool done = false;
-
-  for (int i=0;i<7;i++){
-    float lx = LX[i];
-    if (p0.x < lx && p1.x >= lx){
-      float tf = (lx-p0.x)/max(v.x, 1e-4); vec3 ph = p0+v*tf; vec2 h = ph.yz-vec2(AY,0.); float rr = length(h);
-      if (rr <= LR[i]){
-        vec2 u = v.yz/max(v.x, 1e-4); int m = LM[i];
-        if (m == 2) u = vec2(0.);
-        else if (m == 3){ float mr = sqrt(h2.x)*.27, ma = 6.2831853*h2.y; vec3 dd = vec3(SX, AY+sin(ma)*mr, cos(ma)*mr)-ph; u = dd.yz/dd.x; }
-        else { float f = LF[i]; if (m == 1) f *= (1.+.075*(lam-.5))/(1.+.3*rr*rr); u -= h/f; }
-        v = normalize(vec3(1.,u))*spd; p1 = ph+v*(uDt-tf);
-      }
-      break;
-    }
-  }
-  if (!done && p0.x < IX && p1.x >= IX){
-    vec3 ph = p0+v*((IX-p0.x)/max(v.x,1e-4)); float rr = length(ph.yz-vec2(AY,0.));
-    if (rr > uIris && rr < .318){ p1 = ph; v = vec3(0.); nst = 3.; nage = -.45; done = true; }
-  }
-  if (!done){
-    vec2 q0 = p0.xy-PC, q1 = p1.xy-PC;
-    float s0 = dot(q0,PN1)-PA, s1 = dot(q1,PN1)-PA;
-    float n = mix(1.68, 1.44, lam);
-    if (nst < .5 && s0 > 0. && s1 <= 0.){
-      float tf = s0/(s0-s1); vec3 ph = mix(p0,p1,tf);
-      if (abs(dot(ph.xy-PC, vec2(-PN1.y,PN1.x))) < PS && abs(ph.z-uPrismZ) < PHZ){
-        v = refract(normalize(v), vec3(PN1,0.), 1./n)*spd; p1 = ph+v*uDt*(1.-tf); nst = 1.; q1 = p1.xy-PC;
-      }
-    }
-    float e0 = dot(q0,PN2)-PA, e1 = dot(q1,PN2)-PA;
-    if (nst > .5 && e0 < 0. && e1 >= 0.){
-      float tf = e0/(e0-e1); vec3 ph = mix(p0,p1,tf);
-      if (abs(dot(ph.xy-PC, vec2(-PN2.y,PN2.x))) < PS && abs(ph.z-uPrismZ) < PHZ){
-        vec3 dn = normalize(v), rf = refract(dn, vec3(-PN2,0.), n);
-        if (dot(rf,rf) < .5) rf = reflect(dn, vec3(-PN2,0.));
-        v = rf*spd; p1 = ph+v*uDt*(1.-tf);
-      }
-    }
-    if (p0.x < SX && p1.x >= SX){
-      vec3 ph = p0+v*((SX-p0.x)/max(v.x,1e-4));
-      if (abs(ph.y-AY) < .5 && abs(ph.z) < .5){ p1 = ph; v = vec3(0.); nst = 2.; nage = -(4.+2.*h2.w); done = true; }
-    }
-    if (!done && p1.y < .006){
-      vec3 ph = mix(p0, p1, clamp((p0.y-.006)/max(p0.y-p1.y,1e-5), 0., 1.)); ph.y = .006;
-      p1 = ph; v = vec3(0.); nage = -(.5+1.3*r.z); nst = nst > .5 ? 5. : 3.; done = true;
-    }
-  }
-  /* grains left upstream of where the film now needs them are recycled */
-  float ex = h2.z < uShare.z ? 4.86 : (h2.z < uShare.z+uShare.y ? 2.2 : (h2.z < uShare.z+uShare.y+uShare.x ? -2.94 : uSrcX));
-  if (!done && p1.x < ex-.2 && r.x < uDt*3.) nage = 99.;
-  if (!done && (p1.x > 9.5 || abs(p1.z) > 4. || p1.y > 4. || nage > 40. || (p1.x > uKillX+1. && r.w < uDt*4.))){
-    spawn(P, V, h1, h2, r, r.z*.5); oPos = P; oVel = V; return;
-  }
-  oPos = vec4(p1, nage); oVel = vec4(v, nst);
+  /* a bead's place along its ray depends only on the clock: evenly spaced, every colour in step */
+  float k = float(g/NSLOT);
+  if (k >= uK){ oPos = vec4(0.,-50.,0.,0.); oVel = vec4(0.,0.,0.,4.); return; }
+  float sp = fract((k+.5)/uK + uTime/LIFE), lam = (float(n%NC)+.5)/float(NC); vec2 u;
+  vec3 p = trace(slot, lam, SRC+sp*(END+.15-SRC), u);
+  oPos = vec4(p, sp*LIFE); oVel = vec4(normalize(vec3(1.,u))*C0, 0.);
 }`);
 
 /* ------------------------------------------------------------------ grains: one program for the view, the table reflection and the light field */
@@ -378,7 +328,8 @@ uniform sampler2D tPos, tVel, tGD;
 uniform mat4 uVP;
 uniform float uPass, uSat, uTail, uProj, uFocus, uAp, uMaxPx, uThinPx, uGain, uKillX, uWaveX, uMode, uDustK;
 uniform vec3 uZone;
-out vec3 vCol; out float vBlur;
+out vec3 vCol;
+const vec3 SPEC[6] = vec3[6](vec3(.45,.0,.78), vec3(.05,.12,.95), vec3(.0,.55,.55), vec3(.15,1.,.10), vec3(.78,.40,.0), vec3(.95,.05,.02)); out float vBlur;
 ${COMMON}
 ${LFIELD}
 float H(float n){ return fract(sin(n)*43758.5453); }
@@ -401,29 +352,20 @@ void main(){
   vec2 fc = vec2(id)+.5; vec4 h1 = hash42(fc), h2 = hash42(fc+71.3);
   float st = V.w, age = P.w; vec3 col; float b; float fine = 1.;
   gl_Position = vec4(2.,2.,2.,1.); gl_PointSize = 0.; vCol = vec3(0.); vBlur = 0.;
-  if (h1.w < DUST){
+  int g = gl_VertexID/NC, slot = g%NSLOT; bool dust = slot >= NRAY; float tw = hash42(vec2(float(g%1024), float(g/1024))+.5).x;
+  if (dust){
     if (uMode > 1.5) return;
     float life = 9.+9.*h2.x;
     b = smoothstep(0.,1.5,age)*(1.-smoothstep(life-1.5, life, age))*(.35+1.3*h2.y);
-    col = lightField(P.xyz)*uDustK+vec3(.50,.58,.72)*.03;
+    col = lightField(P.xyz)*uDustK+vec3(.50,.58,.72)*.008;
   } else {
-    if (st > 3.5 && st < 4.5) return;
-    vec3 sp = spectral(h1.x); vec3 white = mix(vec3(1.,.90,.76), sp*1.5, uSat);
-    if (st < 1.5){
-      float x = P.x; col = st < .5 ? white : mix(white, sp*2.1, 1.-smoothstep(.6, 1.02, P.y));
-      b = (x < -3. ? uZone.x : (x < 2.2 ? uZone.y : (x < 4.85 ? uZone.z : 1.)))*uTail;
-      b *= (1.-smoothstep(uKillX, uKillX+1., x))*smoothstep(0., .7, age)*(h1.y < .07 ? .55 : 1.)*(.75+.5*h2.w);
-      b *= 1.+3.*exp(-pow((x-uWaveX)/.35, 2.));
-      float rr = length(P.yz-vec2(AY,0.)), g = 0.;
-      for (int i=0;i<7;i++) g += (1.-smoothstep(.02,.17,abs(x-LX[i])))*step(rr, LR[i]);
-      b *= 1.+.55*g; if (x > 5.3) b *= .5;
-    } else if (st < 2.5){
-      float life = 4.+2.*h2.w;
-      float ma = 6.2831853*h2.y; vec2 m = vec2(cos(ma), sin(ma))*sqrt(h2.x);
-      col = vec3(.80,.87,1.); b = moon(m)*2.8*clamp(-age/1.2, 0., 1.)*smoothstep(0., .3, life+age); fine = .8;
-    } else {
-      col = st > 4.5 ? sp*2.1 : white; b = clamp(-age*1.4, 0., 1.)*(st > 4.5 ? 1.15 : .8);
-    }
+    if (st > 2.5) return;
+    float x = P.x; col = SPEC[gl_VertexID%NC]*.62;
+    b = 1.-smoothstep(END-1.2, END, x);
+    b *= 1.+3.*exp(-pow((x-uWaveX)/.35, 2.));
+    float rr = length(P.yz-vec2(AY,0.)), g = 0.;
+    for (int i=0;i<NL;i++) g += (1.-smoothstep(.02,.17,abs(x-LX[i])))*step(rr, LR[i])*(LM[i] == 6 ? .4 : 1.);
+    b *= 1.+.5*g;
   }
   if (uMode > 1.5){
     float u = (P.x+13.)/22.*2.-1.;
@@ -436,14 +378,14 @@ void main(){
     bool front = gd < 1. && nd.z < gd;
     if (front != (uPass > .5)) return;
   }
-  float base = .0030*(.55+.9*h1.z)*fine*uProj/z;
+  float base = (dust ? .0030*(.55+.9*h1.z) : .0046)*fine*uProj/z;
   float coc = uAp*uProj*abs(1./uFocus-1./z)*.011;
   float want = sqrt(base*base+coc*coc), e = 1.;
-  if (want > uThinPx){ float p = max(uThinPx*uThinPx/(want*want), .012); float w = 1.-smoothstep(p*.6, p, h2.w); if (w <= 0.) return; e = w/(.8*p); }
+  if (want > uThinPx){ float p = max(uThinPx*uThinPx/(want*want), .012); float w = 1.-smoothstep(p*.6, p, tw); if (w <= 0.) return; e = w/(.8*p); }
   float size = clamp(want, 1.3, uMaxPx);
   e *= base*base/(want*want)*pow(min(want/1.3, 1.), 1.15);
   vBlur = smoothstep(.6, 2.2, coc/max(base, 1.3));
-  gl_Position = clip; gl_PointSize = size; vCol = col*b*e*uGain;
+  gl_Position = clip; gl_PointSize = size; vCol = col*b*e*uGain*(dust ? 1. : 1.-smoothstep(2.4, 4.2, z));
 }`, `
 in vec3 vCol; in float vBlur; out vec4 o;
 void main(){
@@ -534,12 +476,12 @@ void main(){
 }`);
 const pGlass = prog(MV, `
 in vec3 vW; in vec3 vN; out vec4 o;
-uniform vec3 uCam, uTint; uniform vec2 uRes; uniform mat3 uViewR; uniform sampler2D tA, tGD; uniform float uStr, uBack, uMilk, uScat, uCoat, uEdge;
+uniform vec3 uCam, uTint; uniform vec2 uRes; uniform mat3 uViewR; uniform sampler2D tA, tGD; uniform float uStr, uBack, uMilk, uScat, uCoat, uEdge, uVis;
 ${COMMON}
 ${LFIELD}
 ${ENV}
 vec3 coat(float ndv){ return mix(vec3(1.), mix(vec3(.62,.30,1.), vec3(.30,.95,.62), smoothstep(.25,.85,ndv))*1.5, uCoat); }
-void main(){
+void body(){
   vec3 N = normalize(vN); vec3 Vd = uCam-vW; float dist = length(Vd); vec3 V = Vd/dist;
   if (uBack > .5){
     N = -N; float ndv = max(dot(N,V),0.); float F = .04+.96*pow(1.-ndv,5.);
@@ -566,8 +508,36 @@ void main(){
   vec3 ghost = texture(tA, suv-off*1.7).rgb*vec3(.5,.8,1.)*.07*uCoat;
   float T = mix(1., .16, pow(1.-ndv, 2.6));
   o = vec4(refl+ghost+T*(uTint*rf-base), T);
-}`);
+}
+void main(){ body(); o = mix(vec4(0.,0.,0.,1.), o, uVis); }`);
 
+const XS = (() => { const b = [SRC, ...LENS.map(l => l.x), FX, END], o = [b[0]]; for (let i=1;i<b.length;i++){ const n = Math.ceil((b[i]-b[i-1])/.6); for (let j=1;j<=n;j++) o.push(b[i-1]+(b[i]-b[i-1])*j/n); } return o; })();
+const pRay = prog(`
+uniform mat4 uVP; uniform vec2 uRes; uniform float uW, uGain;
+out vec3 vCol; out float vS;
+const vec3 SPEC[6] = vec3[6](vec3(.45,.0,.78), vec3(.05,.12,.95), vec3(.0,.55,.55), vec3(.15,1.,.10), vec3(.78,.40,.0), vec3(.95,.05,.02));
+${COMMON}
+const int NSEG = ${XS.length-1};
+const float XS[${XS.length}] = float[${XS.length}](${XS.map(fl).join(',')});
+void main(){
+  int q = gl_VertexID/6, c = gl_VertexID%6, seg = q%NSEG, sr = q/NSEG, col = sr%NC, ray = sr/NC;
+  float lam = (float(col)+.5)/float(NC); vec2 u;
+  float xa = XS[seg], xb = XS[seg+1];
+  vec4 A = uVP*vec4(trace(ray, lam, xa, u), 1.), B = uVP*vec4(trace(ray, lam, xb, u), 1.);
+  gl_Position = vec4(2.,2.,2.,1.); vCol = vec3(0.); vS = 0.;
+  if (A.w < .06 && B.w < .06) return;
+  if (A.w < .06){ float t = (.06-A.w)/(B.w-A.w); A = mix(A, B, t); xa = mix(xa, xb, t); }
+  if (B.w < .06){ float t = (.06-B.w)/(A.w-B.w); B = mix(B, A, t); xb = mix(xb, xa, t); }
+  vec2 sa = A.xy/A.w*uRes*.5, sb = B.xy/B.w*uRes*.5; vec2 d = sb-sa; float ln = length(d); if (ln < 1e-3) return;
+  vec2 nn = vec2(-d.y, d.x)/ln;
+  float t = (c == 1 || c == 2 || c == 4) ? 1. : 0., sd = (c == 0 || c == 1 || c == 3) ? -1. : 1.;
+  vec4 C = t > .5 ? B : A; float x = t > .5 ? xb : xa;
+  vec2 sp = (t > .5 ? sb : sa)+nn*sd*uW;
+  gl_Position = vec4(sp/(uRes*.5)*C.w, C.z, C.w); vS = sd;
+  vCol = SPEC[col]*uGain*(1.-smoothstep(END-1.6, END-.2, x))*smoothstep(SRC, SRC+.25, x+.001*t)*(1.-smoothstep(2.4, 4.2, C.w));
+}`, `
+in vec3 vCol; in float vS; out vec4 o;
+void main(){ float a = 1.-smoothstep(.15, 1., abs(vS)); o = vec4(vCol*a, 1.); }`);
 const pDepth = prog(MV, `void main(){}`);
 
 /* ------------------------------------------------------------------ post */
@@ -638,23 +608,24 @@ function cylY(cx,cz,y0,y1,r,segs,m){
     tri([cx,y1,cz],[cx+r*c0,y1,cz+r*s0],[cx+r*c1,y1,cz+r*s1], [0,1,0],[0,1,0],[0,1,0], m);
   }
 }
-const lensProf = (l, n=16) => { const p = []; for (let i=0;i<=n;i++){ const r = l.a*i/n; p.push([-l.tc/2+l.s1*(r/l.a)**2, r]); }
+const lensProf = (l, n=26) => { const p = []; for (let i=0;i<=n;i++){ const r = l.a*i/n; p.push([-l.tc/2+l.s1*(r/l.a)**2, r]); }
   for (let i=n;i>=0;i--){ const r = l.a*i/n; p.push([l.tc/2-l.s2*(r/l.a)**2, r]); } return p; };
 const ringProf = (ri, ro, hw) => [[-hw,ri],[-hw,ro],[hw,ro],[hw,ri]];
 const mark = () => VB.length/7;
 const range = fn => { const s = mark(); fn(); return { s, n: mark()-s }; };
 
-const gTable = range(() => { const u = [0,1,0]; quad([-70,0,-70],[70,0,-70],[70,0,70],[-70,0,70], u,u,u,u, 0); });
-const prismV = [70.5,190.5,310.5].map(a => [PRISM.cx+PRISM.s/Math.sqrt(3)*Math.cos(a*D2R), PRISM.cy+PRISM.s/Math.sqrt(3)*Math.sin(a*D2R)]);
-const gIris = range(() => { const n = [-1,0,0]; quad([IX,AY-.32,-.32],[IX,AY+.32,-.32],[IX,AY+.32,.32],[IX,AY-.32,.32], n,n,n,n, 0); });
-const glass = LENS.map(l => ({ r: range(() => lathe(l.x, lensProf(l), 72, 0, false)), c:[l.x,AY,0], str:l.str, tint:[.97,.985,1], milk:0, sc:.03, coat:.7, mov:0 }));
-glass.push({ r: range(() => {
-  for (let i=0;i<3;i++){ const a = prismV[i], b = prismV[(i+1)%3]; let nx = b[1]-a[1], ny = a[0]-b[0]; const l = Math.hypot(nx,ny); nx/=l; ny/=l;
-    const mx = (a[0]+b[0])/2-PRISM.cx, my = (a[1]+b[1])/2-PRISM.cy; if (nx*mx+ny*my < 0){ nx=-nx; ny=-ny; }
-    const n = [nx,ny,0]; quad([a[0],a[1],-PRISM.hz],[b[0],b[1],-PRISM.hz],[b[0],b[1],PRISM.hz],[a[0],a[1],PRISM.hz], n,n,n,n, 0); }
-  for (const z of [-PRISM.hz, PRISM.hz]){ const n = [0,0,Math.sign(z)]; tri([prismV[0][0],prismV[0][1],z],[prismV[1][0],prismV[1][1],z],[prismV[2][0],prismV[2][1],z], n,n,n, 0); }
-}), c:[PRISM.cx,PRISM.cy,0], str:.10, tint:[.96,.985,1], milk:0, sc:.02, coat:.12, mov:1 });
-glass.push({ r: range(() => box(SX+.016,AY,0,.02,1.01,1.01,0)), c:[SX,AY,0], str:.02, tint:[.93,.95,.97], milk:.0008, sc:.004, coat:.3, mov:0 });
+const glass = LENS.filter(l => l.tc).map(l => ({ r: range(() => lathe(l.x, lensProf(l), 120, 0, false)), c:[l.x,AY,0], str:l.str, tint:[.97,.985,1], milk:0, sc:.03, coat:.7, mov:0, flat:0 }));
+/* direct vision prisms: tall wedges, alternately apex down and apex up */
+for (const l of LENS.filter(l => l.m === 6)){
+  const sg = Math.sign(l.f), hw = .2, hh = 1.6, hz = .8;
+  const V = [[l.x-hw, AY+sg*hh],[l.x+hw, AY+sg*hh],[l.x, AY-sg*hh]], cy = AY+sg*hh/3;
+  glass.push({ r: range(() => {
+    for (let i=0;i<3;i++){ const a = V[i], b = V[(i+1)%3]; let nx = b[1]-a[1], ny = a[0]-b[0]; const ln = Math.hypot(nx,ny); nx/=ln; ny/=ln;
+      if (nx*((a[0]+b[0])/2-l.x)+ny*((a[1]+b[1])/2-cy) < 0){ nx=-nx; ny=-ny; }
+      const n = [nx,ny,0]; quad([a[0],a[1],-hz],[b[0],b[1],-hz],[b[0],b[1],hz],[a[0],a[1],hz], n,n,n,n, 0); }
+    for (const z of [-hz, hz]){ const n = [0,0,Math.sign(z)]; tri([V[0][0],V[0][1],z],[V[1][0],V[1][1],z],[V[2][0],V[2][1],z], n,n,n, 0); }
+  }), c:[l.x,AY,0], str:.03, tint:[.96,.985,1], milk:0, sc:.02, coat:.12, mov:0, flat:1 });
+}
 
 const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
 gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(VB), gl.STATIC_DRAW);
@@ -678,7 +649,7 @@ const TIERS = [
   { dpr:1.0,  frac:.5,  refl:0, ms:0 },
   { dpr:.8,   frac:.35, refl:0, ms:0 },
 ];
-let tier = 2, W = 1, H = 1, scale = 1, R = null, msOK = true;
+let tier = 1, W = 1, H = 1, scale = 1, R = null, msOK = true;
 function free(r){ if (!r) return; r.tx.forEach(t => gl.deleteTexture(t)); r.rb.forEach(b => gl.deleteRenderbuffer(b)); r.fb.forEach(f => gl.deleteFramebuffer(f)); }
 function resize(){
   const q = TIERS[tier], cw = innerWidth, ch = innerHeight;
@@ -730,17 +701,14 @@ function mul(o, a, b){ for (let c=0;c<4;c++) for (let r=0;r<4;r++) o[c*4+r] = a[
 
 /* ------------------------------------------------------------------ the take */
 const KEYS = [
-  { t:0,    p:[-8.25,1.3,1.3],   q:[-6.75,.92,0],   fov:30, ap:1.2, ex:.95 },
-  { t:1,    p:[-7.95,1.52,.8],   q:[-6.9,1.17,0],   fov:32, ap:1.3, ex:.85 },
-  { t:2,    p:[-5.05,1.14,1.3],  q:[-4.4,1.2,0],    fov:30, ap:1.1, ex:.80 },
-  { t:3,    p:[-3.8,1.0,.98],    q:[-2.9,1.22,0],   fov:31, ap:1.2, ex:.90 },
-  { t:4,    p:[.8,.78,1.6],      q:[-.2,.85,0],     fov:32, ap:1.0, ex:1.00 },
-  { t:4.5,  p:[1.95,.17,1.3],    q:[.95,.1,0],      fov:32, ap:1.3, ex:1.00 },
-  { t:5,    p:[1.85,1.42,.8],    q:[3.3,1.18,0],    fov:30, ap:1.1, ex:1.00 },
-  { t:6,    p:[3.05,1.5,.9],     q:[3.62,1.2,0],    fov:28, ap:1.2, ex:1.05 },
-  { t:6.5,  p:[6.35,1.5,.8],     q:[6.95,1.2,.05],  fov:28, ap:1.2, ex:1.05 },
-  { t:6.75, p:[7.7,1.5,1.0],     q:[7.0,1.2,0],     fov:26, ap:1.0, ex:1.10 },
-  { t:7,    p:[8.9,1.2,.02],     q:[7.0,1.12,-.1],  fov:22, ap:.9,  ex:1.15 },
+  { t:0, p:[-10.4,1.5,2.0],  q:[-9.35,1.1,0],  fov:30, ap:.6, ex:1.0 },
+  { t:1, p:[-9.0,1.5,1.7],   q:[-7.6,1.1,0],   fov:30, ap:.6, ex:1.0 },
+  { t:2, p:[-6.3,1.45,1.5],  q:[-5.0,1.15,0],  fov:30, ap:.6, ex:1.0 },
+  { t:3, p:[-4.6,1.5,1.5],   q:[-3.4,1.12,0],  fov:30, ap:.6, ex:1.0 },
+  { t:4, p:[-3.0,1.5,1.8],   q:[-1.5,1.1,0],   fov:31, ap:.6, ex:1.0 },
+  { t:5, p:[-1.3,1.45,2.0],  q:[.05,1.15,0],   fov:31, ap:.6, ex:1.0 },
+  { t:6, p:[.5,1.5,1.9],     q:[1.9,1.1,0],    fov:31, ap:.6, ex:1.0 },
+  { t:7, p:[3.5,1.45,2.3],   q:[5.4,.9,0],   fov:30, ap:.6, ex:1.0 },
 ];
 const cr = (a,b,c,d,u) => .5*((2*b)+(-a+c)*u+(2*a-5*b+4*c-d)*u*u+(-a+3*b-3*c+d)*u*u*u);
 const cam = { p:[0,0,0], q:[0,0,0], fov:30, ap:.5, ex:1 };
@@ -767,16 +735,17 @@ let px = 0, py = 0, pushT = 0, push = 0, burst = 0, waveT = -100, time = 0;
 addEventListener('pointermove', e => { px = e.clientX/innerWidth*2-1; py = 1-e.clientY/innerHeight*2; if (e.pointerType === 'mouse') pushT = 1; });
 addEventListener('pointerdown', e => { if (e.target.closest('a,button')) return; px = e.clientX/innerWidth*2-1; py = 1-e.clientY/innerHeight*2; burst = 1; waveT = time; });
 document.documentElement.addEventListener('pointerleave', () => { pushT = 0; });
-$('#home').addEventListener('click', () => scrollTo({ top:0, behavior: calm ? 'auto' : 'smooth' }));
-document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', e => { e.preventDefault(); scrollTo({ top: a.classList.contains('pill') ? document.documentElement.scrollHeight : 0, behavior: calm ? 'auto' : 'smooth' }); }));
+const TMAX = 7;
+const goTo = k => scrollTo({ top:(document.documentElement.scrollHeight-innerHeight)*k/TMAX, behavior: calm ? 'auto' : 'smooth' });
+$('#home').addEventListener('click', () => goTo(0));
+$('#demo').addEventListener('click', () => goTo(TMAX));
 $('#reserve').addEventListener('click', () => { $('#note').hidden = false; waveT = time; });
 
-/* ------------------------------------------------------------------ copy and focus scale */
+/* ------------------------------------------------------------------ copy and the light path */
 const chs = [...document.querySelectorAll('.ch')], chO = chs.map(() => -1);
-const scaleEl = $('#scale'), stops = ['∞','10','4','2','1.2','0.8','0.6','0.45'], TMAX = 7;
-stops.forEach((s,i) => { const el = document.createElement('span'); el.textContent = s; el.style.top = (i/TMAX*100)+'%'; scaleEl.appendChild(el); });
-const idx = document.createElement('em'); scaleEl.appendChild(idx);
-const stopEls = [...scaleEl.querySelectorAll('span')]; let atStop = -1;
+const pathBtns = [...document.querySelectorAll('.path button')], pathDot = document.querySelector('.path em'), hintEl = $('#hint');
+pathBtns.forEach(b => b.addEventListener('click', () => goTo(+b.dataset.k)));
+let atNode = -1;
 function updateUI(T){
   for (let k=0;k<chs.length;k++){
     const o = Math.min(1, Math.max(0, (.44-Math.abs(T-k))/.2));
@@ -784,11 +753,12 @@ function updateUI(T){
     const s = chs[k].style; s.opacity = o; s.visibility = o > 0 ? 'visible' : 'hidden'; s.transform = `translate3d(0,${((T-k)*-26).toFixed(1)}px,0)`;
     chs[k].classList.toggle('live', o > .5);
   }
-  idx.style.top = (T/TMAX*100).toFixed(2)+'%';
-  const near = Math.round(T); if (near !== atStop){ atStop = near; stopEls.forEach((el,i) => el.classList.toggle('at', i === near)); }
+  /* on the way in, the marker runs back up the path from the image to the lamp */
+  const pos = T;
+  pathDot.style.transform = `translate3d(0,${(17+pos*34).toFixed(1)}px,0)`;
+  const near = Math.round(pos); if (near !== atNode){ atNode = near; pathBtns.forEach((el,i) => el.classList.toggle('at', i === near)); }
   hintEl.style.opacity = Math.max(0, 1-T*2.2);
 }
-const hintEl = $('#hint');
 
 /* ------------------------------------------------------------------ frame pacing and the stats readout */
 const hud = $('#hud'); let hudOn = location.hash === '#stats';
@@ -831,11 +801,12 @@ function scrollT(){
   const raw = Math.min(1, Math.max(0, scrollY/max))*TMAX, k = Math.min(TMAX-1, Math.floor(raw)), fr = raw-k;
   return k+fr-Math.sin(fr*Math.PI*2)/(Math.PI*2)*.62;
 }
+let beadK = Math.floor(NP/(6*27));
 function simStep(dt, st, rayO, rayD, dustX){
   const a = simT[simI], b = simT[1-simI];
   gl.bindFramebuffer(gl.FRAMEBUFFER, b.f); gl.viewport(0,0,SIM,SIM);
-  use(pSim, { tPos:a.p, tVel:a.v, uDt:dt, uTime:time, uInit:first ? 1 : 0, uKillX:st.killX, uPrismZ:st.prismZ, uIris:st.iris, uPush:push, uBurst:burst,
-    uSrcX:SRC, uRayO:rayO, uRayD:rayD, uDustC:[dustX,0,0], uShare:st.share });
+  use(pSim, { tPos:a.p, tVel:a.v, uDt:dt, uTime:time, uInit:first ? 1 : 0, uKillX:st.killX, uPrismZ:st.prismZ, uIris:st.iris, uPush:push, uBurst:burst, uK:beadK,
+    uRayO:rayO, uRayD:rayD, uDustC:[dustX,0,0] });
   gl.drawArrays(gl.TRIANGLES, 0, 3); simI = 1-simI; first = false;
 }
 const camP = [0,0,0], rayD = [0,0,1];
@@ -857,7 +828,7 @@ function render(now){
   sx += (px-sx)*(1-Math.exp(-dt*2.5)); sy += (py-sy)*(1-Math.exp(-dt*2.5));
   const dist = Math.hypot(cam.p[0]-cam.q[0], cam.p[1]-cam.q[1], cam.p[2]-cam.q[2]);
   const drift = calm ? 0 : 1, sw = dist*.012;
-  camP[0] = cam.p[0]+(Math.sin(time*.23)*sw+sx*dist*.02)*drift; camP[1] = Math.max(.12, cam.p[1]+(Math.sin(time*.31+1.3)*sw*.6+sy*dist*.012)*drift); camP[2] = cam.p[2]+Math.cos(time*.19)*sw*drift;
+  camP[0] = cam.p[0]+(Math.sin(time*.23)*sw+sx*dist*.02)*drift; camP[1] = (cam.p[1]+(Math.sin(time*.31+1.3)*sw*.6+sy*dist*.012)*drift); camP[2] = cam.p[2]+Math.cos(time*.19)*sw*drift;
   const basis = lookAt(mView, camP, cam.q); persp(mProj, fy, asp, .05, 90); mul(mVP, mProj, mView);
   for (let i=0;i<16;i++) mVPm[i] = (i >= 4 && i < 8) ? -mVP[i] : mVP[i];
   mR3[0]=mView[0];mR3[1]=mView[1];mR3[2]=mView[2];mR3[3]=mView[4];mR3[4]=mView[5];mR3[5]=mView[6];mR3[6]=mView[8];mR3[7]=mView[9];mR3[8]=mView[10];
@@ -866,7 +837,8 @@ function render(now){
   rayD[0] = rd[0]; rayD[1] = rd[1]; rayD[2] = rd[2];
   push += (pushT*.55-push)*(1-Math.exp(-dt*3)); burst *= Math.exp(-dt*6);
   const q = TIERS[tier], count = Math.floor(NP*q.frac/SIM)*SIM, gain = .42/q.frac, proj = H/(2*th);
-  const pu = { uFocus:dist, uAp:cam.ap, uGain:gain, uKillX:st.killX, uWaveX:SRC+C0*(time-waveT), uZone:st.zone, uDustK:2.4, uSat:st.sat, uTail:1-.88*ss(6.5,6.95,Tc) };
+  beadK = Math.max(1, Math.floor(count/(6*27)));
+  const pu = { uFocus:dist, uAp:cam.ap, uGain:gain, uKillX:st.killX, uWaveX:cam.q[0]-2.6+2.2*(time-waveT), uZone:st.zone, uDustK:1.6, uSat:st.sat, uTail:1-.88*ss(6.5,6.95,Tc) };
 
   const timing = extT && !query && frame%4 === 0; let qy = null;
   if (timing){ qy = gl.createQuery(); gl.beginQuery(extT.TIME_ELAPSED_EXT, qy); }
@@ -886,7 +858,7 @@ function render(now){
 
   /* grains mirrored in the table, half size */
   const r = R;
-  if (q.refl){
+  if (false){
     gl.bindFramebuffer(gl.FRAMEBUFFER, r.reflF); gl.viewport(0,0,r.rw,r.rh); gl.clear(gl.COLOR_BUFFER_BIT);
     const nR = Math.floor(count/2/SIM)*SIM;
     use(pPart, { tPos:S.p, tVel:S.v, tLF:lfTex, tGD:null, uPass:2, uVP:mVPm, uMode:0, uProj:proj*.5, uMaxPx:14*scale, uThinPx:2.5*scale, ...pu, uGain:gain*2 });
@@ -896,27 +868,22 @@ function render(now){
   /* opaque set */
   gl.bindFramebuffer(gl.FRAMEBUFFER, r.ms ? r.msF : r.aF); gl.viewport(0,0,W,H);
   gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
-  gl.clearColor(.0030,.0034,.0042,1); gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
   gl.bindVertexArray(vao);
-  const res = [W,H], off0 = [0,0,0], offP = [0,0,st.prismZ];
-  use(pTable, { uVP:mVP, uOff:off0, uCam:camP, uRes:res, tLF:lfTex, tRefl:r.reflTex, uReflOn:q.refl });
-  gl.drawArrays(gl.TRIANGLES, gTable.s, gTable.n);
-  if (r.ms) gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE);
-  use(pIris, { uVP:mVP, uOff:off0, uCam:camP, tLF:lfTex, uIris:st.iris*.985, uRot:.3+st.iris*2.4 });
-  gl.drawArrays(gl.TRIANGLES, gIris.s, gIris.n);
-  gl.disable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+  const res = [W,H], off0 = [0,0,0], offP = off0;
   if (r.ms){
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, r.msF); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, r.aF);
     gl.blitFramebuffer(0,0,W,H,0,0,W,H, gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT, gl.NEAREST);
   }
 
   /* nearest glass surface, so each grain knows whether it is in front of the glass or behind it */
-  for (const g of glass){ const z = g.mov ? st.prismZ : 0; g.d = (g.c[0]-camP[0])**2+(g.c[1]-camP[1])**2+(g.c[2]+z-camP[2])**2; }
+  for (const g of glass){ const z = 0; g.d = (g.c[0]-camP[0])**2+(g.c[1]-camP[1])**2+(g.c[2]+z-camP[2])**2; }
+  for (const g of glass) g.vis = 1-ss(3.3, 4.7, Math.sqrt(g.d));
   glass.sort((a,b) => b.d-a.d);
   gl.bindFramebuffer(gl.FRAMEBUFFER, r.gdF); gl.viewport(0,0,r.dw,r.dh); gl.clearDepth(1); gl.clear(gl.DEPTH_BUFFER_BIT);
   gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); gl.depthFunc(gl.LESS);
   use(pDepth, { uVP:mVP, uOff:off0 });
-  for (const g of glass){ gl.uniform3fv(pDepth.u.uOff.loc, g.mov ? offP : off0); gl.drawArrays(gl.TRIANGLES, g.r.s, g.r.n); }
+  for (const g of glass){ if (g.vis < .5) continue; gl.uniform3fv(pDepth.u.uOff.loc, off0); gl.drawArrays(gl.TRIANGLES, g.r.s, g.r.n); }
   gl.disable(gl.CULL_FACE); gl.depthFunc(gl.LEQUAL);
 
   /* grains behind the glass, or clear of it */
@@ -925,6 +892,8 @@ function render(now){
   const pv = { tPos:S.p, tVel:S.v, tLF:lfTex, tGD:r.gdTex, uVP:mVP, uMode:0, uProj:proj, uMaxPx:24*scale, uThinPx:4.5*scale, ...pu };
   pv.uPass = 0; use(pPart, pv);
   gl.drawArrays(gl.POINTS, 0, count);
+  use(pRay, { uVP:mVP, uRes:res, uW:1.6*scale, uGain:.02 });
+  gl.drawArrays(gl.TRIANGLES, 0, 25*6*(XS.length-1)*6);
 
   /* glass: refracts what is behind it, layered far to near */
   gl.bindFramebuffer(gl.FRAMEBUFFER, r.ms ? r.gmsF : r.gF);
@@ -933,7 +902,7 @@ function render(now){
   gl.blendFuncSeparate(gl.ONE, gl.SRC_ALPHA, gl.ZERO, gl.SRC_ALPHA);
   use(pGlass, { uVP:mVP, uCam:camP, uRes:res, uViewR:mR3, tA:r.aTex, tLF:lfTex, tGD:r.gdTex });
   for (const g of glass){
-    gl.uniform3fv(pGlass.u.uOff.loc, g.mov ? offP : off0); gl.uniform1f(pGlass.u.uStr.loc, g.str); gl.uniform3fv(pGlass.u.uTint.loc, g.tint); gl.uniform1f(pGlass.u.uMilk.loc, g.milk); gl.uniform1f(pGlass.u.uScat.loc, g.sc); gl.uniform1f(pGlass.u.uCoat.loc, g.coat); gl.uniform1f(pGlass.u.uEdge.loc, g.mov ? 0 : 1);
+    gl.uniform3fv(pGlass.u.uOff.loc, g.mov ? offP : off0); gl.uniform1f(pGlass.u.uStr.loc, g.str); gl.uniform3fv(pGlass.u.uTint.loc, g.tint); gl.uniform1f(pGlass.u.uMilk.loc, g.milk); gl.uniform1f(pGlass.u.uScat.loc, g.sc); gl.uniform1f(pGlass.u.uCoat.loc, g.coat); gl.uniform1f(pGlass.u.uEdge.loc, g.flat ? 0 : 1); gl.uniform1f(pGlass.u.uVis.loc, g.vis); if (g.vis <= 0) continue;
     gl.cullFace(gl.FRONT); gl.uniform1f(pGlass.u.uBack.loc, 1); gl.drawArrays(gl.TRIANGLES, g.r.s, g.r.n);
     gl.cullFace(gl.BACK); gl.uniform1f(pGlass.u.uBack.loc, 0); gl.drawArrays(gl.TRIANGLES, g.r.s, g.r.n);
   }
@@ -972,8 +941,9 @@ function render(now){
   updateUI(Tc);
   if (frame === 2) canvas.classList.add('on');
   if (hudOn && frame%20 === 0){ const s = stats();
-    hud.textContent = `${s.fps.toFixed(0)} fps   ${s.avg.toFixed(1)} ms avg   ${s.worst.toFixed(1)} ms worst\nGPU ${s.gpu < 0 ? 'n/a' : s.gpu.toFixed(1)+' ms'}   tier ${s.tier}   ${s.w}×${s.h}   MSAA ${s.msaa}×\n${s.grains.toLocaleString('en')} grains`; }
+    hud.textContent = `${s.fps.toFixed(0)} fps   ${s.avg.toFixed(1)} ms avg   ${s.worst.toFixed(1)} ms worst\nGPU ${s.gpu < 0 ? 'n/a' : s.gpu.toFixed(1)+' ms'}   tier ${s.tier}   ${s.w}×${s.h}   MSAA ${s.msaa}×\n${s.grains.toLocaleString('en')} photons`; }
 }
+{ const st0 = stage(0); gl.bindVertexArray(vaoNone); gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST); for (let i=0;i<72;i++){ time += .2; simStep(.2, st0, [0,50,0], [0,1,0], -9); } }
 requestAnimationFrame(render);
 
 window.__film = {
