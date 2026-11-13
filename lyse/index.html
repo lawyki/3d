@@ -93,7 +93,7 @@ dd{margin:5px 0 0;color:var(--fg);font-size:15px;font-variant-numeric:tabular-nu
   <section class="ch" id="c0">
     <p class="eyebrow"><b>Lyse M1</b><i></i>Research microscope</p>
     <h1>This picture is made of <em id="count">225,000</em> photons.</h1>
-    <p>A diatom, nine hundredths of a millimetre across. Scroll to go inside the instrument and follow the light that drew it.</p>
+    <p>Living cells, each a fiftieth of a millimetre across: walls in green, nuclei in blue. Scroll to go inside the instrument and follow the light that drew it.</p>
     <div class="go"><span></span>Scroll</div>
   </section>
   <section class="ch" id="c1">
@@ -190,20 +190,23 @@ const vec2 PN2=vec2(${Math.cos(PRISM.a2).toFixed(5)},${Math.sin(PRISM.a2).toFixe
 const float PA=${(PRISM.s/(2*Math.sqrt(3))).toFixed(5)}, PS=${fl(PRISM.s/2)}, PHZ=${fl(PRISM.hz)};
 const vec3 BG=vec3(0.);
 vec4 hash42(vec2 p){ vec4 p4 = fract(vec4(p.xyxy)*vec4(.1031,.1030,.0973,.1099)); p4 += dot(p4, p4.wzxy+33.33); return fract((p4.xxyz+p4.yzzw)*p4.zywx); }
+/* the picture: living tissue in a round field of view. x = cell walls, y = nuclei */
+vec2 tissue(vec2 m){
+  vec2 p = m*3.1+vec2(.37,.11); p += .12*vec2(sin(p.y*1.7), cos(p.x*1.3));
+  vec2 ip = floor(p), fp = fract(p); float f1 = 9., f2 = 9.;
+  for (int j=-1;j<=1;j++) for (int i=-1;i<=1;i++){
+    vec2 g = vec2(float(i),float(j)); vec2 o = hash42(ip+g+.5).xy*.7+.15;
+    float d = length(g+o-fp); if (d < f1){ f2 = f1; f1 = d; } else if (d < f2) f2 = d;
+  }
+  return vec2(1.-smoothstep(.02, .11, f2-f1), 1.-smoothstep(.13, .21, f1));
+}
 float diatom(vec2 m){
   float r = length(m); if (r > 1.) return 0.;
-  float a = atan(m.y, m.x);
-  float zone = smoothstep(.27,.31,r)*(1.-smoothstep(.83,.87,r));
-  float rib = pow(.5+.5*cos(a*32.), 8.);
-  float pores = pow(.5+.5*cos(r*88.), 2.)*pow(.5-.5*cos(a*64.), 3.);
-  float rim = smoothstep(.885,.905,r)*(1.-smoothstep(.975,.995,r))*(.5+.5*pow(.5+.5*cos(a*128.), 2.));
-  float ring = exp(-pow((r-.27)/.012, 2.))+.7*exp(-pow((r-.585)/.008, 2.));
-  float hub = (1.-smoothstep(.20,.24,r))*(.18+.82*pow(.5+.5*cos(a*9.), 2.)*smoothstep(.03,.10,r));
-  return .03+zone*(rib*.9+pores*.55)+rim*.6+ring*.7+hub*.6+exp(-r*r/.0014);
+  vec2 t = tissue(m);
+  return (.035+t.x*.8+t.y*1.1)*(1.-smoothstep(.93, 1., r));
 }
-vec3 palette(vec2 m){ float r = length(m);
-  vec3 c = mix(vec3(1.,.72,.36), vec3(.60,.85,1.), smoothstep(.16,.50,r));
-  return mix(c, vec3(1.,.80,.50), smoothstep(.86,.92,r)); }
+vec3 palette(vec2 m){ vec2 t = tissue(m);
+  return mix(mix(vec3(.45,.75,.62), vec3(.30,1.,.62), t.x), vec3(.42,.58,1.), smoothstep(.2,.7,t.y)); }
 vec2 addr(vec2 fc, vec4 h2){
   vec4 g = hash42(fc+17.7);
   vec2 a = sqrt(h2.x)*vec2(cos(6.2831853*h2.y), sin(6.2831853*h2.y));
@@ -763,7 +766,8 @@ function mul(o, a, b){ for (let c=0;c<4;c++) for (let r=0;r<4;r++) o[c*4+r] = a[
 /* ------------------------------------------------------------------ the take */
 const KEYS = [
   { t:0,    p:[10.2,1.2,.3],     q:[7.0,1.2,.3],    fov:22, ap:.9,  ex:1.10 },
-  { t:.5,   p:[1.0,3.0,3.6],     q:[-3.5,1.2,0],    fov:30, ap:3.2, ex:.2 },
+  { t:.38,  p:[8.1,1.2,.2],      q:[7.0,1.2,.2],    fov:24, ap:2.4, ex:0 },
+  { t:.62,  p:[-11.6,1.7,1.9],   q:[-9.4,1.12,0],   fov:32, ap:2.0, ex:0 },
   { t:1,    p:[-10.5,1.48,1.05], q:[-9.4,1.12,0],   fov:32, ap:1.2, ex:.9 },
   { t:1.5,  p:[-8.25,1.3,1.3],   q:[-6.75,.92,0],   fov:30, ap:1.2, ex:.95 },
   { t:2,    p:[-5.05,1.14,1.3],  q:[-4.4,1.2,0],    fov:30, ap:1.1, ex:.80 },
@@ -821,7 +825,7 @@ function updateUI(T){
     chs[k].classList.toggle('live', o > .5);
   }
   /* on the way in, the marker runs back up the path from the image to the lamp */
-  const pos = T < 1 ? 6*(1-ss(.08,.92,T)) : T-1;
+  const pos = T < .5 ? 6 : Math.max(0, T-1);
   pathDot.style.transform = `translate3d(0,${(17+pos*34).toFixed(1)}px,0)`;
   const near = Math.round(pos); if (near !== atNode){ atNode = near; pathBtns.forEach((el,i) => el.classList.toggle('at', i === near)); }
   hintEl.style.opacity = Math.max(0, 1-T*2.2);
