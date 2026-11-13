@@ -1,0 +1,985 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Lyse Optikk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one fixed film canvas. Copy sits in a single column anchored bottom left; a lens focus scale runs down the right edge as the scroll index. */
+:root{
+  --bg:#050607; --fg:#ECE9E3; --muted:#A3A19A; --faint:#6B6A65; --line:rgba(236,233,227,.16);
+  --amber:#E7A23C; --panel:rgba(5,6,7,.62);
+  --sans:'Geist','Helvetica Neue',Helvetica,Arial,sans-serif;
+  --mono:'Geist Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --gut:max(24px, env(safe-area-inset-left, 0px)); --gutr:max(24px, env(safe-area-inset-right, 0px));
+  color-scheme:dark;
+}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+*{box-sizing:border-box}
+#film{position:fixed;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity 1.4s ease}
+#film.on{opacity:1}
+#track{height:940vh}
+.scrim{position:fixed;inset:0;pointer-events:none;background:
+  linear-gradient(to top, rgba(5,6,7,.82) 0%, rgba(5,6,7,.38) 26%, rgba(5,6,7,0) 52%),
+  linear-gradient(to bottom, rgba(5,6,7,.55) 0%, rgba(5,6,7,0) 16%)}
+
+header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:24px;
+  padding:calc(20px + env(safe-area-inset-top, 0px)) var(--gutr) 0 var(--gut);z-index:5}
+.mark{font-weight:600;font-size:13px;letter-spacing:.34em;text-transform:uppercase;color:var(--fg);text-decoration:none;display:flex;align-items:baseline;gap:12px;background:none;border:0;padding:0;cursor:pointer;font-family:var(--sans)}
+.mark small{font-family:var(--mono);font-weight:400;font-size:10px;letter-spacing:.1em;color:var(--faint)}
+nav{display:flex;align-items:center;gap:26px;font-size:13px}
+nav a{color:var(--muted);text-decoration:none;transition:color .2s}
+nav a:hover{color:var(--fg)}
+.pill{color:var(--fg)!important;border:1px solid var(--line);border-radius:999px;padding:7px 14px}
+:focus-visible{outline:1px solid var(--amber);outline-offset:4px;border-radius:3px}
+
+.ch{position:fixed;left:var(--gut);bottom:calc(46px + env(safe-area-inset-bottom, 0px));width:min(440px, calc(100vw - var(--gut) - var(--gutr)));
+  opacity:0;visibility:hidden;pointer-events:none;will-change:opacity,transform;z-index:3}
+.ch.live{pointer-events:auto}
+#c0{width:min(600px, calc(100vw - var(--gut) - var(--gutr)));opacity:1;visibility:visible}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);display:flex;gap:12px;align-items:center;margin:0 0 16px}
+.eyebrow b{font-weight:500;color:var(--amber)}
+.eyebrow i{display:block;width:28px;height:1px;background:var(--line)}
+h1,h2{font-weight:500;letter-spacing:-.028em;line-height:1.06;margin:0;text-wrap:balance}
+h1{font-size:clamp(34px,4.5vw,62px)}
+h2{font-size:clamp(26px,2.7vw,38px)}
+.ch p:not(.eyebrow){color:var(--muted);margin:16px 0 0;max-width:46ch;text-wrap:pretty}
+#c0 p:not(.eyebrow){font-size:16px;max-width:44ch}
+dl{margin:22px 0 0;border-top:1px solid var(--line)}
+dl div{display:flex;justify-content:space-between;gap:20px;padding:8px 0;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.03em}
+dt{color:var(--faint);text-transform:uppercase;letter-spacing:.1em;font-size:10px;padding-top:1px}
+dd{margin:0;color:var(--fg);text-align:right;font-variant-numeric:tabular-nums}
+.go{display:flex;align-items:center;gap:12px;margin-top:26px;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.go span{display:block;width:1px;height:30px;background:linear-gradient(var(--amber),transparent);animation:drop 2.4s ease-in-out infinite;transform-origin:top}
+@keyframes drop{0%{transform:scaleY(0)}50%{transform:scaleY(1)}100%{transform:scaleY(1);opacity:0}}
+.cta{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:22px}
+.btn{font-family:var(--sans);font-weight:500;font-size:13.5px;color:#0b0b0a;background:var(--fg);border:0;border-radius:999px;padding:11px 20px;cursor:pointer;transition:background .2s}
+.btn:hover{background:#fff}
+.note{font-family:var(--mono);font-size:11px;color:var(--muted)}
+
+/* focus scale: seven engraved stops, one per shot */
+.scale{position:fixed;right:var(--gutr);top:50%;transform:translateY(-50%);height:min(46vh,380px);width:64px;z-index:3;pointer-events:none}
+.scale::before{content:"";position:absolute;right:0;top:0;bottom:0;width:1px;background:var(--line)}
+.scale span{position:absolute;right:0;transform:translateY(-50%);display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;color:var(--faint);font-variant-numeric:tabular-nums;transition:color .3s}
+.scale span::after{content:"";display:block;width:9px;height:1px;background:currentColor}
+.scale span.at{color:var(--fg)}
+.scale em{position:absolute;right:-1px;width:18px;height:1px;background:var(--amber);font-style:normal}
+.scale em::before{content:"m";position:absolute;right:26px;top:-7px;font-family:var(--mono);font-size:9px;color:var(--amber);opacity:0}
+.hint{position:fixed;right:var(--gutr);bottom:calc(46px + env(safe-area-inset-bottom, 0px));font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--faint);z-index:3;pointer-events:none;text-align:right}
+#hud{position:fixed;left:var(--gut);top:calc(64px + env(safe-area-inset-top, 0px));font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px;z-index:9;white-space:pre;font-variant-numeric:tabular-nums}
+.fallback{display:none;position:fixed;inset:0;align-items:center;justify-content:center;text-align:center;padding:0 var(--gutr) 0 var(--gut);color:var(--muted);background:radial-gradient(60% 40% at 50% 45%, #1a1712, var(--bg))}
+.nogl .fallback{display:flex}.nogl #film,.nogl .ch:not(#c0),.nogl .scale,.nogl .hint{display:none}
+
+@media (max-width:760px){
+  nav a:not(.pill){display:none}
+  .scale,.hint{display:none}
+  .ch{bottom:calc(28px + env(safe-area-inset-bottom, 0px))}
+  dl div:nth-child(n+3){display:none}
+  #c6 dl div:nth-child(n+3){display:flex}
+}
+@media (max-height:620px){ dl{display:none} }
+@media (prefers-reduced-motion:reduce){ .go span{animation:none} #film{transition:none} }
+</style>
+
+<canvas id="film" aria-hidden="true"></canvas>
+<div class="scrim"></div>
+<div class="fallback"><p>This film needs WebGL 2 with floating point render targets, which this browser does not offer.</p></div>
+
+<header>
+  <button class="mark" id="home" type="button">Lyse <small>Optikk · Bergen</small></button>
+  <nav aria-label="Primary">
+    <a href="#primes">Primes</a><a href="#glass">Glass</a><a href="#atelier">Atelier</a>
+    <a class="pill" href="#reserve">Reserve a set</a>
+  </nav>
+</header>
+
+<main>
+  <section class="ch" id="c0">
+    <p class="eyebrow"><b>Cinema primes</b><i></i>Ground by hand since 1961</p>
+    <h1>Light, before it is a picture.</h1>
+    <p>Every Lyse lens starts as a parallel beam on a steel table in Bergen. Follow one through the glass, from the source to the image.</p>
+    <div class="go"><span></span>Scroll to follow the beam</div>
+  </section>
+  <section class="ch" id="c1">
+    <p class="eyebrow"><b>01</b><i></i>Singlet</p>
+    <h2>One element bends everything.</h2>
+    <p>A single lens pulls a parallel beam down to a point, and gets it slightly wrong at the edges. That error is where our work starts.</p>
+    <dl><div><dt>Blank</dt><dd>Fluor crown, FPL 53</dd></div><div><dt>Surface</dt><dd>λ/10 at 633 nm</dd></div><div><dt>Centring</dt><dd>under 30 arcsec</dd></div></dl>
+  </section>
+  <section class="ch" id="c2">
+    <p class="eyebrow"><b>02</b><i></i>Focus</p>
+    <h2>The colours disagree about where.</h2>
+    <p>Blue comes to focus a little before red. Left alone, that gap is the purple edge on every bright window. We measure it in microns and close it with a second glass.</p>
+    <dl><div><dt>Axial colour</dt><dd>under 8 µm</dd></div><div><dt>Spherical</dt><dd>0.02 λ RMS</dd></div></dl>
+  </section>
+  <section class="ch" id="c3">
+    <p class="eyebrow"><b>03</b><i></i>Dispersion</p>
+    <h2>White is a crowd.</h2>
+    <p>Send the beam through a prism and it separates into everything it was carrying. We choose each glass by how hard it pulls the spectrum apart.</p>
+    <dl><div><dt>Abbe number</dt><dd>ν 94.9 to 25.4</dd></div><div><dt>Anneal</dt><dd>11 days per melt</dd></div></dl>
+  </section>
+  <section class="ch" id="c4">
+    <p class="eyebrow"><b>04</b><i></i>The stack</p>
+    <h2>Five elements, each correcting the last.</h2>
+    <p>Crown, flint, air. Every surface undoes a mistake made by the one before it, until the beam leaves cleaner than it arrived.</p>
+    <dl><div><dt>Design</dt><dd>5 elements, 3 groups</dd></div><div><dt>Coating</dt><dd>9 layers, 0.2 % loss</dd></div><div><dt>Spacing</dt><dd>held to 5 µm</dd></div></dl>
+  </section>
+  <section class="ch" id="c5">
+    <p class="eyebrow"><b>05</b><i></i>Iris</p>
+    <h2>Eleven blades, one circle.</h2>
+    <p>The iris decides how much of the beam gets through. Ours stays round from T1.4 to T16, so the highlights behind your subject stay round too.</p>
+    <dl><div><dt>Blades</dt><dd>11, blued steel</dd></div><div><dt>Range</dt><dd>T1.4 to T16</dd></div><div><dt>Ring</dt><dd>stepless, 0.8 mod</dd></div></dl>
+  </section>
+  <section class="ch" id="c6">
+    <p class="eyebrow"><b>06</b><i></i>Image</p>
+    <h2>And then it is the moon.</h2>
+    <p>Every grain of light lands where it belongs. Lyse 50 mm T1.4, shipping in sets of four.</p>
+    <dl><div><dt>Image circle</dt><dd>46.3 mm</dd></div><div><dt>Close focus</dt><dd>0.45 m</dd></div><div><dt>Front</dt><dd>95 mm</dd></div><div><dt>Weight</dt><dd>1.42 kg</dd></div></dl>
+    <div class="cta"><button class="btn" id="reserve" type="button">Reserve a set</button><span class="note" id="note" hidden>The list opens 2 March 2027.</span></div>
+  </section>
+</main>
+
+<div class="scale" aria-hidden="true" id="scale"></div>
+<div class="hint" id="hint">Move through the beam<br>Click to fire the shutter</div>
+<pre id="hud" hidden></pre>
+<div id="track"></div>
+
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const canvas = $('#film');
+const gl = canvas.getContext('webgl2', {antialias:false, alpha:false, depth:false, stencil:false, powerPreference:'high-performance'});
+if (!gl || !gl.getExtension('EXT_color_buffer_float')){ document.documentElement.classList.add('nogl'); return; }
+gl.getExtension('OES_texture_float_linear');
+const extT = gl.getExtension('EXT_disjoint_timer_query_webgl2');
+const coarse = matchMedia('(pointer:coarse)').matches;
+const calm = matchMedia('(prefers-reduced-motion:reduce)').matches;
+const SIM = coarse ? 384 : 512, NP = SIM*SIM;
+
+/* ------------------------------------------------------------------ the bench (world units: 1 = 10 cm) */
+const AY = 1.2, SX = 7, IX = 3.6, C0 = 1.6;
+const LENS = [
+  {x:-7,  f:2.4,  a:1.0, o:1.10, m:1, tc:.42, s1:.16,  s2:.16,  str:.20},
+  {x:-3,  f:1,    a:.62, o:.72,  m:2, tc:.30, s1:.11,  s2:.11,  str:.16},
+  {x:2.4, f:2.4,  a:.46, o:.52,  m:0, tc:.20, s1:.08,  s2:.05,  str:.12},
+  {x:3.0, f:-1.8, a:.36, o:.42,  m:0, tc:.06, s1:-.05, s2:-.05, str:.10},
+  {x:4.2, f:-.8,  a:.36, o:.42,  m:0, tc:.05, s1:-.07, s2:-.04, str:.11},
+  {x:4.8, f:1.4,  a:.56, o:.62,  m:0, tc:.24, s1:.06,  s2:.12,  str:.13},
+  {x:5.3, f:1,    a:.58, o:.64,  m:3, tc:.20, s1:.10,  s2:.02,  str:.12},
+];
+const fl = v => { const s = String(v); return /[.e]/.test(s) ? s : s + '.'; };
+const garr = k => `float[7](${LENS.map(l => fl(l[k])).join(',')})`;
+const D2R = Math.PI/180;
+const PRISM = { cx:-.5, cy:.937, s:1.2, hz:.42, a1:130.5*D2R, a2:10.5*D2R };
+const COMMON = `
+const float AY=${fl(AY)}, SX=${fl(SX)}, IX=${fl(IX)}, C0=${fl(C0)}, SRCX=-11.25, R0=.5, R1=.333, DUST=.14;
+const int SIM=${SIM};
+const float LX[7]=${garr('x')}; const float LF[7]=${garr('f')}; const float LR[7]=${garr('a')}; const float LO[7]=${garr('o')};
+const int LM[7]=int[7](${LENS.map(l=>l.m).join(',')});
+const vec2 PC=vec2(${fl(PRISM.cx)},${fl(PRISM.cy)});
+const vec2 PN1=vec2(${Math.cos(PRISM.a1).toFixed(5)},${Math.sin(PRISM.a1).toFixed(5)});
+const vec2 PN2=vec2(${Math.cos(PRISM.a2).toFixed(5)},${Math.sin(PRISM.a2).toFixed(5)});
+const float PA=${(PRISM.s/(2*Math.sqrt(3))).toFixed(5)}, PS=${fl(PRISM.s/2)}, PHZ=${fl(PRISM.hz)};
+const vec3 BG=vec3(.0030,.0034,.0042);
+vec4 hash42(vec2 p){ vec4 p4 = fract(vec4(p.xyxy)*vec4(.1031,.1030,.0973,.1099)); p4 += dot(p4, p4.wzxy+33.33); return fract((p4.xxyz+p4.yzzw)*p4.zywx); }
+`;
+const LFIELD = `
+uniform sampler2D tLF;
+vec3 lightField(vec3 p){
+  float u = (p.x+13.)/22.;
+  vec3 t = textureLod(tLF, vec2(u, clamp(p.z/6.+.5, .02, .98)*.5), 0.).rgb;
+  vec3 s = textureLod(tLF, vec2(u, .5+clamp(p.y/3., .02, .98)*.5), 0.).rgb;
+  return min(sqrt(t*s), vec3(6.));
+}
+vec3 topGlow(vec2 xz){
+  float u = (xz.x+13.)/22.; vec3 a = vec3(0.);
+  a += textureLod(tLF, vec2(u, clamp(xz.y/6.+.5, .02, .98)*.5), 0.).rgb*.30;
+  a += textureLod(tLF, vec2(u, clamp((xz.y+.3)/6.+.5, .02, .98)*.5), 0.).rgb*.20;
+  a += textureLod(tLF, vec2(u, clamp((xz.y-.3)/6.+.5, .02, .98)*.5), 0.).rgb*.20;
+  a += textureLod(tLF, vec2(u, clamp((xz.y+.75)/6.+.5, .02, .98)*.5), 0.).rgb*.15;
+  a += textureLod(tLF, vec2(u, clamp((xz.y-.75)/6.+.5, .02, .98)*.5), 0.).rgb*.15;
+  return a;
+}`;
+const ENV = `
+vec3 env(vec3 R, float ro){
+  float a = smoothstep(.45-ro, .8+ro, R.y)*(1.-smoothstep(.10+ro*.5, .28+ro, abs(R.z-.3)));
+  float b = smoothstep(-ro, .35+ro, R.y)*(1.-smoothstep(.06+ro*.5, .2+ro, abs(R.z+.8)));
+  return vec3(.80,.90,1.)*a*1.3 + vec3(1.,.78,.55)*b*.5 + vec3(.02,.024,.03)*smoothstep(-.3,.7,R.y);
+}`;
+
+/* ------------------------------------------------------------------ tiny GL layer */
+function shader(type, src){
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)){ const log = gl.getShaderInfoLog(s); console.error(log, '\n', src.split('\n').map((l,i)=>(i+1)+': '+l).join('\n')); throw new Error(log); }
+  return s;
+}
+function prog(vs, fs){
+  const p = gl.createProgram();
+  gl.attachShader(p, shader(gl.VERTEX_SHADER, '#version 300 es\nprecision highp float; precision highp int; precision highp sampler2D;\n'+vs));
+  gl.attachShader(p, shader(gl.FRAGMENT_SHADER, '#version 300 es\nprecision highp float; precision highp int; precision highp sampler2D;\n'+fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for (let i=0;i<n;i++){ const info = gl.getActiveUniform(p, i); u[info.name.replace(/\[0\]$/,'')] = { loc:gl.getUniformLocation(p, info.name), type:info.type }; }
+  return { p, u };
+}
+function use(P, vals){
+  gl.useProgram(P.p); let unit = 0;
+  for (const k in vals){
+    const U = P.u[k]; if (!U) continue; const v = vals[k];
+    switch (U.type){
+      case gl.FLOAT: gl.uniform1f(U.loc, v); break;
+      case gl.FLOAT_VEC2: gl.uniform2fv(U.loc, v); break;
+      case gl.FLOAT_VEC3: gl.uniform3fv(U.loc, v); break;
+      case gl.FLOAT_VEC4: gl.uniform4fv(U.loc, v); break;
+      case gl.FLOAT_MAT3: gl.uniformMatrix3fv(U.loc, false, v); break;
+      case gl.FLOAT_MAT4: gl.uniformMatrix4fv(U.loc, false, v); break;
+      case gl.SAMPLER_2D: gl.activeTexture(gl.TEXTURE0+unit); gl.bindTexture(gl.TEXTURE_2D, v); gl.uniform1i(U.loc, unit++); break;
+    }
+  }
+}
+function tex(w, h, ifmt, type, filter){
+  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texImage2D(gl.TEXTURE_2D, 0, ifmt, w, h, 0, gl.RGBA, type, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+function fbo(texs, depthRB, colorRB){
+  const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f);
+  texs.forEach((t,i) => gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0+i, gl.TEXTURE_2D, t, 0));
+  if (colorRB) gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, colorRB);
+  if (depthRB) gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRB);
+  if (texs.length > 1) gl.drawBuffers(texs.map((_,i) => gl.COLOR_ATTACHMENT0+i));
+  const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+  return { f, ok };
+}
+function rb(w, h, fmt, samples){
+  const r = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, r);
+  if (samples) gl.renderbufferStorageMultisample(gl.RENDERBUFFER, samples, fmt, w, h); else gl.renderbufferStorage(gl.RENDERBUFFER, fmt, w, h);
+  return r;
+}
+const FSV = `out vec2 vUv; void main(){ vec2 p = vec2(gl_VertexID==1?3.:-1., gl_VertexID==2?3.:-1.); vUv = p*.5+.5; gl_Position = vec4(p,0.,1.); }`;
+
+/* ------------------------------------------------------------------ simulation: grains are light, and the glass really bends them */
+const pSim = prog(FSV, `
+uniform sampler2D tPos, tVel;
+uniform float uDt, uTime, uInit, uKillX, uPrismZ, uIris, uPush, uBurst;
+uniform vec3 uRayO, uRayD, uDustC, uShare;
+layout(location=0) out vec4 oPos; layout(location=1) out vec4 oVel;
+${COMMON}
+void spawn(out vec4 P, out vec4 V, vec4 h1, vec4 h2, vec4 r, float wait){
+  float rr = pow(r.x, .52), th = 6.2831853*r.y; vec2 d = vec2(cos(th), sin(th))*rr;
+  float x = SRCX, R = R0, e = h2.z;
+  if (e < uShare.z && rr*.4375 < 1.75*uIris){ x = 4.86; R = .4375; }
+  else if (e < uShare.z+uShare.y){ x = 2.2; R = R1; }
+  else if (e < uShare.z+uShare.y+uShare.x){ x = -2.94; R = R1; }
+  P = vec4(x, AY+d.x*R, d.y*R, -wait);
+  V = vec4(C0*(.9+.2*h1.y), 0., 0., 4.);
+}
+void main(){
+  ivec2 id = ivec2(gl_FragCoord.xy);
+  vec4 P = texelFetch(tPos, id, 0), V = texelFetch(tVel, id, 0);
+  vec4 h1 = hash42(gl_FragCoord.xy), h2 = hash42(gl_FragCoord.xy+71.3);
+  vec4 r = hash42(gl_FragCoord.xy + vec2(mod(uTime,61.)*131.7, mod(uTime,47.)*71.9));
+  if (h1.w < DUST){
+    float life = 9.+9.*h2.x;
+    if (uInit > .5 || P.w > life || abs(P.x-uDustC.x) > 7.5){
+      P = vec4(uDustC.x+(r.x-.5)*14., .05+r.y*r.y*3.2, (r.z-.5)*7., uInit > .5 ? r.w*life : 0.); V = vec4(0.);
+    }
+    vec3 p = P.xyz; float t = uTime*.12;
+    vec3 f = vec3(sin(p.y*1.3+t)+cos(p.z*1.1-t), sin(p.z*1.2-t)+cos(p.x*.9+t), sin(p.x*1.4+t)+cos(p.y-t))*.035;
+    f.y -= .004;
+    vec3 w = p-uRayO; vec3 dl = w-uRayD*dot(w,uRayD);
+    f += normalize(dl+1e-5)*exp(-dot(dl,dl)/.25)*(uPush*.5+uBurst*5.);
+    V.xyz = mix(V.xyz, f, 1.-exp(-uDt*1.6));
+    P.xyz += V.xyz*uDt; P.w += uDt; P.y = max(P.y, .02);
+    oPos = P; oVel = V; return;
+  }
+  if (uInit > .5){ spawn(P, V, h1, h2, r, r.w*7.); oPos = P; oVel = V; return; }
+  float st = V.w, age = P.w;
+  if (st > 3.5 && st < 4.5){ age += uDt; if (age >= 0.){ st = 0.; age = 0.; } oPos = vec4(P.xyz, age); oVel = vec4(V.xyz, st); return; }
+  if (st > 1.5){ age += uDt; if (age >= 0.) spawn(P, V, h1, h2, r, r.w*.5); else P.w = age; oPos = P; oVel = V; return; }
+
+  float spd = C0*(.9+.2*h1.y), lam = h1.x;
+  vec3 p0 = P.xyz, v = V.xyz;
+  vec3 w = p0-uRayO; vec3 dl = w-uRayD*dot(w,uRayD);
+  v += normalize(dl+1e-5)*exp(-dot(dl,dl)/.09)*(uPush*1.6+uBurst*16.)*uDt;
+  v = normalize(v)*spd;
+  vec3 p1 = p0+v*uDt;
+  float nst = st, nage = age+uDt; bool done = false;
+
+  for (int i=0;i<7;i++){
+    float lx = LX[i];
+    if (p0.x < lx && p1.x >= lx){
+      float tf = (lx-p0.x)/max(v.x, 1e-4); vec3 ph = p0+v*tf; vec2 h = ph.yz-vec2(AY,0.); float rr = length(h);
+      if (rr > LR[i]){ if (rr < LO[i]){ p1 = ph; v = vec3(0.); nst = 3.; nage = -.3; done = true; } }
+      else {
+        vec2 u = v.yz/max(v.x, 1e-4); int m = LM[i];
+        if (m == 2) u = vec2(0.);
+        else if (m == 3){ float mr = sqrt(h2.x)*.27, ma = 6.2831853*h2.y; vec3 dd = vec3(SX, AY+sin(ma)*mr, cos(ma)*mr)-ph; u = dd.yz/dd.x; }
+        else { float f = LF[i]; if (m == 1) f *= (1.+.075*(lam-.5))/(1.+.3*rr*rr); u -= h/f; }
+        v = normalize(vec3(1.,u))*spd; p1 = ph+v*(uDt-tf);
+      }
+      break;
+    }
+  }
+  if (!done && p0.x < IX && p1.x >= IX){
+    vec3 ph = p0+v*((IX-p0.x)/max(v.x,1e-4)); float rr = length(ph.yz-vec2(AY,0.));
+    if (rr > uIris && rr < .40){ p1 = ph; v = vec3(0.); nst = 3.; nage = -.45; done = true; }
+  }
+  if (!done){
+    vec2 q0 = p0.xy-PC, q1 = p1.xy-PC;
+    float s0 = dot(q0,PN1)-PA, s1 = dot(q1,PN1)-PA;
+    float n = mix(1.68, 1.44, lam);
+    if (nst < .5 && s0 > 0. && s1 <= 0.){
+      float tf = s0/(s0-s1); vec3 ph = mix(p0,p1,tf);
+      if (abs(dot(ph.xy-PC, vec2(-PN1.y,PN1.x))) < PS && abs(ph.z-uPrismZ) < PHZ){
+        v = refract(normalize(v), vec3(PN1,0.), 1./n)*spd; p1 = ph+v*uDt*(1.-tf); nst = 1.; q1 = p1.xy-PC;
+      }
+    }
+    float e0 = dot(q0,PN2)-PA, e1 = dot(q1,PN2)-PA;
+    if (nst > .5 && e0 < 0. && e1 >= 0.){
+      float tf = e0/(e0-e1); vec3 ph = mix(p0,p1,tf);
+      if (abs(dot(ph.xy-PC, vec2(-PN2.y,PN2.x))) < PS && abs(ph.z-uPrismZ) < PHZ){
+        vec3 dn = normalize(v), rf = refract(dn, vec3(-PN2,0.), n);
+        if (dot(rf,rf) < .5) rf = reflect(dn, vec3(-PN2,0.));
+        v = rf*spd; p1 = ph+v*uDt*(1.-tf);
+      }
+    }
+    if (p0.x < SX && p1.x >= SX){
+      vec3 ph = p0+v*((SX-p0.x)/max(v.x,1e-4));
+      if (abs(ph.y-AY) < .5 && abs(ph.z) < .5){ p1 = ph; v = vec3(0.); nst = 2.; nage = -(4.+2.*h2.w); done = true; }
+    }
+    if (!done && p1.y < .006){
+      vec3 ph = mix(p0, p1, clamp((p0.y-.006)/max(p0.y-p1.y,1e-5), 0., 1.)); ph.y = .006;
+      p1 = ph; v = vec3(0.); nage = -(.5+1.3*r.z); nst = nst > .5 ? 5. : 3.; done = true;
+    }
+  }
+  if (!done && (p1.x > 9.5 || abs(p1.z) > 4. || p1.y > 4. || nage > 40. || (p1.x > uKillX+1. && r.w < uDt*4.))){
+    spawn(P, V, h1, h2, r, r.z*.5); oPos = P; oVel = V; return;
+  }
+  oPos = vec4(p1, nage); oVel = vec4(v, nst);
+}`);
+
+/* ------------------------------------------------------------------ grains: one program for the view, the table reflection and the light field */
+const pPart = prog(`
+uniform sampler2D tPos, tVel, tGD;
+uniform mat4 uVP;
+uniform float uPass, uSat, uProj, uFocus, uAp, uMaxPx, uThinPx, uGain, uKillX, uWaveX, uMode, uDustK;
+uniform vec3 uZone;
+out vec3 vCol; out float vBlur;
+${COMMON}
+${LFIELD}
+float H(float n){ return fract(sin(n)*43758.5453); }
+float vnoise(vec3 p){ vec3 i = floor(p), f = fract(p); f = f*f*(3.-2.*f); float n = dot(i, vec3(1.,57.,113.));
+  return mix(mix(mix(H(n),H(n+1.),f.x), mix(H(n+57.),H(n+58.),f.x), f.y), mix(mix(H(n+113.),H(n+114.),f.x), mix(H(n+170.),H(n+171.),f.x), f.y), f.z); }
+float moon(vec2 m){
+  float z = sqrt(max(1.-dot(m,m), 0.)); vec3 N = vec3(m, z);
+  float lam = clamp(dot(N, normalize(vec3(-.62,.28,.6)))*1.3+.06, 0., 1.);
+  float f = vnoise(N*2.3+3.1)*.6+vnoise(N*5.1+1.7)*.3+vnoise(N*11.)*.1;
+  float cr = smoothstep(.70,.80, vnoise(N*21.+9.));
+  return lam*lam*(mix(.10, 1., smoothstep(.38,.62,f))+cr*.3);
+}
+vec3 spectral(float t){
+  vec3 c = vec3(exp(-pow((t-.86)/.34, 2.))+.35*exp(-pow((t-.02)/.09, 2.)), .92*exp(-pow((t-.50)/.27, 2.)), 1.25*exp(-pow((t-.18)/.24, 2.)));
+  return c;
+}
+void main(){
+  ivec2 id = ivec2(gl_VertexID % SIM, gl_VertexID / SIM);
+  vec4 P = texelFetch(tPos, id, 0), V = texelFetch(tVel, id, 0);
+  vec2 fc = vec2(id)+.5; vec4 h1 = hash42(fc), h2 = hash42(fc+71.3);
+  float st = V.w, age = P.w; vec3 col; float b; float fine = 1.;
+  gl_Position = vec4(2.,2.,2.,1.); gl_PointSize = 0.; vCol = vec3(0.); vBlur = 0.;
+  if (h1.w < DUST){
+    if (uMode > 1.5) return;
+    float life = 9.+9.*h2.x;
+    b = smoothstep(0.,1.5,age)*(1.-smoothstep(life-1.5, life, age))*(.35+1.3*h2.y);
+    col = lightField(P.xyz)*uDustK+vec3(.50,.58,.72)*.03;
+  } else {
+    if (st > 3.5 && st < 4.5) return;
+    vec3 sp = spectral(h1.x); vec3 white = mix(vec3(1.,.90,.76), sp*1.5, uSat);
+    if (st < 1.5){
+      float x = P.x; col = st < .5 ? white : mix(white, sp*2.1, 1.-smoothstep(.3, 1.02, P.y));
+      b = x < -3. ? uZone.x : (x < 2.2 ? uZone.y : (x < 4.85 ? uZone.z : 1.));
+      b *= 1.-smoothstep(uKillX, uKillX+1., x);
+      b *= 1.+3.*exp(-pow((x-uWaveX)/.35, 2.));
+      float rr = length(P.yz-vec2(AY,0.)), g = 0.;
+      for (int i=0;i<7;i++) g += (1.-smoothstep(.02,.17,abs(x-LX[i])))*step(rr, LR[i]);
+      b *= 1.+1.4*g; if (x > 5.3) b *= .4;
+    } else if (st < 2.5){
+      float life = 4.+2.*h2.w;
+      float ma = 6.2831853*h2.y; vec2 m = vec2(cos(ma), sin(ma))*sqrt(h2.x);
+      col = vec3(.80,.87,1.); b = moon(m)*1.0*clamp(-age/1.2, 0., 1.)*smoothstep(0., .3, life+age); fine = .8;
+    } else {
+      col = st > 4.5 ? sp*2.1 : white; b = clamp(-age*1.4, 0., 1.)*(st > 4.5 ? .75 : .8);
+    }
+  }
+  if (uMode > 1.5){
+    float u = (P.x+13.)/22.*2.-1.;
+    gl_Position = vec4(u, uMode < 2.5 ? P.z/3. : P.y/3.*2.-1., 0., 1.); gl_PointSize = 3.; vCol = col*b*uGain; return;
+  }
+  vec4 clip = uVP*vec4(P.xyz, 1.); float z = clip.w;
+  if (z < .1) return;
+  if (uPass < 1.5){
+    vec3 nd = clip.xyz/z*.5+.5; float gd = texture(tGD, nd.xy).r;
+    bool front = gd < 1. && nd.z < gd;
+    if (front != (uPass > .5)) return;
+  }
+  float base = .0030*(.55+.9*h1.z)*fine*uProj/z;
+  float coc = uAp*uProj*abs(1./uFocus-1./z)*.011;
+  float want = sqrt(base*base+coc*coc), e = 1.;
+  if (want > uThinPx){ float p = max(uThinPx*uThinPx/(want*want), .012); float w = 1.-smoothstep(p*.6, p, h2.w); if (w <= 0.) return; e = w/(.8*p); }
+  float size = clamp(want, 1.3, uMaxPx);
+  e *= base*base/(want*want)*pow(min(want/1.3, 1.), 1.15);
+  vBlur = smoothstep(.6, 2.2, coc/max(base, 1.3));
+  gl_Position = clip; gl_PointSize = size; vCol = col*b*e*uGain;
+}`, `
+in vec3 vCol; in float vBlur; out vec4 o;
+void main(){
+  vec2 c = gl_PointCoord*2.-1.; float r2 = dot(c,c); if (r2 > 1.) discard;
+  float core = exp(-r2*3.)*1.25, disc = (1.-smoothstep(.8,1.,r2))*(.7+.3*smoothstep(.35,.95,r2))*.42;
+  o = vec4(vCol*mix(core, disc, vBlur), 1.);
+}`);
+
+/* ------------------------------------------------------------------ the set: table, metal, iris, glass */
+const MV = `
+layout(location=0) in vec3 aPos; layout(location=1) in vec3 aNrm; layout(location=2) in float aMat;
+uniform mat4 uVP; uniform vec3 uOff;
+out vec3 vW; out vec3 vN; out float vMat;
+void main(){ vW = aPos+uOff; vN = aNrm; vMat = aMat; gl_Position = uVP*vec4(vW,1.); }`;
+const pTable = prog(MV, `
+in vec3 vW; out vec4 o;
+uniform vec3 uCam; uniform vec2 uRes; uniform sampler2D tRefl; uniform float uReflOn;
+${COMMON}
+${LFIELD}
+${ENV}
+void main(){
+  vec3 P = vW; vec3 Vd = uCam-P; float dist = length(Vd); vec3 V = Vd/dist;
+  vec2 g = P.xz/.25; vec2 cell = fract(g)-.5; float d = length(cell)*.25;
+  float aa = fwidth(d)*1.1+1e-5;
+  float fade = 1.-smoothstep(.10, .34, fwidth(g.x)+fwidth(g.y));
+  float hole = (1.-smoothstep(.030-aa, .030+aa, d))*fade;
+  float ring = smoothstep(.030-aa, .030+aa, d)*(1.-smoothstep(.040-aa, .040+aa, d))*fade;
+  float n = hash42(floor(P.xz*vec2(420.,38.))).x;
+  vec3 E = topGlow(P.xz), Ls = lightField(vec3(P.x, .03, P.z));
+  vec3 alb = vec3(.020,.021,.023)*(.9+.2*n);
+  vec3 col = alb*(E*.55+Ls*2.4+vec3(.05,.055,.065));
+  float fres = .035+.75*pow(1.-V.y, 4.);
+  vec3 R = reflect(-V, normalize(vec3((n-.5)*.03, 1., 0.)));
+  col += env(R, .30)*fres*.22;
+  if (uReflOn > .5){
+    vec2 suv = gl_FragCoord.xy/uRes; float sp = (.004+.010*n)*clamp(2./dist, .2, 1.5);
+    vec3 rf = texture(tRefl, suv).rgb*.4+texture(tRefl, suv+vec2(0.,sp)).rgb*.2+texture(tRefl, suv-vec2(0.,sp)).rgb*.2
+            + texture(tRefl, suv+vec2(0.,sp*2.4)).rgb*.1+texture(tRefl, suv-vec2(0.,sp*2.4)).rgb*.1;
+    col += rf*fres*.9;
+  }
+  col = mix(col, col*.12, hole);
+  col += (E*.5+Ls*3.)*ring*.035+ring*env(R,.2)*.03;
+  col = mix(col, BG, smoothstep(5., 24., dist));
+  o = vec4(col, 1.);
+}`);
+const pMetal = prog(MV, `
+in vec3 vW; in vec3 vN; in float vMat; out vec4 o;
+uniform vec3 uCam;
+${COMMON}
+${LFIELD}
+${ENV}
+void main(){
+  vec3 N = normalize(vN); vec3 Vd = uCam-vW; float dist = length(Vd); vec3 V = Vd/dist;
+  if (dot(N,V) < 0.) N = -N;
+  float F = pow(1.-max(dot(N,V),0.), 5.); vec3 R = reflect(-V,N);
+  vec3 toAx = vec3(0., AY-vW.y, -vW.z); float da = length(toAx)+1e-4;
+  vec3 L = lightField(vW+toAx*.8)*(.3+.7*max(dot(N,toAx/da),0.))/(1.+2.*da*da);
+  L += topGlow(vW.xz)*.12*(.5-.5*N.y)/(1.+vW.y*vW.y);
+  vec3 col;
+  if (vMat < .5) col = vec3(.009,.0095,.011)+L*.045+env(R,.22)*(.03+.5*F);
+  else if (vMat < 1.5) col = env(R,.07)*vec3(.60,.63,.68)*(.45+.55*F)+L*.3+vec3(.003);
+  else col = vec3(.004)+L*.006+env(R,.3)*(.01+.2*F);
+  col = mix(col, BG, smoothstep(7., 28., dist));
+  o = vec4(col, 1.);
+}`);
+const pIris = prog(MV, `
+in vec3 vW; out vec4 o;
+uniform vec3 uCam; uniform float uIris, uRot;
+${COMMON}
+${LFIELD}
+${ENV}
+void main(){
+  vec2 p = vec2(vW.y-AY, vW.z); if (length(p) > .318) discard;
+  float mx = -1., line = 1.;
+  for (int k=0;k<11;k++){
+    float a = uRot+float(k)*.5711987; vec2 n = vec2(cos(a), sin(a));
+    float d = dot(p,n)-uIris; mx = max(mx, d);
+    if (dot(p, vec2(-n.y,n.x)) > -uIris*.2936) line = min(line, abs(d));
+  }
+  float aa = fwidth(mx)+1e-5, cov = smoothstep(-aa, aa, mx);
+  if (cov <= 0.) discard;
+  vec3 V = normalize(uCam-vW); vec3 N = vec3(V.x < 0. ? -1. : 1., 0., 0.);
+  vec3 R = reflect(-V, N);
+  vec3 L = lightField(vec3(IX-.06, vW.y, vW.z))+lightField(vec3(IX-.3, AY, 0.))*.25;
+  vec3 col = vec3(.006,.007,.010)+env(R,.25)*.05+L*(V.x < 0. ? .06 : .012);
+  col += (vec3(.03,.035,.045)+L*.08)*(1.-smoothstep(0., fwidth(line)*1.6, line))*smoothstep(0., .004, mx);
+  o = vec4(col, cov);
+}`);
+const pGlass = prog(MV, `
+in vec3 vW; in vec3 vN; out vec4 o;
+uniform vec3 uCam, uTint; uniform vec2 uRes; uniform mat3 uViewR; uniform sampler2D tA, tGD; uniform float uStr, uBack, uMilk, uScat, uCoat;
+${COMMON}
+${LFIELD}
+${ENV}
+vec3 coat(float ndv){ return mix(vec3(1.), mix(vec3(.62,.30,1.), vec3(.30,.95,.62), smoothstep(.25,.85,ndv))*1.5, uCoat); }
+void main(){
+  vec3 N = normalize(vN); vec3 Vd = uCam-vW; float dist = length(Vd); vec3 V = Vd/dist;
+  if (uBack > .5){
+    N = -N; float ndv = max(dot(N,V),0.); float F = .04+.96*pow(1.-ndv,5.);
+    o = vec4(env(reflect(-V,N), .03)*coat(ndv)*F*.45, 1.); return;
+  }
+  float ndv = max(dot(N,V),0.);
+  float F = .04+.96*pow(1.-ndv, 5.);
+  vec3 refl = env(reflect(-V,N), .03)*coat(ndv)*F*1.25+lightField(vW)*uScat+vec3(uMilk);
+  /* only the glass nearest the eye bends the background; anything behind it keeps its reflections */
+  if (gl_FragCoord.z > texelFetch(tGD, ivec2(gl_FragCoord.xy), 0).r+3e-5){ o = vec4(refl, 1.); return; }
+  vec3 Nv = uViewR*N; vec2 suv = gl_FragCoord.xy/uRes;
+  vec2 off = -Nv.xy*uStr*clamp(2.6/dist, .15, 1.6); off.x *= uRes.y/uRes.x;
+  vec3 base = texture(tA, suv).rgb;
+  vec3 rf = vec3(texture(tA, suv+off*.985).r, texture(tA, suv+off).g, texture(tA, suv+off*1.02).b);
+  float T = mix(1., .22, pow(1.-ndv, 3.));
+  o = vec4(refl+T*(uTint*rf-base), T);
+}`);
+
+const pDepth = prog(MV, `void main(){}`);
+
+/* ------------------------------------------------------------------ post */
+const pDown0 = prog(FSV, `
+in vec2 vUv; out vec4 o; uniform sampler2D tA, tG; uniform vec2 uTexel;
+vec3 s(vec2 d){ vec2 u = vUv+d*uTexel; vec4 g = texture(tG, u); return max(texture(tA, u).rgb*g.a+g.rgb, 0.); }
+void main(){ vec3 c = (s(vec2(-1,-1))+s(vec2(1,-1))+s(vec2(-1,1))+s(vec2(1,1)))*.25; c = min(c, vec3(30.));
+  float l = max(c.r, max(c.g, c.b)); o = vec4(c*smoothstep(.04, .9, l), 1.); }`);
+const pDown = prog(FSV, `
+in vec2 vUv; out vec4 o; uniform sampler2D tS; uniform vec2 uTexel;
+void main(){ o = vec4((texture(tS, vUv+vec2(-1,-1)*uTexel).rgb+texture(tS, vUv+vec2(1,-1)*uTexel).rgb+texture(tS, vUv+vec2(-1,1)*uTexel).rgb+texture(tS, vUv+vec2(1,1)*uTexel).rgb)*.25, 1.); }`);
+const pUp = prog(FSV, `
+in vec2 vUv; out vec4 o; uniform sampler2D tLow, tCur; uniform vec2 uTexel;
+void main(){ vec3 l = (texture(tLow, vUv+vec2(-.5,-.5)*uTexel).rgb+texture(tLow, vUv+vec2(.5,-.5)*uTexel).rgb+texture(tLow, vUv+vec2(-.5,.5)*uTexel).rgb+texture(tLow, vUv+vec2(.5,.5)*uTexel).rgb)*.25;
+  o = vec4(texture(tCur, vUv).rgb+l, 1.); }`);
+const pComp = prog(FSV, `
+in vec2 vUv; out vec4 o; uniform sampler2D tA, tG, tB; uniform float uExp, uTime, uBloom;
+${COMMON}
+vec3 aces(vec3 x){ return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14), 0., 1.); }
+void main(){
+  vec4 g = texture(tG, vUv);
+  vec3 c = max(texture(tA, vUv).rgb*g.a+g.rgb, 0.)+texture(tB, vUv).rgb*uBloom;
+  vec2 d = vUv-.5; c *= 1.-dot(d,d)*.9;
+  c = aces(c*uExp); c = pow(c, vec3(1./2.2));
+  c += (hash42(gl_FragCoord.xy+fract(uTime)*211.).x-.5)*.018;
+  o = vec4(c, 1.);
+}`);
+
+/* ------------------------------------------------------------------ geometry */
+const VB = [];
+function tri(a,b,c,na,nb,nc,m){
+  const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
+  const gx=uy*vz-uz*vy, gy=uz*vx-ux*vz, gz=ux*vy-uy*vx;
+  if (gx*(na[0]+nb[0]+nc[0])+gy*(na[1]+nb[1]+nc[1])+gz*(na[2]+nb[2]+nc[2]) < 0){ let t=b; b=c; c=t; t=nb; nb=nc; nc=t; }
+  VB.push(a[0],a[1],a[2],na[0],na[1],na[2],m, b[0],b[1],b[2],nb[0],nb[1],nb[2],m, c[0],c[1],c[2],nc[0],nc[1],nc[2],m);
+}
+function quad(a,b,c,d,na,nb,nc,nd,m){ tri(a,b,c,na,nb,nc,m); tri(a,c,d,na,nc,nd,m); }
+function lathe(cx, prof, segs, m, closed, ay=AY, az=0){
+  const n = prof.length, ne = closed ? n : n-1, en = [];
+  for (let e=0;e<ne;e++){ const a = prof[e], b = prof[(e+1)%n]; const dx = b[0]-a[0], dr = b[1]-a[1], l = Math.hypot(dx,dr)||1; en.push([-dr/l, dx/l]); }
+  const vn = (e, end) => { let o = end ? e+1 : e-1; if (closed) o = (o+ne)%ne; if (o < 0 || o >= ne) return en[e];
+    const a = en[e], b = en[o]; if (a[0]*b[0]+a[1]*b[1] < .75) return a; const x = a[0]+b[0], y = a[1]+b[1], l = Math.hypot(x,y); return [x/l, y/l]; };
+  const TAU = Math.PI*2;
+  for (let e=0;e<ne;e++){
+    const A = prof[e], B = prof[(e+1)%n], nA = vn(e,0), nB = vn(e,1);
+    for (let s=0;s<segs;s++){
+      const t0 = s/segs*TAU, t1 = (s+1)/segs*TAU;
+      const Pt = (p,t) => [cx+p[0], ay+p[1]*Math.cos(t), az+p[1]*Math.sin(t)], Nt = (q,t) => [q[0], q[1]*Math.cos(t), q[1]*Math.sin(t)];
+      quad(Pt(A,t0),Pt(B,t0),Pt(B,t1),Pt(A,t1), Nt(nA,t0),Nt(nB,t0),Nt(nB,t1),Nt(nA,t1), m);
+    }
+  }
+}
+function box(cx,cy,cz,sx,sy,sz,m,rot=0){
+  const c = Math.cos(rot), s = Math.sin(rot);
+  const R = (x,y,z) => [cx+x*c-y*s, cy+x*s+y*c, cz+z], Nn = (x,y,z) => [x*c-y*s, x*s+y*c, z];
+  const hx = sx/2, hy = sy/2, hz = sz/2;
+  const F = [[[1,0,0],[0,1,0],[0,0,1]],[[-1,0,0],[0,1,0],[0,0,1]],[[0,1,0],[1,0,0],[0,0,1]],[[0,-1,0],[1,0,0],[0,0,1]],[[0,0,1],[1,0,0],[0,1,0]],[[0,0,-1],[1,0,0],[0,1,0]]];
+  for (const [n,u,v] of F){
+    const p = (a,b) => R((n[0]+u[0]*a+v[0]*b)*hx, (n[1]+u[1]*a+v[1]*b)*hy, (n[2]+u[2]*a+v[2]*b)*hz), nn = Nn(n[0],n[1],n[2]);
+    quad(p(-1,-1),p(1,-1),p(1,1),p(-1,1), nn,nn,nn,nn, m);
+  }
+}
+function cylY(cx,cz,y0,y1,r,segs,m){
+  const TAU = Math.PI*2;
+  for (let s=0;s<segs;s++){
+    const t0 = s/segs*TAU, t1 = (s+1)/segs*TAU, c0 = Math.cos(t0), s0 = Math.sin(t0), c1 = Math.cos(t1), s1 = Math.sin(t1);
+    quad([cx+r*c0,y0,cz+r*s0],[cx+r*c1,y0,cz+r*s1],[cx+r*c1,y1,cz+r*s1],[cx+r*c0,y1,cz+r*s0], [c0,0,s0],[c1,0,s1],[c1,0,s1],[c0,0,s0], m);
+    tri([cx,y1,cz],[cx+r*c0,y1,cz+r*s0],[cx+r*c1,y1,cz+r*s1], [0,1,0],[0,1,0],[0,1,0], m);
+  }
+}
+const lensProf = (l, n=16) => { const p = []; for (let i=0;i<=n;i++){ const r = l.a*i/n; p.push([-l.tc/2+l.s1*(r/l.a)**2, r]); }
+  for (let i=n;i>=0;i--){ const r = l.a*i/n; p.push([l.tc/2-l.s2*(r/l.a)**2, r]); } return p; };
+const ringProf = (ri, ro, hw) => [[-hw,ri],[-hw,ro],[hw,ro],[hw,ri]];
+const mark = () => VB.length/7;
+const range = fn => { const s = mark(); fn(); return { s, n: mark()-s }; };
+
+const gTable = range(() => { const u = [0,1,0]; quad([-70,0,-70],[70,0,-70],[70,0,70],[-70,0,70], u,u,u,u, 0); });
+const gMetal = range(() => {
+  lathe(-12.45, ringProf(.56,.66,1.2), 72, 0, true);
+  lathe(-11.3, ringProf(.66,.77,.05), 72, 0, true);
+  lathe(-13.4, [[0,0],[0,.57]], 48, 2, false);
+  for (const x of [-13.1,-11.7]){ cylY(x,0,.04,AY-.65,.045,20,1); box(x,.02,0,.36,.04,.6,0); }
+  LENS.forEach((l, i) => {
+    const te = l.tc-l.s1-l.s2, stack = i >= 2;
+    lathe(l.x, ringProf(l.a-.012, l.o, stack ? Math.max(te/2+.03, .045) : te/2+.05), 72, 0, true);
+    cylY(l.x,0,.04,AY-l.o+.01,stack ? .034 : .045,20,1); box(l.x,.02,0,stack ? .26 : .34,.04,stack ? .44 : .56,0);
+  });
+  lathe(IX, ringProf(.312,.40,.04), 72, 0, true);
+  cylY(IX,0,.04,AY-.39,.034,20,1); box(IX,.02,0,.26,.04,.44,0);
+  const fx = SX+.016;
+  box(fx,AY+.53,0,.05,.05,1.11,2); box(fx,AY-.53,0,.05,.05,1.11,2); box(fx,AY,.53,.05,1.01,.05,2); box(fx,AY,-.53,.05,1.01,.05,2);
+  cylY(fx,0,.04,AY-.55,.045,20,1); box(fx,.02,0,.34,.04,.56,0);
+  box(-.6,.03,-.75,.2,.06,2.7,0);
+});
+const prismV = [70.5,190.5,310.5].map(a => [PRISM.cx+PRISM.s/Math.sqrt(3)*Math.cos(a*D2R), PRISM.cy+PRISM.s/Math.sqrt(3)*Math.sin(a*D2R)]);
+const bis = [Math.cos(70.5*D2R), Math.sin(70.5*D2R)], apo = PRISM.s/(2*Math.sqrt(3));
+const padC = [PRISM.cx-bis[0]*(apo+.016), PRISM.cy-bis[1]*(apo+.016)];
+const gCarrier = range(() => {
+  box(padC[0],padC[1],0,.6,.03,.7,0,-19.5*D2R);
+  cylY(-.6,0,.1,padC[1]-.02,.04,20,1); box(-.6,.085,0,.3,.05,.3,0);
+});
+const gIris = range(() => { const n = [-1,0,0]; quad([IX,AY-.32,-.32],[IX,AY+.32,-.32],[IX,AY+.32,.32],[IX,AY-.32,.32], n,n,n,n, 0); });
+const glass = LENS.map(l => ({ r: range(() => lathe(l.x, lensProf(l), 72, 0, false)), c:[l.x,AY,0], str:l.str, tint:[.97,.985,1], milk:0, sc:.03, coat:.7, mov:0 }));
+glass.push({ r: range(() => {
+  for (let i=0;i<3;i++){ const a = prismV[i], b = prismV[(i+1)%3]; let nx = b[1]-a[1], ny = a[0]-b[0]; const l = Math.hypot(nx,ny); nx/=l; ny/=l;
+    const mx = (a[0]+b[0])/2-PRISM.cx, my = (a[1]+b[1])/2-PRISM.cy; if (nx*mx+ny*my < 0){ nx=-nx; ny=-ny; }
+    const n = [nx,ny,0]; quad([a[0],a[1],-PRISM.hz],[b[0],b[1],-PRISM.hz],[b[0],b[1],PRISM.hz],[a[0],a[1],PRISM.hz], n,n,n,n, 0); }
+  for (const z of [-PRISM.hz, PRISM.hz]){ const n = [0,0,Math.sign(z)]; tri([prismV[0][0],prismV[0][1],z],[prismV[1][0],prismV[1][1],z],[prismV[2][0],prismV[2][1],z], n,n,n, 0); }
+}), c:[PRISM.cx,PRISM.cy,0], str:.10, tint:[.96,.985,1], milk:0, sc:.02, coat:.12, mov:1 });
+glass.push({ r: range(() => box(SX+.016,AY,0,.02,1.01,1.01,0)), c:[SX,AY,0], str:.02, tint:[.93,.95,.97], milk:.0008, sc:.004, coat:.3, mov:0 });
+
+const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(VB), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 28, 0);
+gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 28, 12);
+gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 28, 24);
+const vaoNone = gl.createVertexArray();
+VB.length = 0;
+
+/* ------------------------------------------------------------------ fixed size targets */
+const simT = [0,1].map(() => { const p = tex(SIM,SIM,gl.RGBA32F,gl.FLOAT,gl.NEAREST), v = tex(SIM,SIM,gl.RGBA32F,gl.FLOAT,gl.NEAREST); return { p, v, f: fbo([p,v]).f }; });
+let simI = 0;
+const lfTex = tex(512,256,gl.RGBA16F,gl.HALF_FLOAT,gl.LINEAR), lfF = fbo([lfTex]).f;
+
+/* ------------------------------------------------------------------ quality tiers: resolution goes last, and never below what stays crisp */
+const TIERS = [
+  { dpr:2.0,  frac:1.0, refl:1, ms:4 },
+  { dpr:1.5,  frac:1.0, refl:1, ms:4 },
+  { dpr:1.5,  frac:1.0, refl:1, ms:0 },
+  { dpr:1.25, frac:.7,  refl:1, ms:0 },
+  { dpr:1.0,  frac:.5,  refl:0, ms:0 },
+  { dpr:.8,   frac:.35, refl:0, ms:0 },
+];
+let tier = 1, W = 1, H = 1, scale = 1, R = null, msOK = true;
+function free(r){ if (!r) return; r.tx.forEach(t => gl.deleteTexture(t)); r.rb.forEach(b => gl.deleteRenderbuffer(b)); r.fb.forEach(f => gl.deleteFramebuffer(f)); }
+function resize(){
+  const q = TIERS[tier], cw = innerWidth, ch = innerHeight;
+  let s = Math.min(window.devicePixelRatio || 1, q.dpr);
+  const budget = 3.4e6; if (cw*ch*s*s > budget) s = Math.sqrt(budget/(cw*ch));
+  scale = s; W = Math.max(2, Math.round(cw*s)); H = Math.max(2, Math.round(ch*s));
+  canvas.width = W; canvas.height = H;
+  free(R);
+  const r = R = { tx:[], rb:[], fb:[] };
+  const T = (w,h) => { const t = tex(w,h,gl.RGBA16F,gl.HALF_FLOAT,gl.LINEAR); r.tx.push(t); return t; };
+  const B = (fmt, smp) => { const b = rb(W,H,fmt,smp); r.rb.push(b); return b; };
+  const Fb = (t, d, c) => { const f = fbo(t, d, c); r.fb.push(f.f); return f; };
+  r.aTex = T(W,H); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT); r.aDepth = B(gl.DEPTH_COMPONENT24, 0); r.aF = Fb([r.aTex], r.aDepth).f;
+  r.gTex = T(W,H); r.gF = Fb([r.gTex], r.aDepth).f;
+  r.dw = W; r.dh = H; r.gdTex = gl.createTexture(); r.tx.push(r.gdTex); gl.bindTexture(gl.TEXTURE_2D, r.gdTex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT24, r.dw, r.dh, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  r.gdF = gl.createFramebuffer(); r.fb.push(r.gdF); gl.bindFramebuffer(gl.FRAMEBUFFER, r.gdF);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, r.gdTex, 0); gl.drawBuffers([gl.NONE]); gl.readBuffer(gl.NONE);
+  r.ms = 0;
+  if (q.ms && msOK){
+    const smp = Math.min(q.ms, gl.getParameter(gl.MAX_SAMPLES));
+    const c1 = B(gl.RGBA16F, smp), d1 = B(gl.DEPTH_COMPONENT24, smp), c2 = B(gl.RGBA16F, smp);
+    const f1 = Fb([], d1, c1), f2 = Fb([], d1, c2);
+    if (f1.ok && f2.ok && !gl.getError()){ r.ms = smp; r.msF = f1.f; r.gmsF = f2.f; } else msOK = false;
+  }
+  r.rw = W>>1; r.rh = H>>1; r.reflTex = T(r.rw, r.rh); r.reflF = Fb([r.reflTex]).f;
+  r.bl = []; let w = W>>1, h = H>>1;
+  for (let i=0;i<5;i++){ w = Math.max(w,2); h = Math.max(h,2); const d = T(w,h), u = T(w,h); r.bl.push({ w, h, d, df:Fb([d]).f, u, uf:Fb([u]).f }); w >>= 1; h >>= 1; }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, r.reflF); gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT);
+}
+resize();
+let rsT = 0; addEventListener('resize', () => { clearTimeout(rsT); rsT = setTimeout(resize, 120); });
+
+/* ------------------------------------------------------------------ math */
+const sub = (a,b) => [a[0]-b[0],a[1]-b[1],a[2]-b[2]], cross = (a,b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+const nrm = a => { const l = Math.hypot(a[0],a[1],a[2])||1; return [a[0]/l,a[1]/l,a[2]/l]; };
+const ss = (a,b,x) => { const t = Math.min(1, Math.max(0, (x-a)/(b-a))); return t*t*(3-2*t); };
+const mView = new Float32Array(16), mProj = new Float32Array(16), mVP = new Float32Array(16), mVPm = new Float32Array(16), mR3 = new Float32Array(9);
+function lookAt(o, e, t){
+  const f = nrm(sub(t,e)), s = nrm(cross(f,[0,1,0])), u = cross(s,f);
+  o[0]=s[0];o[1]=u[0];o[2]=-f[0];o[3]=0; o[4]=s[1];o[5]=u[1];o[6]=-f[1];o[7]=0; o[8]=s[2];o[9]=u[2];o[10]=-f[2];o[11]=0;
+  o[12]=-(s[0]*e[0]+s[1]*e[1]+s[2]*e[2]); o[13]=-(u[0]*e[0]+u[1]*e[1]+u[2]*e[2]); o[14]=f[0]*e[0]+f[1]*e[1]+f[2]*e[2]; o[15]=1;
+  return { f, s, u };
+}
+function persp(o, fy, asp, n, fa){ const t = 1/Math.tan(fy/2); o.fill(0); o[0]=t/asp; o[5]=t; o[10]=(fa+n)/(n-fa); o[11]=-1; o[14]=2*fa*n/(n-fa); }
+function mul(o, a, b){ for (let c=0;c<4;c++) for (let r=0;r<4;r++) o[c*4+r] = a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3]; }
+
+/* ------------------------------------------------------------------ the take */
+const KEYS = [
+  { t:0,   p:[-7.0,1.0,8.9],    q:[-7.0,.42,0],    fov:30, ap:.35, ex:1.50 },
+  { t:1,   p:[-9.5,1.55,2.1],   q:[-5.6,1.12,0],   fov:32, ap:.70, ex:1.00 },
+  { t:2,   p:[-5.05,1.14,1.45], q:[-4.35,1.2,0],   fov:30, ap:1.0, ex:.80 },
+  { t:3,   p:[.9,.6,3.7],       q:[-.1,.62,0],     fov:33, ap:.80, ex:1.05 },
+  { t:4,   p:[1.0,1.75,2.3],    q:[3.7,1.1,0],     fov:30, ap:.85, ex:1.05 },
+  { t:5,   p:[3.05,1.5,.9],     q:[3.62,1.2,0],    fov:28, ap:1.1, ex:1.10 },
+  { t:5.5, p:[6.1,1.95,2.5],    q:[6.2,1.2,0],     fov:28, ap:.80, ex:1.10 },
+  { t:6,   p:[9.3,1.22,.02],    q:[7.0,1.2,0],     fov:24, ap:.90, ex:1.15 },
+];
+const cr = (a,b,c,d,u) => .5*((2*b)+(-a+c)*u+(2*a-5*b+4*c-d)*u*u+(-a+3*b-3*c+d)*u*u*u);
+const cam = { p:[0,0,0], q:[0,0,0], fov:30, ap:.5, ex:1 };
+function sampleCam(T){
+  let i = 0; while (i < KEYS.length-2 && T >= KEYS[i+1].t) i++;
+  const k0 = KEYS[Math.max(i-1,0)], k1 = KEYS[i], k2 = KEYS[i+1], k3 = KEYS[Math.min(i+2,KEYS.length-1)];
+  const u = Math.min(1, Math.max(0, (T-k1.t)/(k2.t-k1.t)));
+  for (let j=0;j<3;j++){ cam.p[j] = cr(k0.p[j],k1.p[j],k2.p[j],k3.p[j],u); cam.q[j] = cr(k0.q[j],k1.q[j],k2.q[j],k3.q[j],u); }
+  const e = u*u*(3-2*u);
+  cam.fov = k1.fov+(k2.fov-k1.fov)*e; cam.ap = k1.ap+(k2.ap-k1.ap)*e; cam.ex = k1.ex+(k2.ex-k1.ex)*e;
+}
+function stage(T){
+  const a = ss(1.6,2.6,T), b = ss(3.6,4.0,T), c = ss(5.2,5.7,T);
+  const e1 = .85*a-.5*b-.15*c, e2 = .5*b-.2*c, e3 = .4*c, e0 = 1-e1-e2-e3;
+  return {
+    share:[e1,e2,e3], zone:[Math.min(1/e0,3), Math.min(1/(e0+e1),3), Math.min(1/(e0+e1+e2),3)],
+    killX: -2.6+12.1*ss(1.8,2.4,T), prismZ: -1.7*ss(3.25,3.9,T),
+    iris: .30-.225*ss(4.45,5.1,T)+.115*ss(5.25,5.8,T), sat: .07+.4*ss(1.3,1.9,T)*(1-ss(2.2,2.8,T)),
+  };
+}
+
+/* ------------------------------------------------------------------ input */
+let px = 0, py = 0, pushT = 0, push = 0, burst = 0, waveT = -100, time = 0;
+addEventListener('pointermove', e => { px = e.clientX/innerWidth*2-1; py = 1-e.clientY/innerHeight*2; if (e.pointerType === 'mouse') pushT = 1; });
+addEventListener('pointerdown', e => { if (e.target.closest('a,button')) return; px = e.clientX/innerWidth*2-1; py = 1-e.clientY/innerHeight*2; burst = 1; waveT = time; });
+document.documentElement.addEventListener('pointerleave', () => { pushT = 0; });
+$('#home').addEventListener('click', () => scrollTo({ top:0, behavior: calm ? 'auto' : 'smooth' }));
+document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', e => { e.preventDefault(); scrollTo({ top: a.classList.contains('pill') ? document.documentElement.scrollHeight : 0, behavior: calm ? 'auto' : 'smooth' }); }));
+$('#reserve').addEventListener('click', () => { $('#note').hidden = false; waveT = time; });
+
+/* ------------------------------------------------------------------ copy and focus scale */
+const chs = [...document.querySelectorAll('.ch')], chO = chs.map(() => -1);
+const scaleEl = $('#scale'), stops = ['∞','10','4','2','1.2','0.7','0.45'];
+stops.forEach((s,i) => { const el = document.createElement('span'); el.textContent = s; el.style.top = (i/6*100)+'%'; scaleEl.appendChild(el); });
+const idx = document.createElement('em'); scaleEl.appendChild(idx);
+const stopEls = [...scaleEl.querySelectorAll('span')]; let atStop = -1;
+function updateUI(T){
+  for (let k=0;k<chs.length;k++){
+    const o = Math.min(1, Math.max(0, (.44-Math.abs(T-k))/.2));
+    if (Math.abs(o-chO[k]) < .004) continue; chO[k] = o;
+    const s = chs[k].style; s.opacity = o; s.visibility = o > 0 ? 'visible' : 'hidden'; s.transform = `translate3d(0,${((T-k)*-26).toFixed(1)}px,0)`;
+    chs[k].classList.toggle('live', o > .5);
+  }
+  idx.style.top = (T/6*100).toFixed(2)+'%';
+  const near = Math.round(T); if (near !== atStop){ atStop = near; stopEls.forEach((el,i) => el.classList.toggle('at', i === near)); }
+  hintEl.style.opacity = Math.max(0, 1-T*2.2);
+}
+const hintEl = $('#hint');
+
+/* ------------------------------------------------------------------ frame pacing and the stats readout */
+const hud = $('#hud'); let hudOn = location.hash === '#stats';
+addEventListener('hashchange', () => { hudOn = location.hash === '#stats'; hud.hidden = !hudOn; });
+addEventListener('keydown', e => { if (e.key === 's' && !e.metaKey && !e.ctrlKey){ hudOn = !hudOn; hud.hidden = !hudOn; } });
+hud.hidden = !hudOn;
+const dts = new Float32Array(120); let dtI = 0, dtN = 0, accT = 0, accN = 0, settle = 60, gpuMs = -1, gpuAcc = 0, gpuN = 0, query = null, locked = false, lastDown = null, goodFor = 0, drops = 0;
+function setTier(t){ t = Math.max(0, Math.min(TIERS.length-1, t)); if (t === tier) return; tier = t; resize(); settle = 40; accT = accN = 0; gpuAcc = gpuN = 0; }
+function pace(rdt){
+  dts[dtI] = rdt; dtI = (dtI+1)%120; dtN = Math.min(dtN+1, 120);
+  if (settle > 0){ settle--; return; }
+  accT += rdt; accN++;
+  if (accN < 45) return;
+  const avg = accT/accN*1000, g = gpuN ? gpuAcc/gpuN : -1; accT = accN = 0; gpuAcc = gpuN = 0;
+  if (avg > 19.5){
+    goodFor = 0;
+    if (g >= 0 && g < 9){ return; }                       /* slow, but not because of the GPU */
+    if (lastDown && avg > lastDown.avg*.92 && ++lastDown.n >= 2 && g < 0){ locked = true; setTier(lastDown.tier); lastDown = null; return; }
+    if (!locked){ if (!lastDown) lastDown = { tier, avg, n:0 }; drops++; setTier(tier+1); }
+  } else {
+    lastDown = null; goodFor += 45;
+    if (tier > 0 && drops < 3 && ((g >= 0 && g < 6.5 && goodFor > 180) || (g < 0 && goodFor > 1500 && avg < 12))){ goodFor = 0; drops++; setTier(tier-1); }
+  }
+}
+function stats(){
+  let mx = 0, sum = 0; for (let i=0;i<dtN;i++){ sum += dts[i]; if (dts[i] > mx) mx = dts[i]; }
+  const avg = sum/Math.max(dtN,1)*1000;
+  return { fps: 1000/avg, avg, worst: mx*1000, gpu: gpuMs, tier, w: W, h: H, grains: Math.round(NP*TIERS[tier].frac), msaa: R.ms };
+}
+
+/* ------------------------------------------------------------------ render */
+let last = performance.now()*.001, Tc = 0, Tv = 0, frame = 0, first = true, sx = 0, sy = 0, visible = true;
+document.addEventListener('visibilitychange', () => { visible = !document.hidden; last = performance.now()*.001; });
+function scrollT(){
+  const max = document.documentElement.scrollHeight-innerHeight; if (max <= 0) return 0;
+  const raw = Math.min(1, Math.max(0, scrollY/max))*6, k = Math.min(5, Math.floor(raw)), fr = raw-k;
+  return k+fr-Math.sin(fr*Math.PI*2)/(Math.PI*2)*.62;
+}
+function simStep(dt, st, rayO, rayD, dustX){
+  const a = simT[simI], b = simT[1-simI];
+  gl.bindFramebuffer(gl.FRAMEBUFFER, b.f); gl.viewport(0,0,SIM,SIM);
+  use(pSim, { tPos:a.p, tVel:a.v, uDt:dt, uTime:time, uInit:first ? 1 : 0, uKillX:st.killX, uPrismZ:st.prismZ, uIris:st.iris, uPush:push, uBurst:burst,
+    uRayO:rayO, uRayD:rayD, uDustC:[dustX,0,0], uShare:st.share });
+  gl.drawArrays(gl.TRIANGLES, 0, 3); simI = 1-simI; first = false;
+}
+const camP = [0,0,0], rayD = [0,0,1];
+function render(now){
+  requestAnimationFrame(render);
+  if (!visible) return;
+  const t = now*.001; let rdt = t-last; last = t;
+  const hitch = rdt > .2; if (hitch) rdt = 1/60;
+  const dt = Math.min(rdt, 1/30); time += dt; frame++;
+  if (!hitch && frame > 5) pace(rdt);
+
+  /* film time follows the scroll with a little mass */
+  const Tt = scrollT();
+  if (calm) Tc = Tt; else Tc += (Tt-Tc)*(1-Math.exp(-dt*5));
+  const st = stage(Tc);
+  sampleCam(Tc);
+  const asp = W/H;
+  let fy = cam.fov*D2R; if (asp < 1.6) fy = Math.min(2*Math.atan(Math.tan(fy/2)*1.6/asp), 78*D2R);
+  sx += (px-sx)*(1-Math.exp(-dt*2.5)); sy += (py-sy)*(1-Math.exp(-dt*2.5));
+  const dist = Math.hypot(cam.p[0]-cam.q[0], cam.p[1]-cam.q[1], cam.p[2]-cam.q[2]);
+  const drift = calm ? 0 : 1, sw = dist*.012;
+  camP[0] = cam.p[0]+(Math.sin(time*.23)*sw+sx*dist*.02)*drift; camP[1] = Math.max(.12, cam.p[1]+(Math.sin(time*.31+1.3)*sw*.6+sy*dist*.012)*drift); camP[2] = cam.p[2]+Math.cos(time*.19)*sw*drift;
+  const basis = lookAt(mView, camP, cam.q); persp(mProj, fy, asp, .05, 90); mul(mVP, mProj, mView);
+  for (let i=0;i<16;i++) mVPm[i] = (i >= 4 && i < 8) ? -mVP[i] : mVP[i];
+  mR3[0]=mView[0];mR3[1]=mView[1];mR3[2]=mView[2];mR3[3]=mView[4];mR3[4]=mView[5];mR3[5]=mView[6];mR3[6]=mView[8];mR3[7]=mView[9];mR3[8]=mView[10];
+  const th = Math.tan(fy/2);
+  const rd = nrm([basis.f[0]+basis.s[0]*px*th*asp+basis.u[0]*py*th, basis.f[1]+basis.s[1]*px*th*asp+basis.u[1]*py*th, basis.f[2]+basis.s[2]*px*th*asp+basis.u[2]*py*th]);
+  rayD[0] = rd[0]; rayD[1] = rd[1]; rayD[2] = rd[2];
+  push += (pushT*.55-push)*(1-Math.exp(-dt*3)); burst *= Math.exp(-dt*6);
+  const q = TIERS[tier], count = Math.floor(NP*q.frac/SIM)*SIM, gain = .42/q.frac, proj = H/(2*th);
+  const pu = { uFocus:dist, uAp:cam.ap, uGain:gain, uKillX:st.killX, uWaveX:-11.25+C0*(time-waveT), uZone:st.zone, uDustK:2.4, uSat:st.sat };
+
+  const timing = extT && !query && frame%4 === 0; let qy = null;
+  if (timing){ qy = gl.createQuery(); gl.beginQuery(extT.TIME_ELAPSED_EXT, qy); }
+
+  gl.bindVertexArray(vaoNone);
+  gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST); gl.disable(gl.CULL_FACE); gl.depthMask(false);
+  simStep(dt, st, camP, rayD, cam.q[0]);
+  const S = simT[simI];
+
+  /* light field: where the grains are, seen from above and from the side */
+  gl.bindFramebuffer(gl.FRAMEBUFFER, lfF); gl.viewport(0,0,512,256); gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+  const nLF = Math.floor(count/3/SIM)*SIM;
+  use(pPart, { tPos:S.p, tVel:S.v, tLF:null, tGD:null, uPass:2, uMode:2, ...pu, uGain:.0042*count/nLF/q.frac });
+  gl.viewport(0,0,512,128); gl.drawArrays(gl.POINTS, 0, nLF);
+  gl.uniform1f(pPart.u.uMode.loc, 3); gl.viewport(0,128,512,128); gl.drawArrays(gl.POINTS, 0, nLF);
+
+  /* grains mirrored in the table, half size */
+  const r = R;
+  if (q.refl){
+    gl.bindFramebuffer(gl.FRAMEBUFFER, r.reflF); gl.viewport(0,0,r.rw,r.rh); gl.clear(gl.COLOR_BUFFER_BIT);
+    const nR = Math.floor(count/2/SIM)*SIM;
+    use(pPart, { tPos:S.p, tVel:S.v, tLF:lfTex, tGD:null, uPass:2, uVP:mVPm, uMode:0, uProj:proj*.5, uMaxPx:14*scale, uThinPx:2.5*scale, ...pu, uGain:gain*2 });
+    gl.drawArrays(gl.POINTS, 0, nR);
+  }
+
+  /* opaque set */
+  gl.bindFramebuffer(gl.FRAMEBUFFER, r.ms ? r.msF : r.aF); gl.viewport(0,0,W,H);
+  gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(true);
+  gl.clearColor(.0030,.0034,.0042,1); gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.bindVertexArray(vao);
+  const res = [W,H], off0 = [0,0,0], offP = [0,0,st.prismZ];
+  use(pTable, { uVP:mVP, uOff:off0, uCam:camP, uRes:res, tLF:lfTex, tRefl:r.reflTex, uReflOn:q.refl });
+  gl.drawArrays(gl.TRIANGLES, gTable.s, gTable.n);
+  use(pMetal, { uVP:mVP, uOff:off0, uCam:camP, tLF:lfTex });
+  gl.drawArrays(gl.TRIANGLES, gMetal.s, gMetal.n);
+  gl.uniform3fv(pMetal.u.uOff.loc, offP); gl.drawArrays(gl.TRIANGLES, gCarrier.s, gCarrier.n);
+  if (r.ms) gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+  use(pIris, { uVP:mVP, uOff:off0, uCam:camP, tLF:lfTex, uIris:st.iris*.985, uRot:.3+st.iris*2.4 });
+  gl.drawArrays(gl.TRIANGLES, gIris.s, gIris.n);
+  gl.disable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+  if (r.ms){
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, r.msF); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, r.aF);
+    gl.blitFramebuffer(0,0,W,H,0,0,W,H, gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT, gl.NEAREST);
+  }
+
+  /* nearest glass surface, so each grain knows whether it is in front of the glass or behind it */
+  for (const g of glass){ const z = g.mov ? st.prismZ : 0; g.d = (g.c[0]-camP[0])**2+(g.c[1]-camP[1])**2+(g.c[2]+z-camP[2])**2; }
+  glass.sort((a,b) => b.d-a.d);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, r.gdF); gl.viewport(0,0,r.dw,r.dh); gl.clearDepth(1); gl.clear(gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); gl.depthFunc(gl.LESS);
+  use(pDepth, { uVP:mVP, uOff:off0 });
+  for (const g of glass){ gl.uniform3fv(pDepth.u.uOff.loc, g.mov ? offP : off0); gl.drawArrays(gl.TRIANGLES, g.r.s, g.r.n); }
+  gl.disable(gl.CULL_FACE); gl.depthFunc(gl.LEQUAL);
+
+  /* grains behind the glass, or clear of it */
+  gl.bindFramebuffer(gl.FRAMEBUFFER, r.aF); gl.viewport(0,0,W,H); gl.bindVertexArray(vaoNone);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE); gl.depthMask(false);
+  const pv = { tPos:S.p, tVel:S.v, tLF:lfTex, tGD:r.gdTex, uVP:mVP, uMode:0, uProj:proj, uMaxPx:30*scale, uThinPx:4.5*scale, ...pu };
+  pv.uPass = 0; use(pPart, pv);
+  gl.drawArrays(gl.POINTS, 0, count);
+
+  /* glass: refracts what is behind it, layered far to near */
+  gl.bindFramebuffer(gl.FRAMEBUFFER, r.ms ? r.gmsF : r.gF);
+  gl.clearColor(0,0,0,1); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.bindVertexArray(vao); gl.enable(gl.CULL_FACE);
+  gl.blendFuncSeparate(gl.ONE, gl.SRC_ALPHA, gl.ZERO, gl.SRC_ALPHA);
+  use(pGlass, { uVP:mVP, uCam:camP, uRes:res, uViewR:mR3, tA:r.aTex, tLF:lfTex, tGD:r.gdTex });
+  for (const g of glass){
+    gl.uniform3fv(pGlass.u.uOff.loc, g.mov ? offP : off0); gl.uniform1f(pGlass.u.uStr.loc, g.str); gl.uniform3fv(pGlass.u.uTint.loc, g.tint); gl.uniform1f(pGlass.u.uMilk.loc, g.milk); gl.uniform1f(pGlass.u.uScat.loc, g.sc); gl.uniform1f(pGlass.u.uCoat.loc, g.coat);
+    gl.cullFace(gl.FRONT); gl.uniform1f(pGlass.u.uBack.loc, 1); gl.drawArrays(gl.TRIANGLES, g.r.s, g.r.n);
+    gl.cullFace(gl.BACK); gl.uniform1f(pGlass.u.uBack.loc, 0); gl.drawArrays(gl.TRIANGLES, g.r.s, g.r.n);
+  }
+  /* grains in front of the glass go on top, unrefracted */
+  gl.disable(gl.CULL_FACE); gl.bindVertexArray(vaoNone); gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ZERO, gl.ONE);
+  pv.uPass = 1; use(pPart, pv); gl.drawArrays(gl.POINTS, 0, count);
+  gl.disable(gl.DEPTH_TEST); gl.disable(gl.BLEND);
+  if (r.ms){
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, r.gmsF); gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, r.gF);
+    gl.blitFramebuffer(0,0,W,H,0,0,W,H, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+  }
+
+  /* bloom and grade */
+  gl.bindVertexArray(vaoNone);
+  const bl = r.bl;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, bl[0].df); gl.viewport(0,0,bl[0].w,bl[0].h);
+  use(pDown0, { tA:r.aTex, tG:r.gTex, uTexel:[.5/W,.5/H] }); gl.drawArrays(gl.TRIANGLES, 0, 3);
+  for (let i=1;i<bl.length;i++){
+    gl.bindFramebuffer(gl.FRAMEBUFFER, bl[i].df); gl.viewport(0,0,bl[i].w,bl[i].h);
+    use(pDown, { tS:bl[i-1].d, uTexel:[.5/bl[i-1].w,.5/bl[i-1].h] }); gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  for (let i=bl.length-2;i>=0;i--){
+    const low = i === bl.length-2 ? bl[i+1].d : bl[i+1].u;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, bl[i].uf); gl.viewport(0,0,bl[i].w,bl[i].h);
+    use(pUp, { tLow:low, tCur:bl[i].d, uTexel:[1/bl[i+1].w,1/bl[i+1].h] }); gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0,0,W,H);
+  use(pComp, { tA:r.aTex, tG:r.gTex, tB:bl[0].u, uExp:cam.ex, uTime:time, uBloom:.11 }); gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  if (timing){ gl.endQuery(extT.TIME_ELAPSED_EXT); query = qy; }
+  else if (query && gl.getQueryParameter(query, gl.QUERY_RESULT_AVAILABLE)){
+    if (!gl.getParameter(extT.GPU_DISJOINT_EXT)){ gpuMs = gl.getQueryParameter(query, gl.QUERY_RESULT)/1e6; gpuAcc += gpuMs; gpuN++; }
+    gl.deleteQuery(query); query = null;
+  }
+
+  updateUI(Tc);
+  if (frame === 2) canvas.classList.add('on');
+  if (hudOn && frame%20 === 0){ const s = stats();
+    hud.textContent = `${s.fps.toFixed(0)} fps   ${s.avg.toFixed(1)} ms avg   ${s.worst.toFixed(1)} ms worst\nGPU ${s.gpu < 0 ? 'n/a' : s.gpu.toFixed(1)+' ms'}   tier ${s.tier}   ${s.w}×${s.h}   MSAA ${s.msaa}×\n${s.grains.toLocaleString('en')} grains`; }
+}
+requestAnimationFrame(render);
+
+window.__film = {
+  get T(){ return Tc; }, set T(v){ Tc = v; }, stats, setTier, lock(v){ locked = v; },
+  warm(n, T){ const st = stage(T === undefined ? Tc : T); gl.bindVertexArray(vaoNone); gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
+    for (let i=0;i<n;i++){ time += 1/30; simStep(1/30, st, [0,50,0], [0,1,0], 0); } },
+};
+})();
+</script>
