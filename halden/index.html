@@ -253,17 +253,44 @@ h1 em, h2 em { font-style: italic; }
   function polished(color, rough, rep) { return phys({ color: color, metalness: 1, roughness: rough, roughnessMap: rep2(wear, rep, rep), normalMap: rep2(wearN, rep, rep), normalScale: new T.Vector2(0.12, 0.12) }); }
   function finished(color, mk, lo, hi, rep, rot, off, bump, extra) { var h = mk(lo, hi), o = { color: color, metalness: 1, roughness: 1, map: place(mk(165, 255, true), rep, rot, off), roughnessMap: place(h, rep, rot, off), normalMap: place(relief(h, bump), rep, rot, off), normalScale: new T.Vector2(0.55, 0.55) };
     for (var k in extra) o[k] = extra[k]; return phys(o); }
+  // the movement gets its own reflections: the same strips plus broad soft panels, so flat metal has something smooth to mirror
+  var ENV2 = (function () { var s = new T.Scene(); s.background = new T.Color(0x020202);
+    var soft = tex(128, 128, function (x, w) { var g = x.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); g.addColorStop(0, '#fff'); g.addColorStop(0.45, '#8a8a8a'); g.addColorStop(1, '#000'); x.fillStyle = g; x.fillRect(0, 0, w, w); }, true);
+    [[0, 16, 0, 30, 0.2, 1.2, 7], [-9, 16, -9, 1.0, 0.2, 16, 4], [-18, 3, 3, 0.2, 12, 1.0, 6], [18, 6, -4, 0.2, 9, 1.4, 3], [8, 0, 18, 1.2, 16, 0.2, 3], [0, -4, -18, 34, 0.8, 0.2, 4]].forEach(function (b) {
+      var m = new T.Mesh(new T.BoxGeometry(b[3], b[4], b[5]), new T.MeshBasicMaterial({ color: new T.Color(0xffffff).multiplyScalar(b[6]) })); m.position.set(b[0], b[1], b[2]); s.add(m); });
+    [[-14, 22, 20, 44, [1.5, 1.28, 1.05]], [24, 10, -22, 40, [0.5, 0.66, 1.0]], [-26, -6, -14, 36, [0.85, 0.5, 0.28]], [10, -22, 16, 44, [0.5, 0.32, 0.2]], [26, 20, 18, 30, [0.7, 0.7, 0.74]]].forEach(function (b) {
+      var m = new T.Mesh(new T.PlaneGeometry(b[3], b[3]), new T.MeshBasicMaterial({ map: soft, color: new T.Color(b[4][0], b[4][1], b[4][2]), side: T.DoubleSide })); m.position.set(b[0], b[1], b[2]); m.lookAt(0, 0, 0); s.add(m); });
+    var p = new T.PMREMGenerator(renderer), t = p.fromScene(s, 0.03).texture; p.dispose(); return t; })();
+  function stripeN(amp) { return tex(1024, 4, function (x, w) { var img = x.createImageData(w, 4), d = img.data; // Geneva stripes as they are cut: each band a very shallow scallop
+    for (var i = 0; i < w; i++) { var f = (i / w * 8) % 1, e = Math.min(f, 1 - f) / 0.07, k = e >= 1 ? 1 : e * e * (3 - 2 * e), nx = (f - 0.5) * 2 * amp * k, nz = Math.sqrt(1 - nx * nx);
+      for (var j = 0; j < 4; j++) { var q = (j * w + i) * 4; d[q] = (nx * 0.5 + 0.5) * 255; d[q + 1] = 127.5; d[q + 2] = (nz * 0.5 + 0.5) * 255; d[q + 3] = 255; } }
+    x.putImageData(img, 0, 0); }); }
+  function stripeR() { return tex(1024, 4, function (x, w) { var img = x.createImageData(w, 4), d = img.data;
+    for (var i = 0; i < w; i++) { var f = (i / w * 8) % 1, e = Math.min(f, 1 - f), v = 204 + 9 * Math.cos(f * 6.2832) + (rnd() - 0.5) * 12 + (e < 0.02 ? 10 : 0);
+      for (var j = 0; j < 4; j++) { var q = (j * w + i) * 4; d[q] = d[q + 1] = d[q + 2] = v; d[q + 3] = 255; } }
+    x.putImageData(img, 0, 0); }); }
+  function pearlR() { return tex(512, 512, function (x, w) { var n = 8, s = w / n, R = s * 0.86, img = x.createImageData(w, w), d = img.data; // perlage: overlapping spots, only a whisper of difference in sheen
+    for (var py = 0; py < w; py++) for (var px = 0; px < w; px++) { var best = -1, e = 1, j0 = Math.floor(py / s);
+      for (var j = j0 - 1; j <= j0 + 1; j++) { var off = ((j % 2) + 2) % 2 ? 0.5 : 0, i0 = Math.floor(px / s - off);
+        for (var i = i0 - 1; i <= i0 + 1; i++) { var dx = px - (i + off + 0.5) * s, dy = py - (j + 0.5) * s, r2 = dx * dx + dy * dy; if (r2 < R * R) { var ord = (j - j0 + 1) * 8 + (((i % n) + n) % n); if (ord > best) { best = ord; e = Math.sqrt(r2) / R; } } } }
+      var q = (py * w + px) * 4, v = 206 + 13 * e * e + (rnd() - 0.5) * 10; d[q] = d[q + 1] = d[q + 2] = v; d[q + 3] = 255; }
+    x.putImageData(img, 0, 0); }); }
+  function sunR(lo, hi) { return tex(512, 512, function (x, w) { x.fillStyle = grey((lo + hi) / 2); x.fillRect(0, 0, w, w); x.translate(w / 2, w / 2); // fine circular graining
+    for (var i = 0; i < 520; i++) { x.strokeStyle = grey(lo + (hi - lo) * rnd()); x.globalAlpha = 0.35; x.lineWidth = 0.5 + rnd(); x.beginPath(); x.arc(0, 0, rnd() * w * 0.72, 0, 6.2832); x.stroke(); } }); }
+  function inner(o) { o.metalness = 1; o.envMap = ENV2; if (o.envMapIntensity === undefined) o.envMapIntensity = 1; return phys(o); }
+  function mirror(color, rough, rep) { return inner({ color: color, roughness: rough, roughnessMap: rep2(wear, rep, rep) }); }
+  function turned(color, rough, rep) { return inner({ color: color, roughness: rough, roughnessMap: place(sunR(205, 255), rep, 0, true), anisotropy: 0.55, anisotropyMap: place(ringDir(true), rep, 0, true) }); }
   var M = {
-    bridgeTop: phys({ color: 0x777a82, metalness: 1, roughness: 0.5, roughnessMap: place(rep2(brush, 1, 1), 1 / 5, 0.52), normalMap: place(rep2(wearN, 1, 1), 1 / 6), normalScale: new T.Vector2(0.06, 0.06), anisotropy: 0.5, anisotropyMap: place(stripeDir(), 1 / 13, 0.52) }),
-    bridgeEdge: polished(0xa3a7b1, 0.2, 0.35),
-    plateTop: phys({ color: 0x4b4e55, metalness: 1, roughness: 0.6, map: place(pearl('map'), 1 / 7), roughnessMap: place(pearl('rough'), 1 / 7), anisotropy: 0.5, anisotropyMap: place(pearl('dir'), 1 / 7) }),
-    plateEdge: polished(0x595c64, 0.3, 0.3),
-    goldTop: finished(0xbe7850, sunTex, 70, 125, 1 / 16, 0, true, 3, { anisotropy: 0.75, anisotropyMap: place(ringDir(true), 1 / 16, 0, true) }),
-    goldEdge: polished(0xdb9468, 0.24, 0.5),
-    steelTop: finished(0x6c7079, sunTex, 50, 112, 1 / 10, 0, true, 3, { anisotropy: 0.75, anisotropyMap: place(ringDir(true), 1 / 10, 0, true) }),
-    post: polished(0x5d6068, 0.4, 0.5),
-    steel: polished(0xb7bbc3, 0.22, 0.6),
-    blued: phys({ color: 0x0a2390, metalness: 1, roughness: 0.3, roughnessMap: rep2(wear, 0.8, 0.8), iridescence: 0.22, iridescenceIOR: 1.6, iridescenceThicknessRange: [330, 390] }),
+    bridgeTop: inner({ color: 0xc4c6cc, roughness: 0.36, roughnessMap: place(stripeR(), 1 / 13, 0.52) }),
+    bridgeEdge: mirror(0xdfe1e6, 0.12, 0.35),
+    plateTop: inner({ color: 0x565961, roughness: 0.36, roughnessMap: place(pearlR(), 1 / 7), envMapIntensity: 0.9 }),
+    plateEdge: mirror(0x8d9098, 0.2, 0.3),
+    goldTop: turned(0xd9a070, 0.34, 1 / 16),
+    goldEdge: mirror(0xe6ae7c, 0.14, 0.5),
+    steelTop: turned(0xb9bcc3, 0.32, 1 / 10),
+    post: mirror(0xa9acb4, 0.2, 0.5),
+    steel: mirror(0xcfd2d8, 0.14, 0.6),
+    blued: inner({ color: 0x10309c, roughness: 0.16, roughnessMap: rep2(wear, 0.8, 0.8), iridescence: 0.15, iridescenceIOR: 1.6, iridescenceThicknessRange: [330, 390] }),
     dark: phys({ color: 0x050506, metalness: 0.4, roughness: 0.6 }),
     ruby: phys({ color: 0x9a0b2a, metalness: 0, roughness: 0.04, ior: 1.77, clearcoat: 1, clearcoatRoughness: 0.03, specularIntensity: 1, emissive: 0xff1040, emissiveIntensity: 0.3 }),
     // black-coated steel: a brushed base under a thin hard gloss
@@ -314,7 +341,7 @@ h1 em, h2 em { font-style: italic; }
   function screw(x, y, z, into, r, mat) { r = r || 0.44; var g = new T.Group(); g.position.set(x, y, z);
     g.add(new T.Mesh(new T.TorusGeometry(r + 0.09, 0.05, 10, 40), M.bridgeEdge));
     var head = new T.Mesh(crease(new T.LatheGeometry([new T.Vector2(r, -0.05), new T.Vector2(r, 0.1), new T.Vector2(r * 0.9, 0.165), new T.Vector2(0, 0.165)], 40).toNonIndexed(), 50), mat || M.blued); head.rotation.x = Math.PI / 2; g.add(head);
-    var slot = new T.Mesh(new T.BoxGeometry(r * 2.02, 0.085, 0.1), M.dark); slot.position.z = 0.125; slot.rotation.z = x * 1.7 + y * 0.9; g.add(slot); into.add(g); }
+    var slot = new T.Mesh(new T.BoxGeometry(r * 2.02, 0.13, 0.1), M.dark); slot.position.z = 0.127; slot.rotation.z = x * 1.7 + y * 0.9; g.add(slot); into.add(g); }
 
   // outlines with real fillets: describe a shape as a distance field, then trace its edge
   function smin(a, b, k) { var h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; }
@@ -415,9 +442,9 @@ h1 em, h2 em { font-style: italic; }
     var top = BZ + BT;
     ['centre', 'third', 'fourth', 'escape', 'pallet'].forEach(function (k) { jewel(PIV[k][0], PIV[k][1], top - 0.02, bridges); });
     jewel(PIV.balance[0], PIV.balance[1], top - 0.02, bridges, 0.44);
-    Object.keys(F).forEach(function (k) { screw(F[k][0], F[k][1], top, bridges); var post = cyl(0.6, 0, BZ + 0.05, M.post, 32); post.position.x = F[k][0]; post.position.y = F[k][1]; bridges.add(post); });
+    Object.keys(F).forEach(function (k) { screw(F[k][0], F[k][1], top, bridges); var post = cyl(0.42, 0, BZ + 0.05, M.post, 32); post.position.x = F[k][0]; post.position.y = F[k][1]; bridges.add(post); });
     [158, 182, 206, 231, 255].forEach(function (a, i) { var r = a * Math.PI / 180, x = 14.0 * Math.cos(r), y = 14.0 * Math.sin(r); screw(x, y, top, bridges);
-      if (i === 0 || i === 4) { var post = cyl(0.6, 0, BZ + 0.05, M.post, 32); post.position.x = x; post.position.y = y; bridges.add(post); } });
+      if (i === 0 || i === 4) { var post = cyl(0.42, 0, BZ + 0.05, M.post, 32); post.position.x = x; post.position.y = y; bridges.add(post); } });
     // engraving
     var t = tex(1024, 300, function (x, w, h) { x.fillStyle = '#000'; x.fillRect(0, 0, w, h); x.fillStyle = '#fff'; x.textBaseline = 'middle';
       function line(s, y, px, sp, wt) { x.font = wt + ' ' + px + 'px "Helvetica Neue", Helvetica, Arial, sans-serif'; var tw = 0, i; for (i = 0; i < s.length; i++) tw += x.measureText(s[i]).width + sp; var cx = (w - tw + sp) / 2; for (i = 0; i < s.length; i++) { x.fillText(s[i], cx, y); cx += x.measureText(s[i]).width + sp; } }
@@ -435,6 +462,16 @@ h1 em, h2 em { font-style: italic; }
 
   document.getElementById('n-parts').textContent = meshes + 38;
   glow.position.set(0, 0, 2.2); model.add(glow);
+  // haze hanging between the plate and the bridges: thin drifting sheets that catch the inner light
+  var haze = new T.Group(), hazeT = tex(256, 256, function (x, w) { x.fillStyle = '#000'; x.fillRect(0, 0, w, w); x.globalCompositeOperation = 'lighter';
+    for (var i = 0; i < 46; i++) { var cx = rnd() * w, cy = rnd() * w, r = 26 + rnd() * 62, a = 0.05 + rnd() * 0.1;
+      for (var ox = -w; ox <= w; ox += w) for (var oy = -w; oy <= w; oy += w) { var g = x.createRadialGradient(cx + ox, cy + oy, 0, cx + ox, cy + oy, r); g.addColorStop(0, 'rgba(255,255,255,' + a + ')'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(cx + ox - r, cy + oy - r, r * 2, r * 2); } } }, true),
+    hazeA = tex(128, 128, function (x, w) { var g = x.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); g.addColorStop(0, '#fff'); g.addColorStop(0.5, '#8a8a8a'); g.addColorStop(0.96, '#000'); x.fillStyle = g; x.fillRect(0, 0, w, w); });
+  hazeA.wrapS = hazeA.wrapT = T.ClampToEdgeWrapping;
+  for (var hz = 0; hz < 12; hz++) { var hu = hz / 11, hm = new T.MeshBasicMaterial({ map: hazeT.clone(), alphaMap: hazeA, color: new T.Color().setRGB(1.0, 0.5 + 0.22 * hu, 0.24 + 0.4 * hu), transparent: true, opacity: 0, blending: T.AdditiveBlending, depthWrite: false, fog: false, side: T.DoubleSide });
+    hm.map.repeat.set(0.55, 0.55); hm.map.needsUpdate = true; hm.userData.k = (1 - 0.6 * hu) * 0.06; hm.userData.d = [0.004 + 0.006 * rnd(), 0.003 + 0.006 * rnd(), rnd() * 6.28];
+    var hp = new T.Mesh(new T.CircleGeometry(15.4, 48), hm); hp.position.z = 0.25 + hu * 5.6; hp.renderOrder = 5; haze.add(hp); }
+  haze.visible = false; model.add(haze);
 
   /* ---------- the watch around the movement ---------- */
   function lathe(pts, mat, seg) { var g = new T.LatheGeometry(pts.map(function (p) { return new T.Vector2(p[0], p[1]); }), seg || 180).toNonIndexed(); var m = new T.Mesh(crease(g, 40), mat); m.rotation.x = Math.PI / 2; return m; }
@@ -599,6 +636,8 @@ h1 em, h2 em { font-style: italic; }
     slit.intensity = 16 * v('slit'); slit.target.position.set(9 * Math.sin(time * 0.17 + pos * 1.9), 4 * Math.cos(time * 0.12 + pos), 0);
     rim.intensity = 2.2 * v('rim'); glow.intensity = 60 * Math.max(0, v('glow')) * (0.92 + 0.08 * Math.sin(time * 1.3));
     scene.fog.density = 0.36 / dist;
+    var hzv = Math.max(0, Math.min(1, v('glow'))) * (1 - 0.7 * lf); haze.visible = hzv > 0.004;
+    if (haze.visible) for (q = 0; q < haze.children.length; q++) { var hmat = haze.children[q].material, hd = hmat.userData.d; hmat.opacity = hmat.userData.k * hzv; hmat.map.offset.set(time * hd[0] * Math.cos(hd[2]) + q * 0.37, time * hd[1] * Math.sin(hd[2]) + q * 0.61); }
     leak += ((0.045 + Math.min(0.26, Math.abs(vel) * 0.5)) - leak) * Math.min(1, dt * 2.5);
     outM.uniforms.uTime.value = time; outM.uniforms.uExp.value = v('exp'); outM.uniforms.uLeak.value = leak;
     draw();
