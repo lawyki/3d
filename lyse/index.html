@@ -95,7 +95,7 @@ dd{margin:0;color:var(--fg);text-align:right;font-variant-numeric:tabular-nums}
 
 <main>
   <section class="ch" id="c0">
-    <p class="eyebrow"><b>Cinema primes</b><i></i>Ground by hand since 1961</p>
+    <p class="eyebrow"><b>Cinema primes</b><i></i>Since 1961</p>
     <h1>Light, before it is a picture.</h1>
     <p>Every Lyse lens starts as a parallel beam on a steel table in Bergen. Follow one through the glass, from the source to the image.</p>
     <div class="go"><span></span>Scroll to follow the beam</div>
@@ -357,6 +357,9 @@ void main(){
       p1 = ph; v = vec3(0.); nage = -(.5+1.3*r.z); nst = nst > .5 ? 5. : 3.; done = true;
     }
   }
+  /* grains left upstream of where the film now needs them are recycled */
+  float ex = h2.z < uShare.z ? 4.86 : (h2.z < uShare.z+uShare.y ? 2.2 : (h2.z < uShare.z+uShare.y+uShare.x ? -2.94 : SRCX));
+  if (!done && p1.x < ex-.2 && r.x < uDt*3.) nage = 99.;
   if (!done && (p1.x > 9.5 || abs(p1.z) > 4. || p1.y > 4. || nage > 40. || (p1.x > uKillX+1. && r.w < uDt*4.))){
     spawn(P, V, h1, h2, r, r.z*.5); oPos = P; oVel = V; return;
   }
@@ -367,7 +370,7 @@ void main(){
 const pPart = prog(`
 uniform sampler2D tPos, tVel, tGD;
 uniform mat4 uVP;
-uniform float uPass, uSat, uProj, uFocus, uAp, uMaxPx, uThinPx, uGain, uKillX, uWaveX, uMode, uDustK;
+uniform float uPass, uSat, uTail, uProj, uFocus, uAp, uMaxPx, uThinPx, uGain, uKillX, uWaveX, uMode, uDustK;
 uniform vec3 uZone;
 out vec3 vCol; out float vBlur;
 ${COMMON}
@@ -380,7 +383,7 @@ float moon(vec2 m){
   float lam = clamp(dot(N, normalize(vec3(-.62,.28,.6)))*1.3+.06, 0., 1.);
   float f = vnoise(N*2.3+3.1)*.6+vnoise(N*5.1+1.7)*.3+vnoise(N*11.)*.1;
   float cr = smoothstep(.70,.80, vnoise(N*21.+9.));
-  return lam*lam*(mix(.10, 1., smoothstep(.38,.62,f))+cr*.3);
+  return pow(lam, 1.5)*(mix(.10, 1., smoothstep(.38,.62,f))+cr*.3);
 }
 vec3 spectral(float t){
   vec3 c = vec3(exp(-pow((t-.86)/.34, 2.))+.35*exp(-pow((t-.02)/.09, 2.)), .92*exp(-pow((t-.50)/.27, 2.)), 1.25*exp(-pow((t-.18)/.24, 2.)));
@@ -401,19 +404,19 @@ void main(){
     if (st > 3.5 && st < 4.5) return;
     vec3 sp = spectral(h1.x); vec3 white = mix(vec3(1.,.90,.76), sp*1.5, uSat);
     if (st < 1.5){
-      float x = P.x; col = st < .5 ? white : mix(white, sp*2.1, 1.-smoothstep(.3, 1.02, P.y));
-      b = x < -3. ? uZone.x : (x < 2.2 ? uZone.y : (x < 4.85 ? uZone.z : 1.));
+      float x = P.x; col = st < .5 ? white : mix(white, sp*2.1, 1.-smoothstep(.6, 1.02, P.y));
+      b = (x < -3. ? uZone.x : (x < 2.2 ? uZone.y : (x < 4.85 ? uZone.z : 1.)))*uTail;
       b *= 1.-smoothstep(uKillX, uKillX+1., x);
       b *= 1.+3.*exp(-pow((x-uWaveX)/.35, 2.));
       float rr = length(P.yz-vec2(AY,0.)), g = 0.;
       for (int i=0;i<7;i++) g += (1.-smoothstep(.02,.17,abs(x-LX[i])))*step(rr, LR[i]);
-      b *= 1.+1.4*g; if (x > 5.3) b *= .4;
+      b *= 1.+.55*g; if (x > 5.3) b *= .5;
     } else if (st < 2.5){
       float life = 4.+2.*h2.w;
       float ma = 6.2831853*h2.y; vec2 m = vec2(cos(ma), sin(ma))*sqrt(h2.x);
-      col = vec3(.80,.87,1.); b = moon(m)*1.0*clamp(-age/1.2, 0., 1.)*smoothstep(0., .3, life+age); fine = .8;
+      col = vec3(.80,.87,1.); b = moon(m)*2.8*clamp(-age/1.2, 0., 1.)*smoothstep(0., .3, life+age); fine = .8;
     } else {
-      col = st > 4.5 ? sp*2.1 : white; b = clamp(-age*1.4, 0., 1.)*(st > 4.5 ? .75 : .8);
+      col = st > 4.5 ? sp*2.1 : white; b = clamp(-age*1.4, 0., 1.)*(st > 4.5 ? 1.15 : .8);
     }
   }
   if (uMode > 1.5){
@@ -495,7 +498,7 @@ void main(){
   L += topGlow(vW.xz)*.12*(.5-.5*N.y)/(1.+vW.y*vW.y);
   vec3 col;
   if (vMat < .5) col = vec3(.009,.0095,.011)+L*.045+env(R,.22)*(.03+.5*F);
-  else if (vMat < 1.5) col = env(R,.07)*vec3(.60,.63,.68)*(.45+.55*F)+L*.3+vec3(.003);
+  else if (vMat < 1.5) col = env(R,.07)*vec3(.60,.63,.68)*(.45+.55*F)+min(L, vec3(1.5))*.12+vec3(.003);
   else col = vec3(.004)+L*.006+env(R,.3)*(.01+.2*F);
   col = mix(col, BG, smoothstep(7., 28., dist));
   o = vec4(col, 1.);
@@ -682,7 +685,7 @@ const TIERS = [
   { dpr:1.0,  frac:.5,  refl:0, ms:0 },
   { dpr:.8,   frac:.35, refl:0, ms:0 },
 ];
-let tier = 1, W = 1, H = 1, scale = 1, R = null, msOK = true;
+let tier = 2, W = 1, H = 1, scale = 1, R = null, msOK = true;
 function free(r){ if (!r) return; r.tx.forEach(t => gl.deleteTexture(t)); r.rb.forEach(b => gl.deleteRenderbuffer(b)); r.fb.forEach(f => gl.deleteFramebuffer(f)); }
 function resize(){
   const q = TIERS[tier], cw = innerWidth, ch = innerHeight;
@@ -734,7 +737,7 @@ function mul(o, a, b){ for (let c=0;c<4;c++) for (let r=0;r<4;r++) o[c*4+r] = a[
 
 /* ------------------------------------------------------------------ the take */
 const KEYS = [
-  { t:0,   p:[-7.0,1.0,8.9],    q:[-7.0,.42,0],    fov:30, ap:.35, ex:1.50 },
+  { t:0,   p:[-7.0,1.0,8.9],    q:[-7.0,.28,0],    fov:30, ap:.35, ex:1.50 },
   { t:1,   p:[-9.5,1.55,2.1],   q:[-5.6,1.12,0],   fov:32, ap:.70, ex:1.00 },
   { t:2,   p:[-5.05,1.14,1.45], q:[-4.35,1.2,0],   fov:30, ap:1.0, ex:.80 },
   { t:3,   p:[.9,.6,3.7],       q:[-.1,.62,0],     fov:33, ap:.80, ex:1.05 },
@@ -796,22 +799,26 @@ const hud = $('#hud'); let hudOn = location.hash === '#stats';
 addEventListener('hashchange', () => { hudOn = location.hash === '#stats'; hud.hidden = !hudOn; });
 addEventListener('keydown', e => { if (e.key === 's' && !e.metaKey && !e.ctrlKey){ hudOn = !hudOn; hud.hidden = !hudOn; } });
 hud.hidden = !hudOn;
-const dts = new Float32Array(120); let dtI = 0, dtN = 0, accT = 0, accN = 0, settle = 60, gpuMs = -1, gpuAcc = 0, gpuN = 0, query = null, locked = false, lastDown = null, goodFor = 0, drops = 0;
-function setTier(t){ t = Math.max(0, Math.min(TIERS.length-1, t)); if (t === tier) return; tier = t; resize(); settle = 40; accT = accN = 0; gpuAcc = gpuN = 0; }
+const dts = new Float32Array(120); let dtI = 0, dtN = 0, accT = 0, accN = 0, settle = 30, gpuMs = -1, gpuAcc = 0, gpuN = 0, query = null, locked = false, goodFor = 0, ups = 0;
+const hist = [];
+function setTier(t){ t = Math.max(0, Math.min(TIERS.length-1, t)); if (t === tier) return; tier = t; resize(); settle = 30; accT = accN = 0; gpuAcc = gpuN = 0; }
 function pace(rdt){
   dts[dtI] = rdt; dtI = (dtI+1)%120; dtN = Math.min(dtN+1, 120);
   if (settle > 0){ settle--; return; }
   accT += rdt; accN++;
-  if (accN < 45) return;
-  const avg = accT/accN*1000, g = gpuN ? gpuAcc/gpuN : -1; accT = accN = 0; gpuAcc = gpuN = 0;
-  if (avg > 19.5){
-    goodFor = 0;
-    if (g >= 0 && g < 9){ return; }                       /* slow, but not because of the GPU */
-    if (lastDown && avg > lastDown.avg*.92 && ++lastDown.n >= 2 && g < 0){ locked = true; setTier(lastDown.tier); lastDown = null; return; }
-    if (!locked){ if (!lastDown) lastDown = { tier, avg, n:0 }; drops++; setTier(tier+1); }
+  if (accN < (frame < 300 ? 24 : 45)) return;
+  const n = accN, avg = accT/n*1000, g = gpuN ? gpuAcc/gpuN : -1; accT = accN = 0; gpuAcc = gpuN = 0;
+  /* slow means under about 50 frames a second, unless the GPU is plainly idle (a 30 Hz screen, a busy main thread) */
+  const slow = avg > 19.5 && !(g >= 0 && g < 4);
+  if (slow){
+    goodFor = 0; if (locked) return;
+    hist.push({ tier, avg });
+    /* with no GPU timer, two drops that bought nothing mean the display itself is the limit: go back and stay */
+    if (g < 0 && hist.length >= 3 && avg > hist[hist.length-3].avg*.92){ locked = true; setTier(hist[hist.length-3].tier); return; }
+    setTier(tier+(avg > 33 ? 2 : 1));
   } else {
-    lastDown = null; goodFor += 45;
-    if (tier > 0 && drops < 3 && ((g >= 0 && g < 6.5 && goodFor > 180) || (g < 0 && goodFor > 1500 && avg < 12))){ goodFor = 0; drops++; setTier(tier-1); }
+    hist.length = 0; goodFor += n;
+    if (tier > 0 && ups < 2 && g >= 0 && g < 5.5 && goodFor > 150){ ups++; goodFor = 0; setTier(tier-1); }
   }
 }
 function stats(){
@@ -863,7 +870,7 @@ function render(now){
   rayD[0] = rd[0]; rayD[1] = rd[1]; rayD[2] = rd[2];
   push += (pushT*.55-push)*(1-Math.exp(-dt*3)); burst *= Math.exp(-dt*6);
   const q = TIERS[tier], count = Math.floor(NP*q.frac/SIM)*SIM, gain = .42/q.frac, proj = H/(2*th);
-  const pu = { uFocus:dist, uAp:cam.ap, uGain:gain, uKillX:st.killX, uWaveX:-11.25+C0*(time-waveT), uZone:st.zone, uDustK:2.4, uSat:st.sat };
+  const pu = { uFocus:dist, uAp:cam.ap, uGain:gain, uKillX:st.killX, uWaveX:-11.25+C0*(time-waveT), uZone:st.zone, uDustK:2.4, uSat:st.sat, uTail:1-.88*ss(5.45,5.95,Tc) };
 
   const timing = extT && !query && frame%4 === 0; let qy = null;
   if (timing){ qy = gl.createQuery(); gl.beginQuery(extT.TIME_ELAPSED_EXT, qy); }
