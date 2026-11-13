@@ -236,19 +236,32 @@ h1 em, h2 em { font-style: italic; }
     for (var py = 0; py < w; py++) for (var px = 0; px < w; px++) { var X = px - c + 0.5, Y = c - py - 0.5, r = Math.hypot(X, Y) || 1, dx = tangential ? -Y / r : X / r, dy = tangential ? X / r : Y / r, i = (py * w + px) * 4; d[i] = (dx * 0.5 + 0.5) * 255; d[i + 1] = (dy * 0.5 + 0.5) * 255; d[i + 2] = 255; d[i + 3] = 255; }
     x.putImageData(img, 0, 0); }); }
   function rep2(t, u, v) { t = t.clone(); t.repeat.set(u, v); t.needsUpdate = true; return t; }
+  function stripeDir() { return tex(1024, 4, function (x, w) { var img = x.createImageData(w, 4), d = img.data; // Geneva stripes: the brushing direction sweeps across each band and snaps back
+    for (var i = 0; i < w; i++) { var f = (i / w * 8) % 1, a = 0.52 + Math.PI / 2 + (f - 0.5) * 1.0, k = f < 0.04 || f > 0.96 ? 110 : 255; for (var j = 0; j < 4; j++) { var q = (j * w + i) * 4; d[q] = (Math.cos(a) * 0.5 + 0.5) * 255; d[q + 1] = (Math.sin(a) * 0.5 + 0.5) * 255; d[q + 2] = k; d[q + 3] = 255; } }
+    x.putImageData(img, 0, 0); }); }
+  function pearl(kind) { return tex(512, 512, function (x, w) { var n = 8, s = w / n, R = s * 0.64, img = x.createImageData(w, w), d = img.data; // perlage: small overlapping spots, each brushed in a circle
+    for (var py = 0; py < w; py++) for (var px = 0; px < w; px++) { var best = -1, bx = 0, by = 0, j0 = Math.floor(py / s);
+      for (var j = j0 - 1; j <= j0 + 1; j++) { var off = ((j % 2) + 2) % 2 ? 0.5 : 0, i0 = Math.floor(px / s - off);
+        for (var i = i0 - 1; i <= i0 + 1; i++) { var cx = (i + off + 0.5) * s, cy = (j + 0.5) * s, dx = px - cx, dy = py - cy; if (dx * dx + dy * dy < R * R) { var ord = (((j % n) + n) % n) * 64 + (((i % n) + n) % n); if (j > j0 || ord > best || best < 0) { if (ord > best || j === j0 + 1) { best = ord; bx = dx; by = dy; } } } } }
+      var r = Math.hypot(bx, by) || 1, q = (py * w + px) * 4, e = r / R;
+      if (kind === 'dir') { d[q] = (by / r * 0.5 + 0.5) * 255; d[q + 1] = (bx / r * 0.5 + 0.5) * 255; d[q + 2] = 255 * Math.min(1, e * 3); }
+      else { var v = kind === 'map' ? 255 - 40 * Math.pow(e, 6) : 150 + 60 * Math.pow(e, 5) + (rnd() - 0.5) * 30; d[q] = d[q + 1] = d[q + 2] = v; }
+      d[q + 3] = 255; }
+    x.putImageData(img, 0, 0); }, kind === 'map'); }
   var wear = wearTex(70, 235), wearN = relief(wear, 1.4), brush = brushTex(95, 235), brushN = relief(brush, 2.2), grain = grainTex(150, 255), grainN = relief(grain, 1.2);
   function phys(o) { return new T.MeshPhysicalMaterial(o); }
   function polished(color, rough, rep) { return phys({ color: color, metalness: 1, roughness: rough, roughnessMap: rep2(wear, rep, rep), normalMap: rep2(wearN, rep, rep), normalScale: new T.Vector2(0.12, 0.12) }); }
   function finished(color, mk, lo, hi, rep, rot, off, bump, extra) { var h = mk(lo, hi), o = { color: color, metalness: 1, roughness: 1, map: place(mk(165, 255, true), rep, rot, off), roughnessMap: place(h, rep, rot, off), normalMap: place(relief(h, bump), rep, rot, off), normalScale: new T.Vector2(0.55, 0.55) };
     for (var k in extra) o[k] = extra[k]; return phys(o); }
   var M = {
-    bridgeTop: finished(0x3d4047, stripeTex, 62, 132, 1 / 13, 0.52, false, 2.5),
+    bridgeTop: phys({ color: 0x777a82, metalness: 1, roughness: 0.5, roughnessMap: place(rep2(brush, 1, 1), 1 / 5, 0.52), normalMap: place(rep2(wearN, 1, 1), 1 / 6), normalScale: new T.Vector2(0.06, 0.06), anisotropy: 0.5, anisotropyMap: place(stripeDir(), 1 / 13, 0.52) }),
     bridgeEdge: polished(0xa3a7b1, 0.2, 0.35),
-    plateTop: finished(0x26282d, pearlTex, 70, 145, 1 / 11, 0, false, 1.6),
+    plateTop: phys({ color: 0x4b4e55, metalness: 1, roughness: 0.6, map: place(pearl('map'), 1 / 7), roughnessMap: place(pearl('rough'), 1 / 7), anisotropy: 0.5, anisotropyMap: place(pearl('dir'), 1 / 7) }),
     plateEdge: polished(0x595c64, 0.3, 0.3),
     goldTop: finished(0xbe7850, sunTex, 70, 125, 1 / 16, 0, true, 3, { anisotropy: 0.75, anisotropyMap: place(ringDir(true), 1 / 16, 0, true) }),
     goldEdge: polished(0xdb9468, 0.24, 0.5),
     steelTop: finished(0x6c7079, sunTex, 50, 112, 1 / 10, 0, true, 3, { anisotropy: 0.75, anisotropyMap: place(ringDir(true), 1 / 10, 0, true) }),
+    post: polished(0x5d6068, 0.4, 0.5),
     steel: polished(0xb7bbc3, 0.22, 0.6),
     blued: phys({ color: 0x0a2390, metalness: 1, roughness: 0.3, roughnessMap: rep2(wear, 0.8, 0.8), iridescence: 0.22, iridescenceIOR: 1.6, iridescenceThicknessRange: [330, 390] }),
     dark: phys({ color: 0x050506, metalness: 0.4, roughness: 0.6 }),
@@ -300,8 +313,8 @@ h1 em, h2 em { font-style: italic; }
     g.add(cyl(0.07, 0, r * 0.4 + 0.012, M.dark, 12)); into.add(g); }
   function screw(x, y, z, into, r, mat) { r = r || 0.44; var g = new T.Group(); g.position.set(x, y, z);
     g.add(new T.Mesh(new T.TorusGeometry(r + 0.09, 0.05, 10, 40), M.bridgeEdge));
-    var head = new T.Mesh(crease(new T.LatheGeometry([new T.Vector2(r, -0.05), new T.Vector2(r, 0.07), new T.Vector2(r * 0.94, 0.15), new T.Vector2(r * 0.7, 0.2), new T.Vector2(0, 0.2)], 40).toNonIndexed(), 50), mat || M.blued); head.rotation.x = Math.PI / 2; g.add(head);
-    var slot = new T.Mesh(new T.BoxGeometry(r * 2.02, 0.085, 0.1), M.dark); slot.position.z = 0.165; slot.rotation.z = x * 1.7 + y * 0.9; g.add(slot); into.add(g); }
+    var head = new T.Mesh(crease(new T.LatheGeometry([new T.Vector2(r, -0.05), new T.Vector2(r, 0.1), new T.Vector2(r * 0.9, 0.165), new T.Vector2(0, 0.165)], 40).toNonIndexed(), 50), mat || M.blued); head.rotation.x = Math.PI / 2; g.add(head);
+    var slot = new T.Mesh(new T.BoxGeometry(r * 2.02, 0.085, 0.1), M.dark); slot.position.z = 0.125; slot.rotation.z = x * 1.7 + y * 0.9; g.add(slot); into.add(g); }
 
   // outlines with real fillets: describe a shape as a distance field, then trace its edge
   function smin(a, b, k) { var h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; }
@@ -402,9 +415,9 @@ h1 em, h2 em { font-style: italic; }
     var top = BZ + BT;
     ['centre', 'third', 'fourth', 'escape', 'pallet'].forEach(function (k) { jewel(PIV[k][0], PIV[k][1], top - 0.02, bridges); });
     jewel(PIV.balance[0], PIV.balance[1], top - 0.02, bridges, 0.44);
-    Object.keys(F).forEach(function (k) { screw(F[k][0], F[k][1], top, bridges); var post = cyl(0.6, 0, BZ + 0.05, M.bridgeEdge, 32); post.position.x = F[k][0]; post.position.y = F[k][1]; bridges.add(post); });
+    Object.keys(F).forEach(function (k) { screw(F[k][0], F[k][1], top, bridges); var post = cyl(0.6, 0, BZ + 0.05, M.post, 32); post.position.x = F[k][0]; post.position.y = F[k][1]; bridges.add(post); });
     [158, 182, 206, 231, 255].forEach(function (a, i) { var r = a * Math.PI / 180, x = 14.0 * Math.cos(r), y = 14.0 * Math.sin(r); screw(x, y, top, bridges);
-      if (i === 0 || i === 4) { var post = cyl(0.6, 0, BZ + 0.05, M.bridgeEdge, 32); post.position.x = x; post.position.y = y; bridges.add(post); } });
+      if (i === 0 || i === 4) { var post = cyl(0.6, 0, BZ + 0.05, M.post, 32); post.position.x = x; post.position.y = y; bridges.add(post); } });
     // engraving
     var t = tex(1024, 300, function (x, w, h) { x.fillStyle = '#000'; x.fillRect(0, 0, w, h); x.fillStyle = '#fff'; x.textBaseline = 'middle';
       function line(s, y, px, sp, wt) { x.font = wt + ' ' + px + 'px "Helvetica Neue", Helvetica, Arial, sans-serif'; var tw = 0, i; for (i = 0; i < s.length; i++) tw += x.measureText(s[i]).width + sp; var cx = (w - tw + sp) / 2; for (i = 0; i < s.length; i++) { x.fillText(s[i], cx, y); cx += x.measureText(s[i]).width + sp; } }
