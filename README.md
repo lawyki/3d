@@ -30,4 +30,4 @@ Drag to turn a scene, scroll to zoom. Built with three.js 0.160 loaded from unpk
 
 ## Halden
 
-`halden/index.html` is a product page for a made-up hand-wound watch movement. The movement is built from code (plate, barrel, spoked gear train, escapement, balance with hairspring, striped bridges, rubies, blued screws) and runs at true tooth ratios. Scrolling takes it apart by layer with callouts, moves in on the escapement, shows the train from above and puts it back together. Uses three.js.
+`halden/index.html` is a scroll-driven film of a made-up watch. It starts on the closed watch in the dark, with glowing hands showing the visitor's own time, then turns to the profile, turns over, unscrews its back and opens onto a running movement, moves in on the escapement, lifts the bridges off the gear train, and closes again. The light comes through blinds, from inside the movement and from film-style leaks; glow, lens fringing and grain are done in a small hand-written post-process. Uses three.js.
