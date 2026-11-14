@@ -93,7 +93,7 @@ dd{margin:5px 0 0;color:var(--fg);font-size:15px;font-variant-numeric:tabular-nu
   <section class="ch" id="c0">
     <p class="eyebrow"><b>Lyse Optikk</b><i></i>Cinema lenses, Bergen</p>
     <h1>Follow the light.</h1>
-    <p>Every grain is a photon on an exact ray. It stays white until glass pulls its colours apart, and only glass can change where it goes.</p>
+    <p>A stream of photons leaves one lamp. It stays white until glass pulls its colours apart.</p>
     <div class="go"><span></span>Scroll</div>
   </section>
   <section class="ch" id="c1">
@@ -144,7 +144,7 @@ dd{margin:5px 0 0;color:var(--fg);font-size:15px;font-variant-numeric:tabular-nu
   <li><button type="button" data-k="6">White</button></li>
   <li><button type="button" data-k="7">Point</button></li>
 </ol><em aria-hidden="true"></em></nav>
-<div class="hint" id="hint">Click to send a pulse</div>
+<div class="hint" id="hint">Move through the light<br>Click to send a pulse</div>
 <pre id="hud" hidden></pre>
 <div id="track"></div>
 
@@ -162,7 +162,7 @@ const calm = matchMedia('(prefers-reduced-motion:reduce)').matches;
 const SIM = coarse ? 384 : 512, NP = SIM*SIM;
 
 /* ------------------------------------------------------------------ the bench (world units: 1 = 10 cm) */
-const AY = 1.2, C0 = .6, SRC = -10, FX = 6.6, END = 8.3, LIFE = (END+.15-SRC)/C0, IX = 0, SX = 0, R2 = .08;
+const AY = 1.2, C0 = 1.5, SRC = -10, FX = 6.6, END = 8.3, LIFE = (END+.15-SRC)/C0, IX = 0, SX = 0, R2 = .08;
 /* the line of glass. m: 2 collimate, 0 simple lens (bends blue harder than red), 8 corrector (sends every colour of a ray to the same spot on the next element, at x = f),
    6 direct vision prism (spreads colour, f is how hard), 7 the last element, which sends everything to one point */
 const LENS = [
@@ -320,13 +320,42 @@ void main(){
     oPos = P; oVel = V; return;
   }
   /* a bead's place along its ray depends only on the clock: evenly spaced, every colour in step */
-  /* a grain's place along its ray depends only on the clock. Grains are kept near the camera, so the light is dense where it is looked at */
-  float lam = h1.x, lo = uDustC.x-WLO, x = lo+mod(SRC+fract(h1.y+uTime/LIFE)*(END+.15-SRC)-lo, WSPAN); vec2 u, um;
-  if (x < SRC || x > END+.15){ oPos = vec4(0.,-50.,0.,0.); oVel = vec4(0.,0.,0.,4.); return; }
-  vec2 e = grainE(slot, h2);
-  vec3 p = trace(e, lam, x, u), pm = trace(e, .5, x, um);
-  /* how far glass has pulled this colour away from the middle of the spectrum on the same ray */
-  oPos = vec4(p, length(p-pm)); oVel = vec4(normalize(vec3(1.,u))*C0, 0.);
+  float lam = h1.x, spd = C0*(.78+.44*h1.y), lo = max(uDustC.x-WLO, SRC), hi = min(uDustC.x-WLO+WSPAN, END+.15);
+  float st = V.w, age = P.w; vec3 p0 = P.xyz, v = V.xyz;
+  bool behind = p0.x < lo-.05;
+  bool dead = uInit > .5 || st > 3.5 || p0.x > hi || age > 60. || abs(p0.z) > 3. || abs(p0.y-AY) > 3. || (behind && r.x < uDt*4.);
+  if (dead){
+    /* a new grain leaves the lamp in slow moving wisps, never the same twice; exact optics carry it to where the film is looking */
+    float rr = pow(r.z, .52), th = 6.2831853*r.y;
+    th += .55*sin(3.*th+uTime*.37); rr *= .74+.26*sin(th*5.+uTime*.9+rr*4.);
+    vec2 e = vec2(cos(th), sin(th))*rr, u;
+    float x = (uInit > .5 || behind) ? mix(lo, hi, r.w) : lo+r.w*spd*uDt;
+    vec3 p = trace(e, lam, x, u);
+    oPos = vec4(p, x <= SRC+.001 ? 0. : 1.); oVel = vec4(normalize(vec3(1.,u))*spd, 0.); return;
+  }
+  vec3 w = p0-uRayO; vec3 dl = w-uRayD*dot(w,uRayD);
+  v += normalize(dl+1e-5)*exp(-dot(dl,dl)/.09)*(uPush*2.6+uBurst*18.)*uDt;
+  { float tt = uTime*.6, tk = 1.-.6*smoothstep(-3.9,-3.0,p0.x)*(1.-smoothstep(3.0,3.9,p0.x));
+    v.yz += vec2(sin(p0.x*2.1+p0.z*3.3+tt)+sin(p0.y*5.1-tt*1.7), cos(p0.x*1.7-p0.y*3.1+tt*1.3)+cos(p0.z*4.7+tt))*.022*tk*uDt; }
+  v = normalize(v)*spd;
+  vec3 p1 = p0+v*uDt;
+  for (int i=0;i<NL;i++){
+    float lx = LX[i];
+    if (p0.x < lx && p1.x >= lx){
+      float tf = (lx-p0.x)/max(v.x, 1e-4); vec3 ph = p0+v*tf; vec2 h = ph.yz-vec2(AY,0.); float rr = length(h);
+      if (rr <= LR[i]){
+        vec2 u = v.yz/max(v.x, 1e-4); int m = LM[i];
+        if (m == 2) u = vec2(0.);
+        else if (m == 0){ float f = LF[i]*(1.+.11*(lam-.5)); if (i == 1) f /= 1.+.3*rr*rr; u -= h/f; }
+        else if (m == 6) u.x += LF[i]*(lam-.5);
+        else if (m == 8) u = h*(R2/.27-1.)/(LF[i]-lx);
+        else { float mr = sqrt(h2.x)*.012, ma = 6.2831853*h2.y; vec3 dd = vec3(FX, AY+sin(ma)*mr, cos(ma)*mr)-ph; u = dd.yz/dd.x; }
+        v = normalize(vec3(1.,u))*spd; p1 = ph+v*(uDt-tf);
+      }
+      break;
+    }
+  }
+  oPos = vec4(p1, age+uDt); oVel = vec4(v, 0.);
 }`);
 
 /* ------------------------------------------------------------------ grains: one program for the view, the table reflection and the light field */
@@ -359,7 +388,7 @@ void main(){
   vec2 fc = vec2(id)+.5; vec4 h1 = hash42(fc), h2 = hash42(fc+71.3);
   float st = V.w, age = P.w; vec3 col; float b; float fine = 1.;
   gl_Position = vec4(2.,2.,2.,1.); gl_PointSize = 0.; vCol = vec3(0.); vBlur = 0.;
-  int slot = gl_VertexID%NSLOT; bool dust = slot >= NFILL; float tw = h2.w, fil = slot < NRAY ? 1. : 0.;
+  int slot = gl_VertexID%NSLOT; bool dust = slot >= NFILL; float tw = h2.w;
   if (dust){
     if (uMode > 1.5) return;
     float life = 9.+9.*h2.x;
@@ -368,8 +397,11 @@ void main(){
   } else {
     if (st > 2.5) return;
     float x = P.x; vec3 sp = spectral(h1.x);
-    col = mix(mix(vec3(1.,.90,.76), sp*1.5, .16), sp*2.1, smoothstep(.004, .07, age));
-    b = (1.-smoothstep(END-1.2, END, x))*(.75+.5*h2.w)*mix(.55, 1.15, fil);
+    /* how far glass has pulled this colour from the middle of the spectrum at this place */
+    float D = min(min(max(x+1.9, 0.), 1.3), max(2.0-x, 0.));
+    float sep = abs(h1.x-.5)*(.8*D + .02*clamp((x+7.2)/2.2, 0., 1.5)*(1.-smoothstep(-3.9,-3.0,x)));
+    col = mix(mix(vec3(1.,.90,.76), sp*1.5, .16), sp*2.1, smoothstep(.004, .07, sep));
+    b = (1.-smoothstep(END-1.2, END, x))*(.75+.5*h2.w)*smoothstep(0., .25, age)*.9;
     b *= 1.-.6*smoothstep(-3.9,-3.0,x)*(1.-smoothstep(-1.9,-1.2,x)) - .6*smoothstep(1.3,2.0,x)*(1.-smoothstep(3.0,3.9,x));
     b *= 1.+3.*exp(-pow((x-uWaveX)/.35, 2.));
     float rr = length(P.yz-vec2(AY,0.)), g = 0.;
@@ -501,7 +533,7 @@ void body(){
   vec3 refl = env(reflect(-V,N), .03)*coat(ndv)*F*1.25+lightField(vW)*uScat+vec3(uMilk);
   /* only the glass nearest the eye bends the background; anything behind it keeps its reflections */
   /* ground edges: frosted, and they light up when the stream passes */
-  float edge = (1.-smoothstep(.25, .6, abs(N.x)))*uEdge;
+  float edge = uEdge > 1.5 ? 1. : (1.-smoothstep(.25, .6, abs(N.x)))*uEdge;
   if (edge > .5){
     vec3 toAx = vec3(0., AY-vW.y, -vW.z);
     vec3 fr = lightField(vW+toAx*.7)*.05+lightField(vW+toAx*.3)*.05+lightField(vW)*.25+env(N, .5)*.006;
@@ -597,16 +629,30 @@ const mark = () => VB.length/7;
 const range = fn => { const s = mark(); fn(); return { s, n: mark()-s }; };
 
 const glass = LENS.filter(l => l.tc).map(l => ({ r: range(() => lathe(l.x, lensProf(l), 120, 0, false)), c:[l.x,AY,0], str:l.str, tint:[.97,.985,1], milk:0, sc:.03, coat:.7, mov:0, flat:0 }));
-/* direct vision prisms: tall wedges, alternately apex down and apex up */
+/* direct vision prisms: wedges sized to the light they carry, alternately apex down and apex up. Their ground edges catch the stream like the lens rims do */
 for (const l of LENS.filter(l => l.m === 6)){
-  const sg = Math.sign(l.f), hw = .2, hh = 1.6, hz = .8;
+  const sg = Math.sign(l.f), big = (l.x > -1 && l.x < 1), hw = big ? .2 : .13, hh = big ? .92 : .5, hz = big ? .34 : .26;
   const V = [[l.x-hw, AY+sg*hh],[l.x+hw, AY+sg*hh],[l.x, AY-sg*hh]], cy = AY+sg*hh/3;
   glass.push({ r: range(() => {
     for (let i=0;i<3;i++){ const a = V[i], b = V[(i+1)%3]; let nx = b[1]-a[1], ny = a[0]-b[0]; const ln = Math.hypot(nx,ny); nx/=ln; ny/=ln;
+      const P = [[a[0],a[1],-hz],[b[0],b[1],-hz],[b[0],b[1],hz],[a[0],a[1],hz]];
       if (nx*((a[0]+b[0])/2-l.x)+ny*((a[1]+b[1])/2-cy) < 0){ nx=-nx; ny=-ny; }
-      const n = [nx,ny,0]; quad([a[0],a[1],-hz],[b[0],b[1],-hz],[b[0],b[1],hz],[a[0],a[1],hz], n,n,n,n, 0); }
-    for (const z of [-hz, hz]){ const n = [0,0,Math.sign(z)]; tri([V[0][0],V[0][1],z],[V[1][0],V[1][1],z],[V[2][0],V[2][1],z], n,n,n, 0); }
-  }), c:[l.x,AY,0], str:.03, tint:[.96,.985,1], milk:0, sc:.02, coat:.12, mov:0, flat:1 });
+      /* wind so the outward side is the front */
+      const e1 = [P[1][0]-P[0][0],P[1][1]-P[0][1],0], e2 = [0,0,1], cz = e1[0]*e2[1]-e1[1]*e2[0], cxn = e1[1]*e2[2], cyn = -e1[0]*e2[2];
+      const n = [nx,ny,0]; if (cxn*nx+cyn*ny < 0) quad(P[3],P[2],P[1],P[0], n,n,n,n, 0); else quad(P[0],P[1],P[2],P[3], n,n,n,n, 0); }
+    for (const z of [-hz, hz]){ const n = [0,0,Math.sign(z)]; const A = [V[0][0],V[0][1],z], B = [V[1][0],V[1][1],z], C = [V[2][0],V[2][1],z];
+      const cr = (B[0]-A[0])*(C[1]-A[1])-(B[1]-A[1])*(C[0]-A[0]); if (cr*z > 0) tri(A,B,C, n,n,n, 0); else tri(A,C,B, n,n,n, 0); }
+  }), c:[l.x,AY,0], str:.03, tint:[.97,.985,1], milk:.0012, sc:.05, coat:.25, mov:0, flat:1 });
+  /* edges */
+  glass.push({ r: range(() => {
+    const w = .007, E = [];
+    for (let i=0;i<3;i++){ E.push([[V[i][0],V[i][1],-hz],[V[i][0],V[i][1],hz]]); for (const z of [-hz,hz]) E.push([[V[i][0],V[i][1],z],[V[(i+1)%3][0],V[(i+1)%3][1],z]]); }
+    for (const [A,B] of E){ const d = [B[0]-A[0],B[1]-A[1],B[2]-A[2]];
+      const ps = Math.abs(d[2]) > 1e-6 ? [[1,0,0],[0,1,0]] : [[0,0,1],(() => { const l2 = Math.hypot(d[0],d[1]); return [-d[1]/l2, d[0]/l2, 0]; })()];
+      for (const p of ps){ const o = k => [[A[0]+p[0]*w*k,A[1]+p[1]*w*k,A[2]+p[2]*w*k],[B[0]+p[0]*w*k,B[1]+p[1]*w*k,B[2]+p[2]*w*k]];
+        const [a1,b1] = o(-1), [a2,b2] = o(1), n = [0,1,0];
+        quad(a1,b1,b2,a2, n,n,n,n, 0); quad(a2,b2,b1,a1, n,n,n,n, 0); } }
+  }), c:[l.x,AY,0], str:0, tint:[1,1,1], milk:0, sc:0, coat:0, mov:0, flat:2 });
 }
 
 const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
@@ -820,7 +866,7 @@ function render(now){
   push += (pushT*.55-push)*(1-Math.exp(-dt*3)); burst *= Math.exp(-dt*6);
   const q = TIERS[tier], count = Math.floor(NP*q.frac/SIM)*SIM, gain = .42/q.frac, proj = H/(2*th);
   beadK = Math.max(1, Math.floor(count/(6*27)));
-  const pu = { uFocus:dist, uAp:cam.ap, uGain:gain, uKillX:st.killX, uWaveX:cam.q[0]-2.6+2.2*(time-waveT), uZone:st.zone, uDustK:1.6, uSat:st.sat, uTail:1-.88*ss(6.5,6.95,Tc) };
+  const pu = { uFocus:dist, uAp:cam.ap, uGain:gain, uKillX:st.killX, uWaveX:cam.q[0]-2.6+C0*1.4*(time-waveT), uZone:st.zone, uDustK:1.6, uSat:st.sat, uTail:1-.88*ss(6.5,6.95,Tc) };
 
   const timing = extT && !query && frame%4 === 0; let qy = null;
   if (timing){ qy = gl.createQuery(); gl.beginQuery(extT.TIME_ELAPSED_EXT, qy); }
@@ -865,7 +911,7 @@ function render(now){
   gl.bindFramebuffer(gl.FRAMEBUFFER, r.gdF); gl.viewport(0,0,r.dw,r.dh); gl.clearDepth(1); gl.clear(gl.DEPTH_BUFFER_BIT);
   gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); gl.depthFunc(gl.LESS);
   use(pDepth, { uVP:mVP, uOff:off0 });
-  for (const g of glass){ if (g.vis < .5) continue; gl.uniform3fv(pDepth.u.uOff.loc, off0); gl.drawArrays(gl.TRIANGLES, g.r.s, g.r.n); }
+  for (const g of glass){ if (g.vis <= 0 || g.flat === 2) continue; gl.uniform3fv(pDepth.u.uOff.loc, off0); gl.drawArrays(gl.TRIANGLES, g.r.s, g.r.n); }
   gl.disable(gl.CULL_FACE); gl.depthFunc(gl.LEQUAL);
 
   /* grains behind the glass, or clear of it */
@@ -883,7 +929,7 @@ function render(now){
   gl.blendFuncSeparate(gl.ONE, gl.SRC_ALPHA, gl.ZERO, gl.SRC_ALPHA);
   use(pGlass, { uVP:mVP, uCam:camP, uRes:res, uViewR:mR3, tA:r.aTex, tLF:lfTex, tGD:r.gdTex });
   for (const g of glass){
-    gl.uniform3fv(pGlass.u.uOff.loc, g.mov ? offP : off0); gl.uniform1f(pGlass.u.uStr.loc, g.str); gl.uniform3fv(pGlass.u.uTint.loc, g.tint); gl.uniform1f(pGlass.u.uMilk.loc, g.milk); gl.uniform1f(pGlass.u.uScat.loc, g.sc); gl.uniform1f(pGlass.u.uCoat.loc, g.coat); gl.uniform1f(pGlass.u.uEdge.loc, g.flat ? 0 : 1); gl.uniform1f(pGlass.u.uVis.loc, g.vis); if (g.vis <= 0) continue;
+    gl.uniform3fv(pGlass.u.uOff.loc, g.mov ? offP : off0); gl.uniform1f(pGlass.u.uStr.loc, g.str); gl.uniform3fv(pGlass.u.uTint.loc, g.tint); gl.uniform1f(pGlass.u.uMilk.loc, g.milk); gl.uniform1f(pGlass.u.uScat.loc, g.sc); gl.uniform1f(pGlass.u.uCoat.loc, g.coat); gl.uniform1f(pGlass.u.uEdge.loc, g.flat === 2 ? 2 : (g.flat ? 0 : 1)); gl.uniform1f(pGlass.u.uVis.loc, g.vis); if (g.vis <= 0) continue;
     gl.cullFace(gl.FRONT); gl.uniform1f(pGlass.u.uBack.loc, 1); gl.drawArrays(gl.TRIANGLES, g.r.s, g.r.n);
     gl.cullFace(gl.BACK); gl.uniform1f(pGlass.u.uBack.loc, 0); gl.drawArrays(gl.TRIANGLES, g.r.s, g.r.n);
   }
@@ -930,7 +976,7 @@ requestAnimationFrame(render);
 window.__film = {
   get T(){ return Tc; }, set T(v){ Tc = v; }, stats, setTier, lock(v){ locked = v; },
   warm(n, T){ const st = stage(T === undefined ? Tc : T); gl.bindVertexArray(vaoNone); gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
-    for (let i=0;i<n;i++){ time += 1/30; simStep(1/30, st, [0,50,0], [0,1,0], 0); } },
+    sampleCam(T === undefined ? Tc : T); for (let i=0;i<n;i++){ time += 1/30; simStep(1/30, st, [0,50,0], [0,1,0], cam.q[0]); } },
 };
 })();
 </script>
