@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Strand Line One</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Strand: a ride up a lift from the sea to orbit. The picture is the page. Type sits lower left,
+   the instruments sit on the right edge, and both stay small so the planet has the room. */
+:root { --ink: #f3f1ec; --soft: rgba(243, 241, 236, 0.68); --hair: rgba(243, 241, 236, 0.24); --bg: #05070b; --hot: #ff8a3c;
+  --sans: "DM Sans", "Helvetica Neue", Helvetica, Arial, sans-serif; --mono: "DM Mono", ui-monospace, Menlo, Consolas, monospace; color-scheme: dark; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #05070b; } }
+:root[data-theme="dark"] { --bg: #05070b; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+canvas#view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: pan-y; }
+canvas#view.grab { cursor: grabbing; }
+.shade { position: fixed; inset: 0; pointer-events: none; background:
+  radial-gradient(110% 80% at 0% 100%, rgba(3, 5, 9, 0.6), rgba(3, 5, 9, 0) 60%), linear-gradient(to bottom, rgba(3, 5, 9, 0.4), rgba(3, 5, 9, 0) 15%), linear-gradient(to left, rgba(3, 5, 9, 0.4), rgba(3, 5, 9, 0) 22%); }
+.step { height: 170vh; pointer-events: none; } .step:last-child { height: 100vh; height: 100lvh; }
+#track { position: relative; pointer-events: none; }
+
+header { position: fixed; z-index: 3; top: env(safe-area-inset-top, 0px); left: 0; right: 0; display: flex; align-items: baseline; justify-content: space-between;
+  padding: 22px max(30px, env(safe-area-inset-right, 0px)) 0 max(30px, env(safe-area-inset-left, 0px)); pointer-events: none; }
+.mark { font-weight: 500; font-size: 17px; letter-spacing: -0.01em; } .mark span { color: var(--soft); font-weight: 400; margin-left: 10px; }
+.clock { font: 400 12px var(--mono); letter-spacing: 0.06em; color: var(--soft); font-variant-numeric: tabular-nums; } .clock b { font-weight: 500; color: var(--ink); } .scale { text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.08em; margin-right: 34px; } .scale svg { vertical-align: -6px; margin-left: 12px; }
+
+.beat { position: fixed; z-index: 2; left: max(30px, env(safe-area-inset-left, 0px)); bottom: max(44px, env(safe-area-inset-bottom, 0px)); width: min(430px, calc(100vw - 60px));
+  opacity: 0; visibility: hidden; pointer-events: none; will-change: opacity, transform; }
+.beat.live button { pointer-events: auto; }
+.no { font: 500 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--soft); margin: 0 0 18px; display: flex; align-items: center; gap: 12px; }
+.no::before { content: ""; width: 26px; height: 1px; background: var(--hot); }
+h1, h2 { margin: 0; font-weight: 300; letter-spacing: -0.035em; line-height: 1.02; font-size: clamp(38px, 4.6vw, 64px); text-wrap: balance; }
+.lede { margin: 20px 0 0; font-size: 15px; line-height: 1.55; color: var(--soft); max-width: 33em; text-wrap: pretty; }
+button.again { margin-top: 26px; font: 500 14px var(--sans); color: #0b0d11; background: var(--ink); border: 0; border-radius: 999px; padding: 12px 20px; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+/* instruments */
+.inst { position: fixed; z-index: 2; right: max(30px, env(safe-area-inset-right, 0px)); bottom: max(44px, env(safe-area-inset-bottom, 0px)); text-align: right; pointer-events: none; font-variant-numeric: tabular-nums; }
+.alt { font-weight: 300; font-size: clamp(40px, 4.4vw, 62px); letter-spacing: -0.04em; line-height: 1; } .alt small { font: 400 13px var(--mono); letter-spacing: 0.08em; color: var(--soft); margin-left: 8px; }
+.inst p { margin: 0 0 10px; font: 500 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--soft); }
+.reads { display: flex; justify-content: flex-end; gap: 26px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--hair); font: 400 11px var(--mono); letter-spacing: 0.06em; color: var(--soft); }
+.reads b { display: block; font: 400 16px var(--sans); letter-spacing: -0.01em; color: var(--ink); margin-top: 4px; }
+.bar { display: block; width: 100%; height: 2px; background: var(--hair); margin-top: 7px; position: relative; } .bar i { position: absolute; inset: 0; background: var(--ink); transform-origin: 0 50%; }
+.ruler { position: fixed; z-index: 2; right: max(30px, env(safe-area-inset-right, 0px)); top: 84px; bottom: 250px; width: 150px; pointer-events: none; font: 400 10.5px var(--mono); letter-spacing: 0.08em; color: var(--soft); }
+.ruler .line { position: absolute; right: 3px; top: 0; bottom: 0; width: 1px; background: var(--hair); }
+.ruler .fill { position: absolute; right: 3px; bottom: 0; width: 1px; height: 100%; background: var(--ink); transform-origin: 50% 100%; transform: scaleY(0); }
+.ruler .dot { position: absolute; right: 0; bottom: 0; width: 7px; height: 7px; margin-bottom: -3.5px; border-radius: 50%; background: var(--hot); box-shadow: 0 0 0 4px rgba(255, 138, 60, 0.2); }
+.ruler span { position: absolute; right: 16px; transform: translateY(50%); white-space: nowrap; text-transform: uppercase; transition: color 0.4s; }
+.ruler span::after { content: ""; position: absolute; right: -16px; top: 50%; width: 8px; height: 1px; background: var(--hair); }
+.ruler span.past { color: var(--ink); }
+.hint { position: fixed; z-index: 3; left: 50%; bottom: max(20px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); font: 400 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--soft); transition: opacity 0.6s; white-space: nowrap; pointer-events: none; }
+.fail { position: fixed; inset: 0; display: grid; place-items: center; padding: 28px; text-align: center; color: var(--soft); font-size: 15px; z-index: 4; }
+@media (max-width: 820px) {
+  .ruler, .hint, .reads .wide, .mark span, .scale { display: none; }
+  .inst { bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 62px); left: max(22px, env(safe-area-inset-left, 0px)); right: max(22px, env(safe-area-inset-right, 0px)); text-align: left; }
+  .inst p { display: none; } .alt { font-size: 34px; } .reads { justify-content: flex-start; margin-top: 10px; padding-top: 10px; border-top: 0; }
+  .beat { left: max(22px, env(safe-area-inset-left, 0px)); bottom: max(34px, env(safe-area-inset-bottom, 0px)); width: calc(100vw - 44px); }
+  header { padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px)); }
+  .lede { font-size: 14px; } h1, h2 { font-size: 34px; }
+  .shade { background: linear-gradient(to top, rgba(3, 5, 9, 0.8), rgba(3, 5, 9, 0) 58%), linear-gradient(to bottom, rgba(3, 5, 9, 0.6), rgba(3, 5, 9, 0) 26%); }
+}
+</style>
+
+<canvas id="view" aria-label="A ride up a space lift: from a platform on the ocean at dawn, through the clouds, past the edge of the atmosphere, to a ring station in orbit with the planet below"></canvas>
+<div class="shade"></div>
+
+<header><span class="mark">Strand<span>Line One</span></span><span class="clock"><span class="scale">To scale<svg viewBox="0 0 84 20" width="84" height="20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor"/><path d="M19 10H69.6M69.6 6v8" stroke="currentColor" fill="none" opacity="0.6"/><circle id="sdot" cx="19" cy="10" r="2.2" fill="#ff8a3c"/></svg></span>T+ <b id="clock">0d 00h 00m</b></span></header>
+<main id="track"><div class="step"></div><div class="step"></div><div class="step"></div><div class="step"></div><div class="step"></div><div class="step"></div></main>
+
+<article class="beat"><p class="no">Kiritimati sea anchor · 05:52</p><h1>Seven days to orbit. No rocket.</h1>
+  <p class="lede">A ribbon of woven carbon hangs from a station above the equator and is tied to a platform in the Pacific. A car climbs it. Scroll to ride.</p></article>
+<article class="beat"><p class="no">6 km · Above the weather</p><h2>The last cloud is under you.</h2>
+  <p class="lede">The car climbs at the speed of a slow train. Nothing burns and nothing shakes. Two minutes ago you were standing at sea level.</p></article>
+<article class="beat"><p class="no">30 km · Stratosphere</p><h2>The sky goes first.</h2>
+  <p class="lede">Ninety-nine percent of the air is now below the floor. The blue thins to black in full daylight, and the horizon has started to bend.</p></article>
+<article class="beat"><p class="no">100 km · Kármán line</p><h2>Space, half an hour in.</h2>
+  <p class="lede">A rocket crosses this line at eight times the speed of sound. You cross it at two hundred kilometres an hour, holding a coffee.</p></article>
+<article class="beat"><p class="no">2,000 km · Hour ten</p><h2>The whole planet, slowly.</h2>
+  <p class="lede">You weigh a little over half of what you did this morning. Dawn is a line you can watch moving across the ocean.</p></article>
+<article class="beat"><p class="no">35,786 km · Meridian Station</p><h2>Arrive weightless.</h2>
+  <p class="lede">At this height one orbit takes exactly one day, so the station hangs still above the anchor and nothing in it falls. Cars leave the sea every morning at dawn.</p>
+  <button type="button" class="again" id="again">Ride again</button></article>
+
+<div class="ruler" id="ruler"><i class="line"></i><i class="fill" id="fill"></i><i class="dot" id="dot"></i></div>
+<div class="inst"><p>Altitude</p><div class="alt"><span id="alt">0.09</span><small id="unit">km</small></div>
+  <div class="reads"><span>Speed<b id="speed">0 km/h</b></span><span>Your weight<b id="weight">100%</b><i class="bar"><i id="wbar"></i></i></span><span class="wide">Outside<b id="out">27 °C</b></span></div></div>
+<p class="hint" id="hint">Scroll to climb · drag to look around</p>
+
+<script>
+(function () {
+  var canvas = document.getElementById('view'), steps = document.querySelectorAll('.step'), beats = document.querySelectorAll('.beat'), NB = beats.length;
+  var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, $ = function (id) { return document.getElementById(id); };
+  function fail(msg) { var d = document.createElement('div'); d.className = 'fail'; d.textContent = msg; document.body.appendChild(d); beats[0].style.opacity = 1; beats[0].style.visibility = 'visible'; }
+  $('again').addEventListener('click', function () { window.scrollTo({ top: 0, behavior: calm ? 'auto' : 'smooth' }); });
+  var gl = canvas.getContext('webgl', { antialias: false, alpha: false, depth: false, powerPreference: 'high-performance' });
+  var hp = gl && gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
+  if (!gl || !hp || hp.precision < 23) { fail('This browser cannot draw the ride in 3D.'); return; }
+
+  /* ---------- the planet, its air and weather, and the three machines, drawn per pixel ---------- */
+  var SCENE = [
+    'precision highp float;',
+    'uniform vec2 uRes, uJit; uniform float uFrame, uAlpha, uTan, uOx, uTime, uH, uPlatY, uStaY, uTrack, uExp, uFog, uSpin;',
+    'uniform vec3 uCam, uF, uR, uU, uSun, uAmbUp, uAmbDn; uniform sampler2D uHist;',
+    'const float R = 6371.0, RA = 6471.0, PI = 3.14159265; const vec3 BR = vec3(5.8e-3, 13.5e-3, 33.1e-3); const float BM = 4.0e-3;',
+    'float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }',
+    'float h3(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }',
+    'float n3(vec3 x){ vec3 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);',
+    '  return mix(mix(mix(h3(i), h3(i + vec3(1, 0, 0)), f.x), mix(h3(i + vec3(0, 1, 0)), h3(i + vec3(1, 1, 0)), f.x), f.y),',
+    '             mix(mix(h3(i + vec3(0, 0, 1)), h3(i + vec3(1, 0, 1)), f.x), mix(h3(i + vec3(0, 1, 1)), h3(i + vec3(1, 1, 1)), f.x), f.y), f.z); }',
+    'float fbm(vec3 p){ return 0.5 * n3(p) + 0.25 * n3(p * 2.02 + 11.0) + 0.125 * n3(p * 4.05 + 5.0) + 0.0625 * n3(p * 8.1 + 2.0); }',
+
+    /* --- air: how much of it lies between a point and the sun, and what a ray gathers on its way --- */
+    'vec2 dens(float a){ a = max(a, 0.0); return vec2(exp(-a / 8.0), exp(-a / 1.2)); }',
+    'vec2 sunDepth(vec3 P, float r){ float bs = dot(P, uSun), a = r - R; if (bs < 0.0 && bs * bs - a * (r + R) > 0.0) return vec2(1e3);',
+    '  float ts = -bs + sqrt(max(bs * bs - (r - RA) * (r + RA), 0.0)), dt = ts / 4.0; vec2 od = vec2(0.0);',
+    '  for (int j = 0; j < 4; j++) { float t = (float(j) + 0.5) * dt; od += dens(sqrt(r * r + 2.0 * t * bs + t * t) - R) * dt; } return od; }',
+    'vec3 sunAt(vec3 P, float r){ vec2 od = sunDepth(P, r); return exp(-(BR * od.x + BM * 1.1 * od.y)); }',
+    'vec3 air(vec3 C, float rC, vec3 rd, float tEnd, float j, out vec3 trans){ trans = vec3(1.0);',
+    '  float b = rC * rd.y, ca = (rC - RA) * (rC + RA), t0 = 0.0, t1;',
+    '  if (ca > 0.0) { float d = b * b - ca; if (b > 0.0 || d < 0.0) return vec3(0.0); float s = sqrt(d); t0 = -b - s; t1 = -b + s; } else t1 = -b + sqrt(b * b - ca);',
+    '  t1 = min(t1, tEnd); if (t1 <= t0) return vec3(0.0);',
+    '  float dt = (t1 - t0) / 10.0; vec2 odV = vec2(0.0); vec3 sR = vec3(0.0), sM = vec3(0.0);',
+    '  for (int i = 0; i < 10; i++) { float t = t0 + (float(i) + j) * dt, rr = sqrt(rC * rC + 2.0 * t * b + t * t); vec2 d = dens(rr - R) * dt; odV += d;',
+    '    vec2 odL = sunDepth(C + rd * t, rr); vec3 att = exp(-(BR * (odV.x + odL.x) + BM * 1.1 * (odV.y + odL.y))); sR += d.x * att; sM += d.y * att; }',
+    '  float mu = dot(rd, uSun), g = 0.76; trans = exp(-(BR * odV.x + BM * 1.1 * odV.y));',
+    '  return 22.0 * (sR * BR * 0.0597 * (1.0 + mu * mu) + sM * BM * 0.1194 * ((1.0 - g * g) * (1.0 + mu * mu)) / ((2.0 + g * g) * pow(1.0 + g * g - 2.0 * g * mu, 1.5))); }',
+    'float clouds(vec3 P, float t){ vec3 u = P / R; float big = fbm(u * 3.2 + vec3(1.7, 0.0, 4.2) + 0.5 * fbm(u * 6.0)), med = mix(fbm(u * 15.0 + 5.0), fbm(P * 0.011 + 3.0), smoothstep(5000.0, 1200.0, t)), det = t < 900.0 ? fbm(P * 0.11) : 0.5;',
+    '  return smoothstep(0.5, 0.64, big * 0.4 + med * 0.36 + det * 0.26); }',
+
+    /* --- the three machines, in metres around the car --- */
+    'float cylY(vec3 p, float r, float h){ vec2 d = vec2(length(p.xz) - r, abs(p.y) - h); return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)); }',
+    'float box(vec3 p, vec3 b){ vec3 q = abs(p) - b; return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0); }',
+    'vec2 rep(vec2 p, float n){ float a = atan(p.y, p.x) + PI / n; a = mod(a, 2.0 * PI / n) - PI / n; return length(p) * vec2(cos(a), sin(a)); }',
+    'float car(vec3 p){ vec3 q = p; q.y -= clamp(q.y, -2.6, 2.6); float d = length(q) - 2.1;',
+    '  d = min(d, cylY(p, 0.75, 6.2)); d = min(d, min(cylY(p - vec3(0.0, 5.6, 0.0), 1.15, 0.8), cylY(p + vec3(0.0, 5.6, 0.0), 1.15, 0.8)) - 0.08);',
+    '  q = p; q.xz = rep(p.xz, 3.0); d = min(d, box(q - vec3(5.2, -1.3, 0.0), vec3(3.4, 0.1, 0.22))); d = min(d, cylY(q - vec3(9.6, -1.3, 0.0), 3.1, 0.07) - 0.05); return d; }',
+    'float platform(vec3 p){ float l = length(p) - 260.0; if (l > 60.0) return l;',
+    '  float d = cylY(p - vec3(0.0, 13.0, 0.0), 112.0, 2.5) - 0.6; vec3 q = p; q.xz = rep(p.xz, 6.0);',
+    '  d = min(d, cylY(q - vec3(88.0, 0.0, 0.0), 9.0, 11.0)); d = min(d, box(q - vec3(62.0, 22.0, 0.0), vec3(13.0, 6.0, 9.0)) - 0.4); d = min(d, box(q - vec3(40.0, 19.0, 0.0), vec3(5.0, 3.0, 16.0)));',
+    '  d = min(d, max(length(p.xz) - mix(17.0, 4.0, clamp((p.y - 16.0) / 62.0, 0.0, 1.0)), abs(p.y - 47.0) - 31.0) * 0.9);',
+    '  d = min(d, cylY(q - vec3(104.0, 30.0, 0.0), 0.5, 15.0)); return d; }',
+    'float station(vec3 p){ float l = length(p) - 380.0; if (l > 80.0) return l;',
+    '  float d = cylY(p, 24.0, 44.0) - 2.0; d = min(d, cylY(p - vec3(0.0, 90.0, 0.0), 3.0, 46.0));',
+    '  float cs = cos(uSpin), sn = sin(uSpin); vec3 r = vec3(cs * p.x - sn * p.z, p.y, sn * p.x + cs * p.z);',
+    '  vec2 tq = vec2(length(r.xz) - 170.0, r.y); d = min(d, length(max(abs(tq) - vec2(6.0, 9.0), 0.0)) - 3.0);',
+    '  vec3 q = r; q.xz = rep(r.xz, 4.0); d = min(d, box(q - vec3(96.0, 0.0, 0.0), vec3(72.0, 2.2, 2.2)));',
+    '  q = r; q.xz = rep(r.xz, 12.0); d = min(d, box(q - vec3(170.0, 0.0, 0.0), vec3(10.0, 12.0, 14.0)) - 1.0);',
+    '  d = min(d, box(vec3(abs(p.x) - 98.0, p.y - 120.0, p.z), vec3(54.0, 0.7, 26.0))); d = min(d, box(p - vec3(0.0, 120.0, 0.0), vec3(44.0, 1.6, 1.6))); return d; }',
+    'float mapL(vec3 p){ float d = car(p); if (uPlatY < 4.0e4) d = min(d, platform(p + vec3(0.0, uPlatY, 0.0))); if (abs(uStaY) < 9.0e4) d = min(d, station(p - vec3(0.0, uStaY + 62.0, 0.0))); return d; }',
+    'vec3 nrmL(vec3 p, float e){ vec2 k = vec2(e, 0.0); return normalize(vec3(mapL(p + k.xyy) - mapL(p - k.xyy), mapL(p + k.yxy) - mapL(p - k.yxy), mapL(p + k.yyx) - mapL(p - k.yyx))); }',
+    'float marchL(vec3 ro, vec3 rd){ float t = 0.5; for (int i = 0; i < 100; i++) { float d = mapL(ro + rd * t); if (d < 0.0012 * t + 0.004) return t; t += d * 0.95; if (t > 1.0e5) break; } return -1.0; }',
+    'float shadowL(vec3 ro, float sc){ float r = 1.0, t = 0.05 * sc; for (int i = 0; i < 30; i++) { float d = mapL(ro + uSun * t); if (d < 0.002 * sc) return 0.0; r = min(r, 9.0 * d / t); t += clamp(d, 0.04 * sc, 12.0 * sc); if (t > 500.0 * sc) break; } return clamp(r, 0.0, 1.0); }',
+    'vec3 lit(vec3 p, vec3 n, vec3 rd, float t, vec3 sunC){',
+    '  float dC = car(p), dP = uPlatY < 4.0e4 ? platform(p + vec3(0.0, uPlatY, 0.0)) : 1e9, dS = abs(uStaY) < 9.0e4 ? station(p - vec3(0.0, uStaY + 62.0, 0.0)) : 1e9;',
+    '  vec3 alb = vec3(0.8), em = vec3(0.0), warm = vec3(1.0, 0.72, 0.42), orange = vec3(0.9, 0.3, 0.07); float spec = 0.25, sc = 1.0;',
+    '  if (dC <= min(dP, dS)) { float r = length(p.xz), a = atan(p.z, p.x);',
+    '    if (r > 5.5) { alb = n.y > 0.5 ? vec3(0.015, 0.02, 0.045) : vec3(0.7); spec = n.y > 0.5 ? 1.4 : 0.2; }',
+    '    else if (abs(p.y) > 4.7 || r < 1.0) alb = vec3(0.06);',
+    '    else if (abs(p.y - 0.8) < 0.42 && r > 1.9) { alb = vec3(0.02); spec = 1.0; em = warm * 1.5 * (0.35 + 0.65 * step(fract(a * 8.0 / (2.0 * PI)), 0.82)); }',
+    '    else if (abs(p.y + 1.9) < 0.13) alb = orange;',
+    '  } else if (dP <= dS) { vec3 q = p + vec3(0.0, uPlatY, 0.0); float r = length(q.xz), a = atan(q.z, q.x); sc = 6.0;',
+    '    alb = vec3(0.34, 0.35, 0.36); if (q.y > 16.5) { alb = vec3(0.78); if (r < 18.0 && fract(q.y / 22.0) < 0.22) alb = orange; }',
+    '    if (q.y > 12.0 && q.y < 16.4 && r > 110.0) em = warm * 5.0 * step(0.8, fract(a * 36.0 / (2.0 * PI)));',
+    '    if (q.y > 17.0 && q.y < 28.0 && r > 30.0 && r < 80.0 && abs(n.y) < 0.5) em = warm * 2.2 * step(0.55, fract(q.y * 0.4)) * step(0.4, fract((q.x + q.z) * 0.21));',
+    '    if (q.y > 44.0 && r > 100.0) em = vec3(1.0, 0.1, 0.05) * 6.0;',
+    '  } else { vec3 q = p - vec3(0.0, uStaY + 62.0, 0.0); float r = length(q.xz); sc = 8.0;',
+    '    if (q.y > 118.0 && abs(q.x) > 40.0) { alb = vec3(0.012, 0.02, 0.06); spec = 1.6; vec2 gq = abs(fract(q.xz / 13.0) - 0.5); if (min(gq.x, gq.y) < 0.035) alb = vec3(0.4); }',
+    '    else if (r > 150.0 && abs(q.y) < 2.2 && abs(n.y) < 0.6) { alb = vec3(0.03); em = warm * 2.4 * step(0.35, fract(atan(q.z, q.x) * 90.0 / (2.0 * PI) + uSpin * 14.3)); }',
+    '    else if (r < 30.0 && abs(abs(q.y) - 30.0) < 2.5) alb = orange;',
+    '    else if (r < 30.0 && abs(q.y) < 20.0 && abs(n.y) < 0.5 && fract(q.y / 8.0) < 0.3) { alb = vec3(0.03); em = warm * 2.0 * step(0.3, fract(atan(q.z, q.x) * 24.0 / (2.0 * PI))); } }',
+    '  float ndl = max(dot(n, uSun), 0.0), sh = ndl > 0.0 ? shadowL(p + n * 0.02 * sc, sc) : 0.0, ao = 1.0;',
+    '  for (int i = 1; i <= 3; i++) { float h = 0.35 * float(i) * sc; ao -= (h - mapL(p + n * h)) / h * 0.22; } ao = clamp(ao, 0.25, 1.0);',
+    '  vec3 hv = normalize(uSun - rd); float F = 0.04 + 0.96 * pow(1.0 - max(dot(n, -rd), 0.0), 5.0);',
+    '  return alb * (sunC * 2.7 * ndl * sh + mix(uAmbDn, uAmbUp, 0.5 + 0.5 * n.y) * ao) + em + sunC * sh * spec * (pow(max(dot(n, hv), 0.0), 70.0) * 2.0) + mix(uAmbDn, uAmbUp, 0.5 + 0.5 * reflect(rd, n).y) * F * spec * ao; }',
+
+    'void main(){',
+    '  vec2 ndc = ((gl_FragCoord.xy + uJit) / uRes) * 2.0 - 1.0; ndc.x -= uOx;',
+    '  vec3 rd = normalize(uF + uR * ndc.x * uTan * uRes.x / uRes.y + uU * ndc.y * uTan);',
+    '  float j = hash(gl_FragCoord.xy + fract(uFrame * 0.618) * 91.7), rC = R + uH; vec3 C = vec3(0.0, rC, 0.0);',
+    '  vec3 sunC = sunAt(C, rC);',
+    // the planet: ocean, a few islands, weather
+    '  float b = rC * rd.y, c = uH * (2.0 * R + uH), disc = b * b - c, tP = -1.0; if (b < 0.0 && disc > 0.0) tP = c / (-b + sqrt(disc));',
+    '  float hc = uH - 3.0, cc = hc * (2.0 * R + uH + 3.0), dc = b * b - cc, tC = -1.0;',
+    '  if (hc > 0.0) { if (b < 0.0 && dc > 0.0) tC = -b - sqrt(dc); } else { tC = -b + sqrt(dc); if (tP > 0.0) tC = -1.0; }',
+    '  vec3 col = vec3(0.0), st = vec3(0.0), trans; float tEnd = tP > 0.0 ? tP : 1e9, mu = dot(rd, uSun);',
+    '  if (tP > 0.0) { vec3 P = C + rd * tP, n = P / R; vec3 sc = sunAt(P, R + 0.01) * 2.6; float tw = smoothstep(-0.12, 0.22, dot(n, uSun));',
+    '    vec3 nw = n; float near = 1.0 / (1.0 + tP * 0.02);',
+    '    if (tP < 400.0) { vec2 q = P.xz; nw = normalize(n + near * 0.22 * vec3(n3(vec3(q * 55.0, uTime * 0.6)) + 0.5 * n3(vec3(q * 190.0, uTime * 0.9)) - 0.75, 0.0, n3(vec3(q * 55.0 + 7.3, uTime * 0.6)) + 0.5 * n3(vec3(q * 190.0 + 3.1, uTime * 0.9)) - 0.75)); }',
+    '    float F = 0.02 + 0.98 * pow(1.0 - max(dot(nw, -rd), 0.0), 5.0); vec3 hv = normalize(uSun - rd);',
+    '    col = vec3(0.012, 0.045, 0.095) * (sc * max(dot(n, uSun), 0.0) + vec3(0.3, 0.45, 0.7) * 0.5 * tw) + vec3(0.32, 0.5, 0.78) * 0.55 * tw * F * (1.0 - 0.5 * near)',
+    '      + sc * (pow(max(dot(nw, hv), 0.0), mix(160.0, 900.0, near)) * mix(1.6, 9.0, near));',
+    '    float land = smoothstep(0.66, 0.69, fbm(n * 5.5 + 2.0)); col = mix(col, vec3(0.16, 0.19, 0.1) * (sc * max(dot(n, uSun), 0.0) + 0.1 * tw), land * 0.9);',
+    '    if (tC > 0.0) { vec3 Pc = C + rd * tC; float d = clouds(Pc, tC), d2 = clouds(Pc + uSun * (1.5 + tC * 0.02), tC); vec3 cl = (sc * (0.3 + 0.7 * max(dot(n, uSun) + 0.1, 0.0)) * (0.5 + 0.5 * clamp(1.0 + (d - d2) * 2.2 - 0.35 * d, 0.0, 1.3)) + vec3(0.3, 0.42, 0.62) * 0.55 * tw) * 0.92; col = mix(col * (1.0 - 0.45 * d), cl, d); }',
+    '  } else {',
+    '    vec3 q = rd * 190.0, id = floor(q); float s = h3(id); st = vec3(1.0, 0.95, 0.9) * step(0.9965, s) * smoothstep(0.3, 0.03, length(fract(q) - 0.5)) * (0.6 + 5.0 * fract(s * 77.0));',
+    '    col = vec3(1.0, 0.95, 0.88) * (smoothstep(0.99994, 0.99998, mu) * 60.0 + pow(max(mu, 0.0), 2500.0) * 6.0 + pow(max(mu, 0.0), 180.0) * 0.5); }',
+    '  vec3 sky = air(C, rC, rd, tEnd, j, trans); col = (col + st * clamp(1.0 - 7.0 * dot(sky, vec3(0.33)), 0.0, 1.0)) * trans + sky;',
+    '  if (tP < 0.0 && tC > 0.0) { vec3 Pc = C + rd * tC; float d = clouds(Pc, tC) * exp(-tC * 0.004); vec3 sc = sunAt(Pc, R + 3.0) * 2.6;',   // weather seen from underneath
+    '    col = mix(col, sc * 0.5 + vec3(0.32, 0.4, 0.55) * 0.5 + sky * 0.4, d * 0.9); }',
+    // the ribbon: a line from the sea to past the top of the picture
+    '  vec3 ro = uCam; float depth = 1e9;',
+    '  float k = dot(rd.xz, rd.xz), ts = -dot(ro.xz, rd.xz) / max(k, 1e-6), ys = ro.y + rd.y * ts;',
+    '  if (ts > 0.0 && ys > -uH * 1000.0 - 5.0) { float dm = length(ro.xz + rd.xz * ts), px = ts * 2.0 * uTan / uRes.y, rf = max(0.3, 0.75 * px), cov = clamp((rf - dm) / px + 0.5, 0.0, 1.0) * pow(0.3 / rf, 0.55);',
+    '    vec3 tc = vec3(0.07) + sunC * 1.6 * (0.25 + 0.75 * max(dot(normalize(vec3(-rd.x, 0.0, -rd.z)), uSun), 0.0)) * 0.3 + uAmbUp * 0.2;',
+    '    tc = mix(tc, vec3(0.9, 0.3, 0.07) * (0.3 + sunC), step(fract((ys + uTrack) / 30.0), 0.1) * smoothstep(1.0, 0.3, px)); col = mix(col, tc, cov); if (cov > 0.5) depth = ts; }',
+    '  float tl = marchL(ro, rd); if (tl > 0.0 && tl < depth + 2.0) { vec3 p = ro + rd * tl; vec3 o = lit(p, nrmL(p, 0.01 + 0.0006 * tl), rd, tl, sunC); col = mix(col, o, exp(-tl * 0.00003 * (1.0 - smoothstep(20.0, 80.0, uH)))); }',
+    '  col = mix(col, (sunC * 0.6 + vec3(0.5, 0.56, 0.66)) * 0.75, uFog * (tl > 0.0 && tl < 300.0 ? 1.0 - exp(-tl * 0.03) : 1.0));',
+    '  col *= uExp; col = clamp((col * (2.51 * col + 0.03)) / (col * (2.43 * col + 0.59) + 0.14), 0.0, 1.0); col = pow(col, vec3(1.0 / 2.2));',
+    '  col += (hash(gl_FragCoord.xy * 1.31 + fract(uFrame * 0.37) * 53.0) - 0.5) * (2.0 / 255.0);',
+    '  gl_FragColor = vec4(mix(texture2D(uHist, gl_FragCoord.xy / uRes).rgb, col, uAlpha), 1.0); }'].join('\n');
+  var BLIT = [
+    'precision highp float; uniform sampler2D uTex; uniform vec2 uOut; uniform float uTime;',
+    'float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }',
+    'void main(){ vec2 uv = gl_FragCoord.xy / uOut; vec3 c = texture2D(uTex, uv).rgb; vec2 d = uv - 0.5; c *= 1.0 - 0.5 * dot(d, d); c += (hash(gl_FragCoord.xy + fract(uTime) * 97.0) - 0.5) * 0.02; gl_FragColor = vec4(c, 1.0); }'].join('\n');
+  var VS = 'attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }';
+  function sh(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.error(gl.getShaderInfoLog(s)); return null; } return s; }
+  function program(fs) { var v = sh(gl.VERTEX_SHADER, VS), f = sh(gl.FRAGMENT_SHADER, fs); if (!v || !f) return null; var p = gl.createProgram(); gl.attachShader(p, v); gl.attachShader(p, f); gl.bindAttribLocation(p, 0, 'a'); gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) { console.error(gl.getProgramInfoLog(p)); return null; }
+    var u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); for (var i = 0; i < n; i++) { var nm = gl.getActiveUniform(p, i).name; u[nm] = gl.getUniformLocation(p, nm); } p.u = u; return p; }
+  var pScene = program(SCENE), pBlit = program(BLIT);
+  if (!pScene || !pBlit) { fail('This device could not prepare the 3D ride.'); return; }
+  var quad = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, quad); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+  /* ---------- drawing size: sharp where the device can afford it ---------- */
+  var rt = [null, null], rw = 0, rh = 0, cur = 0, scale = 1, fresh = true, W = 1, H = 1;
+  function target(w, h) { var t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    var f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0); return { t: t, f: f }; }
+  function alloc() { var w = Math.max(2, Math.round(canvas.width * scale)), h = Math.max(2, Math.round(canvas.height * scale)); if (w === rw && h === rh) return;
+    for (var i = 0; i < 2; i++) { if (rt[i]) { gl.deleteTexture(rt[i].t); gl.deleteFramebuffer(rt[i].f); } rt[i] = target(w, h); } rw = w; rh = h; fresh = true; }
+  function size() { var dpr = Math.min(window.devicePixelRatio || 1, 2); W = canvas.clientWidth; H = canvas.clientHeight; canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    scale = window.__s || Math.min(scale, Math.max(0.35, Math.sqrt(1.3e6 / (canvas.width * canvas.height)))); alloc(); }
+  window.addEventListener('resize', size); size();
+
+  /* ---------- the ride ---------- */
+  var ALT = [0.09, 6, 30, 100, 2000, 35786], GEO = 35786, RE = 6371;
+  // camera around the car at each stop: turn, height angle, distance (m), aim height (m), exposure
+  var CAMK = [[2.62, 0.1, 74, -8, 1.5], [2.45, 0.42, 42, 0, 1.15], [2.2, 0.4, 40, 0, 1.0], [1.95, 0.56, 40, 0, 1.0], [1.6, 0.98, 46, 0, 1.0], [1.2, 1.3, 640, 62, 1.15]];
+  var AMB = [[0.09, [0.2, 0.25, 0.4], [0.07, 0.09, 0.13]], [6, [0.22, 0.32, 0.55], [0.34, 0.3, 0.3]], [30, [0.03, 0.06, 0.16], [0.22, 0.27, 0.36]], [100, [0.004, 0.006, 0.012], [0.12, 0.19, 0.32]], [2000, [0.003, 0.003, 0.004], [0.07, 0.11, 0.19]], [35786, [0.003, 0.003, 0.004], [0.012, 0.018, 0.03]]];
+  function sm(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function ride(p) { // p: 0..5 along the six stops -> altitude and camera
+    var i = Math.max(0, Math.min(NB - 2, Math.floor(p))), u = Math.max(0, Math.min(1, p - i)), A = CAMK[i], B = CAMK[i + 1], o = {};
+    if (i < NB - 2) { o.h = Math.exp(lerp(Math.log(ALT[i]), Math.log(ALT[i + 1]), u)); o.yaw = lerp(A[0], B[0], sm(u)); o.el = lerp(A[1], B[1], sm(u)); o.r = lerp(A[2], B[2], sm(u)); o.ty = lerp(A[3], B[3], sm(u)); o.e = lerp(A[4], B[4], u); o.left = (GEO - o.h) * 1000; }
+    else { // the last leg: most of the distance early, then a slow approach and a pull back to see the station
+      var far = Math.min(1, u / 0.55), s = Math.max(0, (u - 0.55) / 0.45), gap;
+      if (u < 0.55) gap = GEO - Math.exp(lerp(Math.log(ALT[i]), Math.log(GEO - 46), far)); else gap = 46 * Math.pow(1 - s, 3);
+      o.h = GEO - gap; o.left = gap * 1000; o.yaw = lerp(A[0], B[0], sm(u));
+      o.el = u < 0.55 ? lerp(A[1], 1.15, sm(far)) : lerp(1.15, B[1], sm(s));
+      o.r = u < 0.55 ? lerp(A[2], 60, sm(far)) : lerp(60, B[2], sm(s / 0.45)); o.ty = u < 0.55 ? 0 : (o.left + B[3]) * sm(s / 0.35); o.cy = o.ty; o.e = lerp(A[4], B[4], u); }
+    return o; }
+  function amb(h, k) { var l = Math.log(h); for (var i = 0; i < AMB.length - 1; i++) if (h <= AMB[i + 1][0] || i === AMB.length - 2) { var t = Math.max(0, Math.min(1, (l - Math.log(AMB[i][0])) / (Math.log(AMB[i + 1][0]) - Math.log(AMB[i][0])))); return [0, 1, 2].map(function (c) { return lerp(AMB[i][k][c], AMB[i + 1][k][c], t); }); } }
+
+  // altitude ruler, on a log scale
+  var ruler = $('ruler'), MARKS = [[0.09, 'Sea'], [3, 'Cloud 3 km'], [30, 'Stratosphere 30'], [100, 'Kármán 100'], [400, 'Low orbit 400'], [2000, '2,000'], [35786, 'Meridian 35,786']], marks = [];
+  function rpos(h) { return Math.max(0, Math.min(1, Math.log(h / 0.09) / Math.log(GEO / 0.09))); }
+  MARKS.forEach(function (m) { var s = document.createElement('span'); s.textContent = m[1]; s.style.bottom = (rpos(m[0]) * 100) + '%'; ruler.appendChild(s); marks.push([m[0], s]); });
+
+  var goal = 0, pos = 0, vel = 0;
+  function readScroll() { var y = window.scrollY, k = 0; for (var i = 0; i < NB - 1; i++) if (y >= steps[i].offsetTop) k = i;
+    goal = Math.max(0, Math.min(NB - 1, k + (y - steps[k].offsetTop) / Math.max(1, steps[k].offsetHeight))); if (y > 40) $('hint').style.opacity = 0; }
+  window.addEventListener('scroll', readScroll, { passive: true }); readScroll(); pos = goal;
+  var look = { x: 0, tx: 0, y: 0, ty: 0, yaw: 0, el: 0 }, down = null;
+  window.addEventListener('pointermove', function (e) { if (e.pointerType !== 'touch') { look.tx = e.clientX / window.innerWidth * 2 - 1; look.ty = e.clientY / window.innerHeight * 2 - 1; } });
+  canvas.addEventListener('pointerdown', function (e) { if (e.button > 0) return; down = { id: e.pointerId, x: e.clientX, y: e.clientY }; canvas.classList.add('grab'); try { canvas.setPointerCapture(e.pointerId); } catch (err) {} });
+  canvas.addEventListener('pointermove', function (e) { if (!down || down.id !== e.pointerId) return; look.yaw -= (e.clientX - down.x) * 0.006; if (e.pointerType !== 'touch') look.el += (e.clientY - down.y) * 0.005; down.x = e.clientX; down.y = e.clientY; $('hint').style.opacity = 0; });
+  function up(e) { if (down && down.id === e.pointerId) { down = null; canvas.classList.remove('grab'); } }
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+
+  var JIT = [[0, 0], [0.5, 0.333], [-0.5, -0.333], [0.25, -0.111], [-0.25, 0.111], [0.375, 0.444], [-0.375, -0.444], [0.125, -0.25]];
+  var last = performance.now(), t0 = last, frameNo = 0, prev = [0, 0, 0, 0, 0, 0, 0], track = 0, lastH = 0.09, acc = 0, accN = 0, fast = 0, lastTxt = '';
+  var SUN = [0, Math.sin(0.11), Math.cos(0.11)];
+  function fmt(h) { return h < 10 ? h.toFixed(2) : h < 100 ? h.toFixed(1) : Math.round(h).toLocaleString('en-US'); }
+  function frame(now) {
+    var ms = now - last, dt = Math.min(0.05, ms / 1000); last = now; var time = (now - t0) / 1000;
+    if (window.__pos !== undefined) { goal = window.__pos; pos = goal; vel = 0; }
+    if (calm) { pos = goal; vel = 0; } else { vel += ((goal - pos) * 20 - vel * 8.95) * dt; pos += vel * dt; }
+    look.x += (look.tx - look.x) * Math.min(1, dt * 2); look.y += (look.ty - look.y) * Math.min(1, dt * 2);
+    if (!down && Math.abs(vel) > 0.03) { var back = Math.min(1, dt * 1.4); look.yaw -= (look.yaw - Math.round(look.yaw / (2 * Math.PI)) * 2 * Math.PI) * back; look.el -= look.el * back; }
+
+    var k0 = Math.min(NB - 2, Math.floor(pos)), u = pos - k0, p = k0 + (u + sm(u)) / 2, o = ride(p), narrow = W < 820;
+    var yaw = o.yaw + look.yaw + look.x * 0.05, el = Math.max(-1.35, Math.min(1.4, o.el + look.el + look.y * 0.03)), r = o.r * (narrow ? 1.25 : 1);
+    var eye = [Math.sin(yaw) * Math.cos(el) * r, Math.sin(el) * r + (o.cy !== undefined ? o.cy : o.ty * 0.25), Math.cos(yaw) * Math.cos(el) * r], aim = [0, o.ty, 0];
+    var f = [aim[0] - eye[0], aim[1] - eye[1], aim[2] - eye[2]], fl = Math.hypot(f[0], f[1], f[2]); f = [f[0] / fl, f[1] / fl, f[2] / fl];
+    var rl = Math.hypot(f[0], f[2]) || 1, rr = [-f[2] / rl, 0, f[0] / rl], uu = [rr[1] * f[2] - rr[2] * f[1], rr[2] * f[0] - rr[0] * f[2], rr[0] * f[1] - rr[1] * f[0]];
+    if (uu[1] < 0) { uu = [-uu[0], -uu[1], -uu[2]]; }
+
+    // the ribbon's paint marks run past the car: fast while climbing, a crawl while you stop to look
+    var climb = (o.h - lastH) * 1000 / Math.max(dt, 0.001); lastH = o.h; var docked = sm(1 - o.h / 0.25) + sm(1 - o.left / 400);
+    track += (Math.max(-900, Math.min(900, climb * 0.02)) + (calm ? 0 : 26 * (1 - Math.min(1, docked)))) * dt; track %= 3000;
+
+    var move = Math.abs(eye[0] - prev[0]) / r + Math.abs(eye[1] - prev[1]) / r + Math.abs(eye[2] - prev[2]) / r + Math.abs(f[0] - prev[3]) + Math.abs(f[1] - prev[4]) + Math.abs(f[2] - prev[5]) + Math.abs(Math.log(o.h / prev[6])) * 2;
+    prev = [eye[0], eye[1], eye[2], f[0], f[1], f[2], o.h];
+    var alpha = fresh ? 1 : Math.max(0.14, Math.min(0.85, 0.14 + move * 12)); fresh = false;
+    var fog = sm((o.h - 1.9) / 0.9) * (1 - sm((o.h - 3.3) / 1.1)), g = pScene.u, src = rt[cur], dst = rt[1 - cur], jit = JIT[frameNo % 8];
+    gl.bindFramebuffer(gl.FRAMEBUFFER, dst.f); gl.viewport(0, 0, rw, rh); gl.useProgram(pScene);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, src.t); gl.uniform1i(g.uHist, 0);
+    gl.uniform2f(g.uRes, rw, rh); gl.uniform2f(g.uJit, jit[0], jit[1]); gl.uniform1f(g.uFrame, frameNo); gl.uniform1f(g.uAlpha, alpha); gl.uniform1f(g.uTime, calm ? 0 : time);
+    gl.uniform1f(g.uTan, Math.tan((narrow ? 66 : 50) * Math.PI / 360)); gl.uniform1f(g.uOx, narrow ? 0 : 0.14 * (1 - sm(p - 4.5)));
+    gl.uniform3fv(g.uCam, eye); gl.uniform3fv(g.uF, f); gl.uniform3fv(g.uR, rr); gl.uniform3fv(g.uU, uu); gl.uniform3fv(g.uSun, SUN);
+    gl.uniform1f(g.uH, o.h); gl.uniform1f(g.uPlatY, o.h * 1000); gl.uniform1f(g.uStaY, o.left); gl.uniform1f(g.uTrack, track); gl.uniform1f(g.uExp, o.e); gl.uniform1f(g.uFog, fog); gl.uniform1f(g.uSpin, calm ? 0.3 : time * 0.07);
+    gl.uniform3fv(g.uAmbUp, amb(o.h, 1)); gl.uniform3fv(g.uAmbDn, amb(o.h, 2));
+    gl.drawArrays(gl.TRIANGLES, 0, 3); cur = 1 - cur;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, canvas.width, canvas.height); gl.useProgram(pBlit);
+    gl.bindTexture(gl.TEXTURE_2D, dst.t); gl.uniform1i(pBlit.u.uTex, 0); gl.uniform2f(pBlit.u.uOut, canvas.width, canvas.height); gl.uniform1f(pBlit.u.uTime, calm ? 0 : time); gl.drawArrays(gl.TRIANGLES, 0, 3); frameNo++;
+
+    if (!window.__s && frameNo > 20 && ms < 400) { acc += ms; accN++; if (accN >= 24) { var avg = acc / accN; acc = accN = 0;
+      if (avg > 26) { fast = 0; if (scale > 0.36) { scale = Math.max(0.35, scale * (avg > 45 ? 0.7 : 0.85)); alloc(); } } else if (avg < 13.5) { if (++fast >= 5 && scale < 1) { scale = Math.min(1, scale * 1.12); alloc(); fast = 0; } } else fast = 0; } }
+
+    // words and instruments
+    for (var q = 0; q < NB; q++) { var dd = pos - q, ad = Math.abs(dd), op = 1 - sm((ad - 0.14) / 0.26), st = beats[q].style;
+      st.opacity = op.toFixed(3); st.transform = 'translate3d(0,' + (-dd * 46).toFixed(1) + 'px,0)'; st.visibility = op < 0.01 ? 'hidden' : 'visible'; beats[q].classList.toggle('live', op > 0.6); }
+    var txt = fmt(o.h); if (txt !== lastTxt) { lastTxt = txt; $('alt').textContent = txt;
+      var hrs = Math.max(0, o.h - 0.09) / 200, dd2 = Math.floor(hrs / 24), hh = Math.floor(hrs % 24), mm = Math.floor(hrs * 60 % 60); $('clock').textContent = dd2 + 'd ' + ('0' + hh).slice(-2) + 'h ' + ('0' + mm).slice(-2) + 'm';
+      var spd = 200 * (1 - Math.exp(-(o.h - 0.09) / 1.5)) * Math.min(1, o.left / 3000); $('speed').textContent = Math.round(spd) + ' km/h';
+      var rad = (RE + o.h) * 1000, wgt = Math.max(0, (3.986e14 / (rad * rad) - 5.317e-9 * rad) / 9.78); $('weight').textContent = Math.round(wgt * 100) + '%'; $('wbar').style.transform = 'scaleX(' + Math.min(1, wgt).toFixed(3) + ')';
+      var T = o.h < 11 ? 27 - 6.5 * o.h * (83 / 71.5) : o.h < 20 ? -56 : o.h < 47 ? -56 + (o.h - 20) * 2 : o.h < 85 ? -2 - (o.h - 47) * 2.3 : null; $('out').textContent = T === null || o.h > 85 ? 'Vacuum' : Math.round(T) + ' °C';
+      $('sdot').setAttribute('cx', (19 + o.h / RE * 9).toFixed(2)); var rp = rpos(o.h); $('fill').style.transform = 'scaleY(' + rp.toFixed(4) + ')'; $('dot').style.bottom = (rp * 100).toFixed(2) + '%'; marks.forEach(function (m) { m[1].classList.toggle('past', o.h >= m[0] * 0.98); }); }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
