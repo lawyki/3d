@@ -1,0 +1,714 @@
+<title>Vire</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400;1,6..96,500&family=Albert+Sans:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap">
+<style>
+/* Layout: one fixed stage holds the instrument; copy scrolls past in a narrow column that swaps sides, the instrument swaps to the other. Single dark look by choice (concert hall, lit strings). */
+:root{
+  color-scheme:dark;
+  --ink:#0b0908;
+  --bone:#ece4d6;
+  --dim:#a39686;
+  --faint:#6f655a;
+  --brass:#e0b070;
+  --steel:#aec3e0;
+  --hair:rgba(236,228,214,.15);
+  --display:"Bodoni Moda","Didot","Bodoni 72",Georgia,serif;
+  --body:"Albert Sans","Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --gl:max(16px,env(safe-area-inset-left,0px));
+  --gr:max(16px,env(safe-area-inset-right,0px));
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--bone);font-family:var(--body);font-weight:300;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0;touch-action:pan-y}
+a{color:inherit}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+:focus-visible{outline:1px solid var(--brass);outline-offset:4px}
+.mono{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:400}
+
+/* top bar */
+.bar{position:fixed;inset:0 0 auto;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:24px;
+  padding-block:calc(env(safe-area-inset-top,0px) + 20px) 20px;padding-left:calc(var(--gl) + clamp(0px,3vw,40px));padding-right:calc(var(--gr) + clamp(0px,3vw,40px));pointer-events:none}
+.bar>*{pointer-events:auto}
+.mark{font-family:var(--display);font-style:italic;font-size:26px;letter-spacing:.01em;text-decoration:none;line-height:1}
+.bar nav{display:flex;gap:28px}
+.bar nav a{text-decoration:none;color:var(--dim);transition:color .25s}
+.bar nav a:hover{color:var(--bone)}
+.snd{display:flex;align-items:center;gap:10px;color:var(--bone)}
+.snd i{display:flex;gap:2px;align-items:center;height:12px}
+.snd i b{width:1px;height:3px;background:currentColor;transition:height .3s}
+.snd[aria-pressed="true"]{color:var(--brass)}
+.snd[aria-pressed="true"] i b{animation:eq 1.1s ease-in-out infinite alternate}
+.snd[aria-pressed="true"] i b:nth-child(2){animation-delay:-.3s}
+.snd[aria-pressed="true"] i b:nth-child(3){animation-delay:-.7s}
+.snd[aria-pressed="true"] i b:nth-child(4){animation-delay:-.5s}
+@keyframes eq{from{height:2px}to{height:12px}}
+
+/* sections */
+main{position:relative;z-index:1}
+.sec{min-height:100vh;min-height:100svh;display:flex;align-items:center;padding-left:var(--gl);padding-right:var(--gr);padding-block:120px 110px}
+.copy{width:min(100%,410px);margin-inline:clamp(0px,6vw,104px);min-width:0;display:flex;flex-direction:column;gap:22px}
+.sec.r .copy{margin-left:auto}
+#top .copy{width:min(100%,640px)}
+#top{padding-bottom:150px}
+.eyebrow{color:var(--brass);display:flex;gap:14px;align-items:center}
+.eyebrow::after{content:"";height:1px;width:44px;background:var(--hair)}
+h1,h2{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;letter-spacing:-.012em}
+h1{font-size:clamp(46px,6.2vw,96px);line-height:.96;font-style:italic}
+h1 span{font-style:normal}
+h2{font-size:clamp(44px,5.4vw,84px);line-height:.98;font-style:italic}
+p{margin:0;color:var(--dim);max-width:38ch}
+p strong{color:var(--bone);font-weight:400}
+.lead{font-size:18px;color:var(--bone);font-weight:300;max-width:34ch}
+.facts{display:grid;grid-template-columns:repeat(3,auto);gap:6px 28px;justify-content:start;margin:6px 0 0}
+.facts dt{color:var(--faint)}
+.facts dd{margin:0;font-family:var(--display);font-size:24px;line-height:1.2;grid-row:2;font-variant-numeric:tabular-nums}
+.facts dt{grid-row:1}
+.hint{display:flex;align-items:center;gap:12px;color:var(--dim);margin-top:10px}
+.hint svg{flex:none}
+.cta{display:inline-flex;align-items:center;gap:14px;align-self:flex-start;border:1px solid var(--hair);padding:13px 20px 13px 18px;border-radius:999px;color:var(--bone);transition:border-color .25s,color .25s;margin-top:6px}
+.cta:hover{border-color:var(--brass);color:var(--brass)}
+.cta span{width:6px;height:6px;border-radius:50%;background:var(--brass)}
+
+/* last section */
+.sec.fin{align-items:flex-start;padding-top:22vh}
+.sec.fin .copy{width:min(100%,470px);gap:26px}
+.rows{display:flex;flex-direction:column;margin:0;padding:0;list-style:none}
+.rows li{display:grid;grid-template-columns:118px 1fr;gap:16px;padding:13px 0;border-top:1px solid var(--hair);align-items:baseline}
+.rows li:last-child{border-bottom:1px solid var(--hair)}
+.rows .k{color:var(--faint)}
+.rows .v{color:var(--bone);min-width:0}
+.rows .v small{display:block;color:var(--dim);font-size:13px}
+h3{font-family:var(--display);font-style:italic;font-weight:400;font-size:30px;margin:26px 0 0;line-height:1.1}
+footer{color:var(--faint);padding-top:40px;line-height:1.9}
+
+/* heads-up layer */
+.hud{position:fixed;inset:0;z-index:4;pointer-events:none}
+.call{position:absolute;left:0;top:0;display:flex;align-items:center;gap:10px;white-space:nowrap;will-change:transform;opacity:0;transition:opacity .5s}
+.call.on{opacity:1}
+.call::before{content:"";width:5px;height:5px;border-radius:50%;border:1px solid var(--brass);flex:none;margin-left:-3px}
+.call .ln{width:46px;height:1px;background:var(--hair);flex:none}
+.call.l{flex-direction:row-reverse}
+.call.l::before{margin-left:0;margin-right:-3px}
+.call.l .tx{text-align:right}
+.call .tx{display:flex;flex-direction:column;gap:3px}
+.call .tx b{font-weight:400;color:var(--bone)}
+.call .tx span{color:var(--dim);font-variant-numeric:tabular-nums;letter-spacing:.06em}
+.steps{display:flex;gap:5px;justify-content:flex-end;pointer-events:auto;margin-bottom:8px}
+.steps a{width:16px;height:14px;display:flex;align-items:center;color:var(--faint);transition:color .3s}
+.steps a::after{content:"";width:100%;height:1px;background:currentColor}
+.steps a.on{color:var(--brass)}
+.steps a.on::after{height:2px}
+.foot{position:absolute;inset:auto 0 0;display:flex;align-items:flex-end;gap:26px;
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 18px);padding-left:calc(var(--gl) + clamp(0px,3vw,40px));padding-right:calc(var(--gr) + clamp(0px,3vw,40px));
+  background:linear-gradient(to top,rgba(11,9,8,.82),rgba(11,9,8,0));padding-top:46px}
+.note{display:flex;flex-direction:column;gap:2px;min-width:112px}
+.note b{font-family:var(--display);font-weight:400;font-size:30px;line-height:1;color:var(--bone);font-variant-numeric:tabular-nums}
+.note span{color:var(--dim);font-variant-numeric:tabular-nums;letter-spacing:.06em}
+#map{flex:1;min-width:0;height:44px;display:block}
+.tun{text-align:right;color:var(--dim);min-width:112px;display:flex;flex-direction:column;gap:2px}
+.tun b{font-weight:400;color:var(--bone)}
+.nogl #gl,.nogl .hud{display:none}
+.nogl .sec{min-height:0}
+
+@media (max-width:820px){
+  .bar nav,.call,.tun{display:none}
+  .sec,#top{align-items:flex-end;padding-block:54vh 150px}
+  .sec.fin{padding-top:54vh}
+  .foot{background:linear-gradient(to top,rgba(11,9,8,.96) 55%,rgba(11,9,8,0));padding-top:60px}
+  .copy,.sec.r .copy{margin-inline:0;width:100%;gap:16px}
+  .copy{position:relative}
+  .copy::before{content:"";position:absolute;inset:-70px calc(-1 * var(--gr)) -110px calc(-1 * var(--gl));background:linear-gradient(to bottom,rgba(11,9,8,0),rgba(11,9,8,.8) 70px,rgba(11,9,8,.8) calc(100% - 90px),rgba(11,9,8,0));z-index:-1}
+  .note{min-width:84px}
+  .note b{font-size:24px}
+  .facts{gap:6px 20px}
+  .rows li{grid-template-columns:96px 1fr}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.snd i b{animation:none!important}}
+</style>
+
+<canvas id="gl" aria-hidden="true"></canvas>
+
+<header class="bar">
+  <a class="mark" href="#top">Vire</a>
+  <nav class="mono" aria-label="Sections">
+    <a href="#unison">Positions</a>
+    <a href="#instrument">Instrument</a>
+    <a href="#concerts">Concerts</a>
+  </nav>
+  <button class="snd mono" id="snd" type="button" aria-pressed="false"><i aria-hidden="true"><b></b><b></b><b></b><b></b></i><span id="sndt">Sound off</span></button>
+</header>
+
+<main>
+  <section class="sec" id="top">
+    <div class="copy">
+      <div class="eyebrow mono">String instrument · 400 strings</div>
+      <h1>The shape <span>is the</span> tuning.</h1>
+      <p class="lead">Vire holds 400 strings between two bronze rings and has no fixed form. Turn a ring and every string changes length at once.</p>
+      <p>The instrument takes a new shape and a new tuning in the same movement. Scroll to turn the rings.</p>
+      <div class="hint mono"><svg width="26" height="14" viewBox="0 0 26 14" fill="none" stroke="currentColor" aria-hidden="true"><path d="M1 7h24M5 1v12M10 1v12M15 1v12M20 1v12" stroke-width="1"/></svg><span id="hintt">Run the pointer across the strings</span></div>
+      <button class="cta mono" id="hear" type="button"><span></span>Hear it</button>
+    </div>
+  </section>
+
+  <section class="sec r" id="unison">
+    <div class="copy">
+      <div class="eyebrow mono">Position I</div>
+      <h2>Unison</h2>
+      <p class="lead">Rings level, no twist. Every string runs straight up, 2.40 m long.</p>
+      <p>The bronze course sounds <strong>G3</strong> and the steel course the G below it. Wherever you touch the instrument, it answers with one note.</p>
+      <dl class="facts"><dt class="mono">Twist</dt><dt class="mono">Length</dt><dt class="mono">Note</dt><dd>0°</dd><dd>2.40 m</dd><dd>G</dd></dl>
+    </div>
+  </section>
+
+  <section class="sec" id="waist">
+    <div class="copy">
+      <div class="eyebrow mono">Position II</div>
+      <h2>Waist</h2>
+      <p class="lead">Turn the upper ring 110°. No string bends, yet the wall of strings draws in.</p>
+      <p>Each string now has further to travel, 2.91 m from ring to ring. Longer strings sound lower, and the whole instrument drops a tone to <strong>F</strong>.</p>
+      <dl class="facts"><dt class="mono">Twist</dt><dt class="mono">Length</dt><dt class="mono">Note</dt><dd>110°</dd><dd>2.91 m</dd><dd>F</dd></dl>
+    </div>
+  </section>
+
+  <section class="sec r" id="crossing">
+    <div class="copy">
+      <div class="eyebrow mono">Position III</div>
+      <h2>Crossing</h2>
+      <p class="lead">At a half turn all 200 bronze strings pass through a single point.</p>
+      <p>The steel course stops 28° short and closes a collar around it. This is as long as the strings get, 3.12 m, and as low as Vire plays: <strong>D</strong>, a fourth below unison.</p>
+      <dl class="facts"><dt class="mono">Twist</dt><dt class="mono">Length</dt><dt class="mono">Note</dt><dd>180°</dd><dd>3.12 m</dd><dd>D</dd></dl>
+    </div>
+  </section>
+
+  <section class="sec" id="lean">
+    <div class="copy">
+      <div class="eyebrow mono">Position IV</div>
+      <h2>Lean</h2>
+      <p class="lead">Tilt the upper ring 26° and slide it off the axis.</p>
+      <p>Now no two neighbours are the same length. A scale runs around the rim, rising on one side and falling on the other. Sweep the strings to hear it.</p>
+      <dl class="facts"><dt class="mono">Tilt</dt><dt class="mono">Length</dt><dt class="mono">Notes</dt><dd>26°</dd><dd id="leanLen">1.9–2.9 m</dd><dd id="leanNotes">scale</dd></dl>
+    </div>
+  </section>
+
+  <section class="sec r" id="rose">
+    <div class="copy">
+      <div class="eyebrow mono">Position V</div>
+      <h2>Rose</h2>
+      <p class="lead">Bring the rings together and the instrument lies flat as a wheel.</p>
+      <p>The strings become chords of one circle, 1.88 m each, and leave a clear eye in the middle. It is the shortest and highest position: <strong>C</strong>, a fourth above unison.</p>
+      <dl class="facts"><dt class="mono">Twist</dt><dt class="mono">Length</dt><dt class="mono">Note</dt><dd>140°</dd><dd>1.88 m</dd><dd>C</dd></dl>
+    </div>
+  </section>
+
+  <section class="sec fin" id="instrument">
+    <div class="copy">
+      <div class="eyebrow mono">The instrument</div>
+      <h2>Two rings, nothing else.</h2>
+      <p class="lead">Players stand inside or beside it. One turns the rings while the others play.</p>
+      <ul class="rows">
+        <li><span class="k mono">Strings</span><span class="v">400, in two courses of 200<small>Phosphor bronze outside, steel inside</small></span></li>
+        <li><span class="k mono">Rings</span><span class="v">2.00 m across, blackened bronze</span></li>
+        <li><span class="k mono">Travel</span><span class="v">Twist 0 to 180°, tilt 0 to 32°</span></li>
+        <li><span class="k mono">Range</span><span class="v" id="rangeV">D2 to D4, in a five-note scale on D</span></li>
+        <li><span class="k mono">Players</span><span class="v">One to three</span></li>
+      </ul>
+      <h3 id="concerts">Concerts, spring 2027</h3>
+      <ul class="rows">
+        <li><span class="k mono">14 March</span><span class="v">Helsinki<small>Five positions, for three players</small></span></li>
+        <li><span class="k mono">2 April</span><span class="v">Rotterdam<small>Crossing, a piece for one player and one hour</small></span></li>
+        <li><span class="k mono">23 April</span><span class="v">Kyoto<small>Five positions, for three players</small></span></li>
+      </ul>
+      <footer class="mono">Vire is an invented instrument.<br>This page is a design study.</footer>
+    </div>
+  </section>
+</main>
+
+<div class="hud" aria-hidden="true">
+  <div class="call mono" id="c1"><span class="ln"></span><span class="tx"><b>Upper ring</b><span id="c1t">twist 0° · tilt 0°</span></span></div>
+  <div class="call mono" id="c2"><span class="ln"></span><span class="tx"><b>Strings</b><span id="c2t">2.40 m · G2–G3</span></span></div>
+  <div class="foot">
+    <div class="note mono"><b id="nn">G3</b><span id="nf">196.0 Hz</span></div>
+    <canvas id="map"></canvas>
+    <div class="tun mono">
+  <div class="steps" id="steps">
+    <a href="#top" tabindex="-1" aria-label="top"></a>
+    <a href="#unison" tabindex="-1" aria-label="unison"></a>
+    <a href="#waist" tabindex="-1" aria-label="waist"></a>
+    <a href="#crossing" tabindex="-1" aria-label="crossing"></a>
+    <a href="#lean" tabindex="-1" aria-label="lean"></a>
+    <a href="#rose" tabindex="-1" aria-label="rose"></a>
+    <a href="#instrument" tabindex="-1" aria-label="instrument"></a>
+  </div>
+      <b id="tn">Vire</b><span>400 strings</span></div>
+  </div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const cv=$('gl');
+const gl=cv.getContext('webgl2',{antialias:false,alpha:false,powerPreference:'high-performance'});
+if(!gl){document.documentElement.classList.add('nogl');return;}
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const HDR=!!(gl.getExtension('EXT_color_buffer_float')||gl.getExtension('EXT_color_buffer_half_float'));
+gl.getExtension('OES_texture_float_linear');
+
+/* ---------- instrument ---------- */
+const N=200,S=2*N,SEG=40,D2R=Math.PI/180;
+// h height, tA/tB twist of each course, ux/uz upper ring tilt, lx lower ring tilt, off upper ring slide, gp whole-instrument pitch, cam: dist el az, side: which side of the screen
+const F=(name,h,tA,tB,ux,uz,lx,off,gp,dist,el,az,side)=>({name,h,tA:tA*D2R,tB:tB*D2R,ux:ux*D2R,uz:uz*D2R,lx:lx*D2R,off,gp:gp*D2R,dist,el:el*D2R,az:az*D2R,side});
+const FORMS=[
+  F('Vire',      2.30,150,-150,  9, 0,  0,0,   14,6.3, 5,-18, 1),
+  F('I Unison',  2.40,  0,   0,  0, 0,  0,0,    0,6.5, 9,  0,-1),
+  F('II Waist',  2.40,110, 110,  0, 0,  0,0,    6,6.1,14, 10, 1),
+  F('III Crossing',2.40,180,152, 0, 0,  0,0,    0,6.2, 4,  0,-1),
+  F('IV Lean',   2.20, 70, -40, 26,-8,  0,0.35, 4,6.3,10,-12, 1),
+  F('V Rose',    0.06,140,-140,  0, 0,  0,0,   74,5.3, 0,  0,-1),
+  F('Open',      1.30, 60, -60, 30, 0,-30,0,    8,6.6, 8, 14, 1)
+];
+const KEYS=['h','tA','tB','ux','uz','lx','off','gp','dist','el','az','side'];
+const cur={};
+function blend(ff){
+  ff=Math.max(0,Math.min(FORMS.length-1,ff));
+  const i=Math.min(FORMS.length-2,Math.floor(ff));let t=ff-i;
+  t=Math.max(0,Math.min(1,(t-.1)/.8));t=t*t*t*(t*(t*6-15)+10);
+  const a=FORMS[i],b=FORMS[i+1];
+  for(const k of KEYS)cur[k]=a[k]+(b[k]-a[k])*t;
+  return cur;
+}
+
+/* ---------- small maths ---------- */
+const rotX=t=>{const c=Math.cos(t),s=Math.sin(t);return[1,0,0, 0,c,s, 0,-s,c]};
+const rotY=t=>{const c=Math.cos(t),s=Math.sin(t);return[c,0,-s, 0,1,0, s,0,c]};
+const rotZ=t=>{const c=Math.cos(t),s=Math.sin(t);return[c,s,0, -s,c,0, 0,0,1]};
+function mul3(a,b){const o=new Array(9);for(let c=0;c<3;c++)for(let r=0;r<3;r++)o[c*3+r]=a[r]*b[c*3]+a[3+r]*b[c*3+1]+a[6+r]*b[c*3+2];return o}
+function mul4(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];return o}
+function persp(fovy,asp,n,f){const t=1/Math.tan(fovy/2),o=new Float32Array(16);o[0]=t/asp;o[5]=t;o[10]=(f+n)/(n-f);o[11]=-1;o[14]=2*f*n/(n-f);return o}
+function lookAt(e,c){
+  let zx=e[0]-c[0],zy=e[1]-c[1],zz=e[2]-c[2];let l=Math.hypot(zx,zy,zz);zx/=l;zy/=l;zz/=l;
+  let xx=zz,xy=0,xz=-zx;l=Math.hypot(xx,xz);xx/=l;xz/=l;                  // up = +y
+  const yx=zy*xz-zz*xy,yy=zz*xx-zx*xz,yz=zx*xy-zy*xx;
+  const o=new Float32Array([xx,yx,zx,0, xy,yy,zy,0, xz,yz,zz,0, 0,0,0,1]);
+  o[12]=-(xx*e[0]+xy*e[1]+xz*e[2]);o[13]=-(yx*e[0]+yy*e[1]+yz*e[2]);o[14]=-(zx*e[0]+zy*e[1]+zz*e[2]);
+  return{m:o,right:[xx,xy,xz],up:[yx,yy,yz]};
+}
+
+/* ---------- shaders ---------- */
+function sh(type,src){const s=gl.createShader(type);gl.shaderSource(s,'#version 300 es\nprecision highp float;\n'+src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s)+src);return s}
+function prog(vs,fs,attrs){const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,vs));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));
+  if(attrs)attrs.forEach((a,i)=>gl.bindAttribLocation(p,i,a));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));
+  const u={},n=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS);for(let i=0;i<n;i++){const inf=gl.getActiveUniform(p,i);u[inf.name]=gl.getUniformLocation(p,inf.name)}return{p,u}}
+
+const QUAD_VS=`in vec2 a;out vec2 v;void main(){v=a*.5+.5;gl_Position=vec4(a,0.,1.);}`;
+
+const pBg=prog(QUAD_VS,`in vec2 v;out vec4 o;uniform vec2 uC;uniform float uAsp;
+void main(){vec2 p=v-uC;p.x*=uAsp;float r=length(p);
+  vec3 c=vec3(.0017,.0013,.0011);
+  c+=vec3(1.,.66,.38)*.011*exp(-r*r*5.5);
+  c+=vec3(.45,.58,1.)*.0022*exp(-r*r*1.1);
+  vec2 d=normalize(vec2(.58,-.81));float dl=p.x*d.y-p.y*d.x,al=dot(p,d);
+  c+=vec3(1.,.8,.58)*.0075*exp(-dl*dl*16.)*smoothstep(.75,-.9,al);
+  o=vec4(c,1.);}`,['a']);
+
+const pStr=prog(`
+layout(location=0) in vec2 aUV;
+layout(location=1) in vec3 iA;layout(location=2) in vec3 iB;layout(location=3) in vec3 iD;
+layout(location=4) in vec4 iP;layout(location=5) in vec3 iM;
+uniform mat4 uVP;uniform vec3 uCam;uniform vec2 uRes;uniform float uT,uFocus,uPx,uGain,uDof;
+out vec3 vCol;out vec2 vE;
+const float PI=3.14159265;
+vec3 P(float u,out float e){
+  float tau=max(uT-iP.z,0.);e=iP.x*exp(-tau*iM.z);
+  float w=iP.w*6.2831853*tau,s=0.;
+  for(int n=1;n<=4;n++){float fn=float(n);s+=sin(fn*PI*iP.y)/(fn*fn)*sin(fn*PI*u)*cos(fn*w)*exp(-(fn-1.)*1.3*tau);}
+  return mix(iA,iB,u)+iD*(e*s);}
+vec3 lit(vec3 T,vec3 V,vec3 L,vec3 lc,vec3 base){
+  vec3 H=normalize(L+V);float th=dot(T,H);float sh=sqrt(max(1.-th*th,0.));
+  float tl=dot(T,L);float df=sqrt(max(1.-tl*tl,0.));
+  return lc*(base*df*.20+mix(base,vec3(1.),.45)*pow(sh,140.)*2.6+pow(sh,18.)*.18*base);}
+void main(){
+  float e,e2;float u=aUV.x;
+  vec3 p=P(u,e),p2=P(min(u+.012,1.),e2),p0=P(max(u-.012,0.),e2);
+  vec3 T=normalize(p2-p0);
+  vec4 c=uVP*vec4(p,1.),c2=uVP*vec4(p+T*.03,1.);
+  vec2 d=(c2.xy/c2.w-c.xy/c.w)*uRes;d=normalize(d+vec2(1e-5,0.));vec2 n=vec2(-d.y,d.x);
+  float ex=clamp(e*16.,0.,1.5);
+  float px=(.0017+.0022*ex)*uPx/c.w;
+  float hw=max(px,.6);float cov=px/hw;
+  float coc=uDof*abs(c.w-uFocus)/c.w;float hw2=hw+coc;cov*=hw/hw2;
+  c.xy+=n*aUV.y*(hw2+1.)*2./uRes*c.w;
+  vE=vec2(aUV.y*(hw2+1.),hw2);
+  vec3 V=normalize(uCam-p);
+  vec3 base=mix(vec3(1.,.66,.30),vec3(.50,.70,1.),iM.x);
+  vec3 col=base*.035;
+  col+=lit(T,V,normalize(vec3(-.5,.8,.6)),vec3(1.,.88,.7),base);
+  col+=lit(T,V,normalize(vec3(.75,.15,-.65)),vec3(.5,.68,1.)*.9,base);
+  col+=lit(T,V,normalize(vec3(.1,-.9,.35)),vec3(1.,.58,.3)*.4,base);
+  col*=.75+.5*iM.y;
+  col+=(vec3(1.,.6,.26)*3.2+vec3(1.))*ex*ex+base*ex*1.3;
+  float fog=exp(-max(c.w-(uFocus-1.3),0.)*.30);
+  vCol=col*cov*fog*uGain;
+  gl_Position=c;}`,
+`in vec3 vCol;in vec2 vE;out vec4 o;
+void main(){float a=smoothstep(vE.y+.7,vE.y-.7,abs(vE.x));o=vec4(vCol*a,1.);}`);
+
+const pRing=prog(`
+layout(location=0) in vec2 aUV;
+uniform mat4 uVP,uM;uniform float uR,uTube;
+out vec3 vN,vW;
+void main(){float a=aUV.x*6.2831853,b=aUV.y*6.2831853;
+  vec3 rad=vec3(cos(a),0.,sin(a));vec3 nl=rad*cos(b)+vec3(0.,1.,0.)*sin(b);
+  vec4 w=uM*vec4(rad*uR+nl*uTube,1.);vN=mat3(uM)*nl;vW=w.xyz;gl_Position=uVP*w;}`,
+`in vec3 vN,vW;out vec4 o;uniform vec3 uCam;uniform float uFocus;
+vec3 env(vec3 r){
+  vec3 c=vec3(.004,.003,.003);
+  c+=vec3(1.,.9,.76)*1.5*smoothstep(.35,.95,dot(r,normalize(vec3(-.5,.8,.6))));
+  c+=vec3(1.,.93,.82)*.5*smoothstep(.15,.9,r.y)*smoothstep(-.6,.4,r.z);
+  c+=vec3(.45,.62,1.)*1.1*smoothstep(.55,.97,dot(r,normalize(vec3(.75,.15,-.65))));
+  c+=vec3(1.,.5,.22)*.22*smoothstep(.2,.95,-r.y);
+  return c;}
+void main(){vec3 N=normalize(vN),V=normalize(uCam-vW);float nv=max(dot(N,V),0.);
+  vec3 F0=vec3(.34,.25,.17);vec3 Fr=F0+(1.-F0)*pow(1.-nv,5.);
+  vec3 c=env(reflect(-V,N))*Fr+vec3(.006,.005,.004);
+  float fog=exp(-max(length(uCam-vW)-(uFocus-1.3),0.)*.22);
+  o=vec4(c*fog,1.);}`);
+
+const pDown=prog(QUAD_VS,`in vec2 v;out vec4 o;uniform sampler2D uTex;uniform vec2 uTx;uniform float uCut;
+void main(){vec3 s=texture(uTex,v).rgb*4.;
+  s+=texture(uTex,v+uTx).rgb+texture(uTex,v-uTx).rgb+texture(uTex,v+vec2(uTx.x,-uTx.y)).rgb+texture(uTex,v+vec2(-uTx.x,uTx.y)).rgb;
+  o=vec4(max(s/8.-uCut,0.),1.);}`,['a']);
+const pUp=prog(QUAD_VS,`in vec2 v;out vec4 o;uniform sampler2D uTex;uniform vec2 uTx;
+void main(){vec3 s=texture(uTex,v+vec2(-2.*uTx.x,0.)).rgb+texture(uTex,v+vec2(2.*uTx.x,0.)).rgb+texture(uTex,v+vec2(0.,2.*uTx.y)).rgb+texture(uTex,v+vec2(0.,-2.*uTx.y)).rgb;
+  s+=2.*(texture(uTex,v+uTx).rgb+texture(uTex,v-uTx).rgb+texture(uTex,v+vec2(uTx.x,-uTx.y)).rgb+texture(uTex,v+vec2(-uTx.x,uTx.y)).rgb);
+  o=vec4(s/12.,1.);}`,['a']);
+const pOut=prog(QUAD_VS,`in vec2 v;out vec4 o;uniform sampler2D uScene,uBloom;uniform float uT,uB;
+float hash(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
+void main(){vec3 c=texture(uScene,v).rgb+texture(uBloom,v).rgb*uB;
+  vec2 q=(v-.5)*vec2(1.15,1.);c*=1.-.55*smoothstep(.25,.95,length(q));
+  c*=1.35;float l=max(c.r,max(c.g,c.b));
+  vec3 m=c/(1.+l);m=mix(m,vec3(l/(1.+l)),smoothstep(1.2,9.,l)*.6);
+  m=pow(m,vec3(1./2.2));
+  m+=(hash(gl_FragCoord.xy+fract(uT)*61.)-.5)*(2.4/255.);
+  o=vec4(m,1.);}`,['a']);
+
+/* ---------- geometry buffers ---------- */
+const quadVAO=gl.createVertexArray();gl.bindVertexArray(quadVAO);
+const qb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,qb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+
+const strVAO=gl.createVertexArray();gl.bindVertexArray(strVAO);
+{const d=new Float32Array((SEG+1)*4);for(let i=0;i<=SEG;i++){d[i*4]=i/SEG;d[i*4+1]=-1;d[i*4+2]=i/SEG;d[i*4+3]=1}
+ const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,d,gl.STATIC_DRAW);
+ gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);}
+const STRIDE=16,inst=new Float32Array(S*STRIDE),instBuf=gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER,instBuf);gl.bufferData(gl.ARRAY_BUFFER,inst,gl.DYNAMIC_DRAW);
+[[1,3,0],[2,3,3],[3,3,6],[4,4,9],[5,3,13]].forEach(([loc,n,off])=>{gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,n,gl.FLOAT,false,STRIDE*4,off*4);gl.vertexAttribDivisor(loc,1)});
+
+const RU=160,RV=14,ringVAO=gl.createVertexArray();gl.bindVertexArray(ringVAO);
+{const d=new Float32Array((RU+1)*(RV+1)*2);let k=0;for(let i=0;i<=RU;i++)for(let j=0;j<=RV;j++){d[k++]=i/RU;d[k++]=j/RV}
+ const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,d,gl.STATIC_DRAW);
+ gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+ const ix=new Uint16Array(RU*RV*6);k=0;for(let i=0;i<RU;i++)for(let j=0;j<RV;j++){const a=i*(RV+1)+j,c=a+RV+1;ix[k++]=a;ix[k++]=c;ix[k++]=a+1;ix[k++]=a+1;ix[k++]=c;ix[k++]=c+1}
+ const e=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,e);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,ix,gl.STATIC_DRAW);}
+gl.bindVertexArray(null);
+
+/* ---------- render targets ---------- */
+let W=0,H=0,cssW=1,cssH=1,scale=Math.min(window.devicePixelRatio||1,2),maxScale=scale;
+let msFbo=null,msCol=null,msDep=null,scene=null,levels=[],useMS=true;
+const IF=HDR?gl.RGBA16F:gl.RGBA8,TY=HDR?gl.HALF_FLOAT:gl.UNSIGNED_BYTE;
+function target(w,h){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,IF,w,h,0,gl.RGBA,TY,null);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  const f=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,f);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);return{t,f,w,h}}
+function freeTargets(){if(scene){gl.deleteTexture(scene.t);gl.deleteFramebuffer(scene.f)}levels.forEach(l=>{gl.deleteTexture(l.t);gl.deleteFramebuffer(l.f)});levels=[];
+  if(msFbo){gl.deleteFramebuffer(msFbo);gl.deleteRenderbuffer(msCol);gl.deleteRenderbuffer(msDep);msFbo=null}}
+function resize(){
+  cssW=window.innerWidth;cssH=window.innerHeight;
+  const w=Math.max(2,Math.round(cssW*scale)),h=Math.max(2,Math.round(cssH*scale));
+  if(w===W&&h===H)return;W=w;H=h;cv.width=W;cv.height=H;freeTargets();
+  scene=target(W,H);
+  msDep=gl.createRenderbuffer();msCol=gl.createRenderbuffer();msFbo=gl.createFramebuffer();
+  const smp=useMS?Math.min(4,gl.getParameter(gl.MAX_SAMPLES)):0;
+  gl.bindFramebuffer(gl.FRAMEBUFFER,msFbo);
+  if(smp>1){
+    gl.bindRenderbuffer(gl.RENDERBUFFER,msCol);gl.renderbufferStorageMultisample(gl.RENDERBUFFER,smp,IF,W,H);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.RENDERBUFFER,msCol);
+    gl.bindRenderbuffer(gl.RENDERBUFFER,msDep);gl.renderbufferStorageMultisample(gl.RENDERBUFFER,smp,gl.DEPTH_COMPONENT24,W,H);
+  }else{
+    gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,scene.t,0);
+    gl.bindRenderbuffer(gl.RENDERBUFFER,msDep);gl.renderbufferStorage(gl.RENDERBUFFER,gl.DEPTH_COMPONENT24,W,H);
+  }
+  gl.framebufferRenderbuffer(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.RENDERBUFFER,msDep);
+  if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE&&useMS){useMS=false;W=0;return resize()}
+  let lw=W,lh=H;for(let i=0;i<5;i++){lw=Math.max(2,lw>>1);lh=Math.max(2,lh>>1);levels.push(target(lw,lh))}
+  sizeMap();
+}
+
+/* ---------- state ---------- */
+const ends=new Float32Array(S*6),scr=new Float32Array(S*4),len=new Float32Array(S),midi=new Int16Array(S),seed=new Float32Array(S);
+const amp=new Float32Array(S),t0=new Float32Array(S).fill(-99),dec=new Float32Array(S).fill(1.5),nrm=new Float32Array(S);
+for(let s=0;s<S;s++){seed[s]=Math.random();const o=s*STRIDE;inst[o+10]=.5;inst[o+11]=-99;inst[o+12]=6;inst[o+13]=s<N?0:1;inst[o+14]=seed[s];inst[o+15]=1.5;inst[o+6]=1}
+let ffT=0,ff=0,yaw=0,yawV=0,dragPitch=0,mx=0,my=0,pmx=0,pmy=0,time=0,last=performance.now(),lastForm=0,lastInput=-99,nearest=0;
+let VP=new Float32Array(16),camR=[1,0,0],camU=[0,1,0],camPos=[0,0,6],focus=6;
+const secs=[...document.querySelectorAll('main .sec')];let tops=[];
+function measure(){tops=secs.map(s=>s.offsetTop)}
+function readScroll(){const y=window.scrollY;let i=0;while(i<tops.length-1&&y>=tops[i+1])i++;
+  ffT=i>=tops.length-1?tops.length-1:i+(y-tops[i])/(tops[i+1]-tops[i]);ffT=Math.max(0,ffT)}
+
+const PCS=[2,5,7,9,0],NAMES=['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+function quant(f){const m=69+12*Math.log2(f/440);let best=0,bd=99;for(let k=Math.floor(m)-3;k<=Math.floor(m)+4;k++){if(PCS.indexOf(((k%12)+12)%12)<0)continue;const d=Math.abs(k-m);if(d<bd){bd=d;best=k}}return best}
+const noteName=m=>NAMES[((m%12)+12)%12]+(Math.floor(m/12)-1);
+const noteHz=m=>440*Math.pow(2,(m-69)/12);
+
+let ringM=[new Float32Array(16),new Float32Array(16)],ringC=[[0,0,0],[0,0,0]],ringB=[null,null];
+function build(dt){
+  const p=blend(ff);
+  const mobile=cssW<820,asp=cssW/cssH;
+  const G=mul3(rotX(p.gp+dragPitch),rotY(yaw));
+  const rings=[[p.lx,0,0,-p.h/2],[p.ux,p.uz,p.off,p.h/2]];
+  for(let k=0;k<2;k++){const [tx,tz,off,y]=rings[k];
+    const R=mul3(G,mul3(rotZ(tz),rotX(tx)));
+    const c=[G[0]*off+G[3]*y,G[1]*off+G[4]*y,G[2]*off+G[5]*y];
+    ringB[k]=R;ringC[k]=c;
+    const m=ringM[k];m[0]=R[0];m[1]=R[1];m[2]=R[2];m[3]=0;m[4]=R[3];m[5]=R[4];m[6]=R[5];m[7]=0;m[8]=R[6];m[9]=R[7];m[10]=R[8];m[11]=0;m[12]=c[0];m[13]=c[1];m[14]=c[2];m[15]=1}
+  // camera
+  const fov=32*D2R,ds=Math.max(1,Math.min(2.3,(mobile?.82:1.18)/asp));
+  const dist=p.dist*ds,az=p.az+pmx*.07,el=p.el-pmy*.05;
+  camPos=[dist*Math.sin(az)*Math.cos(el),dist*Math.sin(el),dist*Math.cos(az)*Math.cos(el)];
+  const la=lookAt(camPos,[0,0,0]);camR=la.right;camU=la.up;focus=dist;
+  const off=new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, mobile?0:p.side*Math.min(.3,.12+.11*asp),mobile?.42:.03,0,1]);
+  VP=mul4(off,mul4(persp(fov,asp,.5,40),la.m));
+  // strings
+  const L=ringB[0],U=ringB[1],lc=ringC[0],uc=ringC[1];
+  let lo=1e9,hi=0,mlo=999,mhi=0;
+  for(let s=0;s<S;s++){
+    const c=s<N?0:1,i=s%N,a=6.2831853*(i+.5*c)/N,b=a+(c?p.tB:p.tA),rf=c?.965:1;
+    const ca=Math.cos(a)*rf,sa=Math.sin(a)*rf,cb=Math.cos(b)*rf,sb=Math.sin(b)*rf;
+    const ax=lc[0]+L[0]*ca+L[6]*sa,ay=lc[1]+L[1]*ca+L[7]*sa,az2=lc[2]+L[2]*ca+L[8]*sa;
+    const bx=uc[0]+U[0]*cb+U[6]*sb,by=uc[1]+U[1]*cb+U[7]*sb,bz=uc[2]+U[2]*cb+U[8]*sb;
+    const o=s*STRIDE;inst[o]=ax;inst[o+1]=ay;inst[o+2]=az2;inst[o+3]=bx;inst[o+4]=by;inst[o+5]=bz;
+    const l=Math.hypot(bx-ax,by-ay,bz-az2);len[s]=l;if(l<lo)lo=l;if(l>hi)hi=l;
+    const m=quant((c?98:196)*2.4/Math.max(l,.3));midi[s]=m;if(m<mlo)mlo=m;if(m>mhi)mhi=m;
+    // screen
+    let w=VP[3]*ax+VP[7]*ay+VP[11]*az2+VP[15];
+    scr[s*4]=((VP[0]*ax+VP[4]*ay+VP[8]*az2+VP[12])/w*.5+.5)*cssW;scr[s*4+1]=(.5-(VP[1]*ax+VP[5]*ay+VP[9]*az2+VP[13])/w*.5)*cssH;
+    w=VP[3]*bx+VP[7]*by+VP[11]*bz+VP[15];
+    scr[s*4+2]=((VP[0]*bx+VP[4]*by+VP[8]*bz+VP[12])/w*.5+.5)*cssW;scr[s*4+3]=(.5-(VP[1]*bx+VP[5]*by+VP[9]*bz+VP[13])/w*.5)*cssH;
+  }
+  stat.lo=lo;stat.hi=hi;stat.mlo=mlo;stat.mhi=mhi;stat.p=p;
+}
+const stat={lo:0,hi:0,mlo:0,mhi:0,p:null};
+
+/* ---------- plucking ---------- */
+function pluck(s,u,dx,dy,strength,quiet){
+  const o=s*STRIDE,ax=inst[o],ay=inst[o+1],az=inst[o+2];
+  let tx=inst[o+3]-ax,ty=inst[o+4]-ay,tz=inst[o+5]-az;const l=Math.hypot(tx,ty,tz)||1;tx/=l;ty/=l;tz/=l;
+  let vx=camR[0]*dx-camU[0]*dy,vy=camR[1]*dx-camU[1]*dy,vz=camR[2]*dx-camU[2]*dy;
+  const k=vx*tx+vy*ty+vz*tz;vx-=k*tx;vy-=k*ty;vz-=k*tz;let vl=Math.hypot(vx,vy,vz);
+  if(vl<1e-4){vx=camR[0];vy=camR[1];vz=camR[2];vl=1}
+  u=Math.max(.14,Math.min(.86,u));
+  let n=0;for(let h=1;h<=4;h++){const q=Math.sin(h*Math.PI*u);n+=q*q/(h*h)}
+  const resid=amp[s]*Math.exp(-(time-t0[s])*dec[s]);
+  const a=Math.min(.085,resid*.5+strength*l*.42);
+  amp[s]=a;t0[s]=time;nrm[s]=1/n;
+  const hz=noteHz(midi[s]);dec[s]=Math.max(.9,Math.min(2.4,.9+hz/400));
+  inst[o+6]=vx/vl;inst[o+7]=vy/vl;inst[o+8]=vz/vl;
+  inst[o+9]=a/n;inst[o+10]=u;inst[o+11]=time;inst[o+12]=Math.max(3.5,Math.min(11,4.5+3.2*Math.log2(hz/100)));inst[o+15]=dec[s];
+  if(!quiet){lastNote=midi[s];noteDirty=true}
+  voice(s,strength,quiet);
+}
+let lastNote=55,noteDirty=true;
+function sweep(x0,y0,x1,y1,speed){
+  const hits=[];const rx=x1-x0,ry=y1-y0;if(rx*rx+ry*ry<.5)return;
+  for(let s=0;s<S;s++){const ax=scr[s*4],ay=scr[s*4+1],sx=scr[s*4+2]-ax,sy=scr[s*4+3]-ay;
+    const den=rx*sy-ry*sx;if(Math.abs(den)<1e-6)continue;
+    const t=((ax-x0)*sy-(ay-y0)*sx)/den,u=((ax-x0)*ry-(ay-y0)*rx)/den;
+    if(t>=0&&t<=1&&u>=.02&&u<=.98)hits.push(s,u)}
+  const n=hits.length/2;if(!n)return;
+  const step=Math.max(1,Math.ceil(n/16));const st=Math.max(.035,Math.min(.16,.03+speed*.06));
+  for(let i=0;i<n;i+=step)pluck(hits[i*2],hits[i*2+1],rx,ry,st,false);
+  lastInput=time;
+}
+const queue=[];
+function strum(soft){const start=Math.floor(Math.random()*N),dir=Math.random()<.5?1:-1,stp=5,cnt=N/stp;
+  for(let k=0;k<cnt;k++){const i=((start+dir*k*stp)%N+N)%N;queue.push({t:time+k*.026,s:i+(k&1?N:0),u:.3+.4*Math.random(),a:soft?.035:.06})}}
+function runQueue(){while(queue.length&&queue[0].t<=time){const q=queue.shift();pluck(q.s,q.u,1,.3,q.a,true)}}
+
+/* ---------- sound ---------- */
+let ac=null,master=null,verb=null,soundOn=false,voices=0,lastVoice=0;const bufs=new Map();
+function initAudio(){
+  const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;
+  ac=new AC();master=ac.createGain();master.gain.value=.0001;
+  const comp=ac.createDynamicsCompressor();comp.threshold.value=-16;comp.ratio.value=5;comp.attack.value=.004;comp.release.value=.2;
+  master.connect(comp);comp.connect(ac.destination);
+  const sr=ac.sampleRate,n=Math.floor(sr*3),ir=ac.createBuffer(2,n,sr);
+  for(let c=0;c<2;c++){const d=ir.getChannelData(c);let lp=0;for(let i=0;i<n;i++){const t=i/sr;lp+=((Math.random()*2-1)-lp)*(.5*Math.exp(-t*1.2)+.06);d[i]=lp*Math.exp(-t*2.1)*(t<.012?t/.012:1)}}
+  verb=ac.createConvolver();verb.buffer=ir;const vg=ac.createGain();vg.gain.value=.9;verb.connect(vg);vg.connect(master);
+  return true;
+}
+function ks(m){
+  let b=bufs.get(m);if(b)return b;
+  const f=noteHz(m),sr=ac.sampleRate,n=Math.floor(sr*Math.min(5,1.8+300/f));b=ac.createBuffer(1,n,sr);const d=b.getChannelData(0);
+  const Nf=sr/f-.5,Ni=Math.floor(Nf),fr=Nf-Ni,g=Math.pow(10,-3/(f*Math.min(5,1.6+420/f)));
+  let lp=0,mean=0;const soft=Math.min(.9,.25+f/900);
+  for(let i=0;i<=Ni+1;i++){lp+=((Math.random()*2-1)-lp)*soft;d[i]=lp;mean+=lp}
+  mean/=Ni+2;for(let i=0;i<=Ni+1;i++)d[i]-=mean;
+  for(let i=Ni+2;i<n;i++){const a=d[i-Ni],bb=d[i-Ni-1],c=d[i-Ni-2];d[i]=g*((1-fr)*.5*(a+bb)+fr*.5*(bb+c))}
+  let pk=0;for(let i=0;i<n;i++){const v=Math.abs(d[i]);if(v>pk)pk=v}
+  const fade=Math.floor(sr*.08);for(let i=0;i<n;i++){d[i]*=.9/pk;if(i>n-fade)d[i]*=(n-i)/fade}
+  bufs.set(m,b);return b;
+}
+function voice(s,strength,quiet){
+  if(!soundOn||!ac||ac.state!=='running')return;
+  const now=ac.currentTime;if(now-lastVoice<(quiet?.05:.016)||voices>30)return;lastVoice=now;
+  const src=ac.createBufferSource();src.buffer=ks(midi[s]);src.playbackRate.value=Math.pow(2,(seed[s]-.5)*10/1200);
+  const g=ac.createGain();g.gain.value=(quiet?.10:.16)+Math.min(.3,strength*2.2);
+  let out=g;if(ac.createStereoPanner){const pn=ac.createStereoPanner();pn.pan.value=Math.max(-.8,Math.min(.8,((scr[s*4]+scr[s*4+2])/cssW-1)*1.2));g.connect(pn);out=pn}
+  src.connect(g);out.connect(master);const sg=ac.createGain();sg.gain.value=.3;out.connect(sg);sg.connect(verb);
+  voices++;src.onended=()=>{voices--;try{sg.disconnect();out.disconnect()}catch(e){}};src.start(now);
+}
+function setSound(on){
+  if(on&&!ac&&!initAudio()){$('sndt').textContent='No sound here';return}
+  soundOn=on;
+  if(on){ac.resume();master.gain.cancelScheduledValues(ac.currentTime);master.gain.setTargetAtTime(.5,ac.currentTime,.08)}
+  else if(ac){master.gain.setTargetAtTime(.0001,ac.currentTime,.08)}
+  $('snd').setAttribute('aria-pressed',on?'true':'false');$('sndt').textContent=on?'Sound on':'Sound off';
+}
+$('snd').addEventListener('click',()=>{setSound(!soundOn);if(soundOn)strum(false)});
+$('hear').addEventListener('click',()=>{if(!soundOn)setSound(true);strum(false)});
+
+/* ---------- input ---------- */
+let px=-1,py=-1,pt=0,drag=false;
+const coarse=matchMedia('(pointer:coarse)').matches;
+if(coarse)$('hintt').textContent='Drag a finger across the strings';
+window.addEventListener('pointermove',e=>{
+  if(e.pointerType==='touch')return;
+  mx=e.clientX/cssW*2-1;my=e.clientY/cssH*2-1;
+  const now=performance.now();
+  if(drag){yawV=(e.clientX-px)*.006;yaw+=yawV;dragPitch=Math.max(-.5,Math.min(.5,dragPitch+(e.clientY-py)*.003));lastInput=time}
+  else if(px>=0&&now-pt<120){const d=Math.hypot(e.clientX-px,e.clientY-py);sweep(px,py,e.clientX,e.clientY,d/Math.max(now-pt,4))}
+  px=e.clientX;py=e.clientY;pt=now;
+},{passive:true});
+window.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'||e.button!==0)return;if(e.target.closest('a,button'))return;drag=true;px=e.clientX;py=e.clientY;document.body.style.cursor='grabbing';document.body.style.userSelect='none'});
+window.addEventListener('pointerup',()=>{drag=false;document.body.style.cursor='';document.body.style.userSelect=''});
+window.addEventListener('pointerleave',()=>{px=-1});
+let tx0=-1,ty0=-1,tt=0;
+window.addEventListener('touchstart',e=>{const t=e.touches[0];tx0=t.clientX;ty0=t.clientY;tt=performance.now()},{passive:true});
+window.addEventListener('touchmove',e=>{const t=e.touches[0],now=performance.now();const d=Math.hypot(t.clientX-tx0,t.clientY-ty0);
+  if(tx0>=0)sweep(tx0,ty0,t.clientX,t.clientY,d/Math.max(now-tt,4));tx0=t.clientX;ty0=t.clientY;tt=now},{passive:true});
+window.addEventListener('scroll',readScroll,{passive:true});
+window.addEventListener('resize',()=>{resize();measure();readScroll()});
+
+/* ---------- heads-up layer ---------- */
+const map=$('map'),m2=map.getContext('2d');let mw=0,mh=0,mdpr=1;
+function sizeMap(){mdpr=Math.min(window.devicePixelRatio||1,2);const r=map.getBoundingClientRect();mw=Math.max(10,r.width);mh=Math.max(10,r.height);map.width=Math.round(mw*mdpr);map.height=Math.round(mh*mdpr)}
+function drawMap(){
+  m2.setTransform(mdpr,0,0,mdpr,0,0);m2.clearRect(0,0,mw,mh);
+  const mid=mh/2,st=mw/N;
+  for(let c=0;c<2;c++){
+    m2.beginPath();
+    for(let i=0;i<N;i++){const s=i+c*N,x=(i+.5)*st;const e=Math.min(1,amp[s]*Math.exp(-(time-t0[s])*dec[s])/.06);
+      const h=2.5+e*(mid-4);if(e<.04){m2.moveTo(x,mid+(c?1.5:-1.5));m2.lineTo(x,mid+(c?h:-h))}}
+    m2.strokeStyle=c?'rgba(174,195,224,.32)':'rgba(224,176,112,.34)';m2.lineWidth=1;m2.stroke();
+    m2.beginPath();
+    for(let i=0;i<N;i++){const s=i+c*N,x=(i+.5)*st;const e=Math.min(1,amp[s]*Math.exp(-(time-t0[s])*dec[s])/.06);
+      if(e>=.04){const h=2.5+e*(mid-4);m2.moveTo(x,mid+(c?1.5:-1.5));m2.lineTo(x,mid+(c?h:-h))}}
+    m2.strokeStyle=c?'#dbe7f7':'#ffd9a0';m2.lineWidth=1.2;m2.stroke();
+  }
+}
+const c1=$('c1'),c2=$('c2'),c1t=$('c1t'),c2t=$('c2t'),nn=$('nn'),nf=$('nf'),tn=$('tn'),stepEls=[...$('steps').children];
+let hudTick=0;
+function ringEdge(k,right){let bx=right?-1e9:1e9,by=0;const R=ringB[k],c=ringC[k];
+  for(let j=0;j<32;j++){const a=j/32*6.2831853,ca=Math.cos(a)*1.03,sa=Math.sin(a)*1.03;
+    const x=c[0]+R[0]*ca+R[6]*sa,y=c[1]+R[1]*ca+R[7]*sa,z=c[2]+R[2]*ca+R[8]*sa;
+    const w=VP[3]*x+VP[7]*y+VP[11]*z+VP[15],sx=((VP[0]*x+VP[4]*y+VP[8]*z+VP[12])/w*.5+.5)*cssW,sy=(.5-(VP[1]*x+VP[5]*y+VP[9]*z+VP[13])/w*.5)*cssH;
+    if(right?sx>bx:sx<bx){bx=sx;by=sy}}
+  return[bx,by]}
+let ce=[[0,0],[0,0]],ceInit=false;
+function hud(dt){
+  const p=stat.p,right=p.side>0,settled=Math.abs(p.side)>.6&&cssW>=820;
+  const e1=ringEdge(1,right),e2=ringEdge(0,right);if(Math.abs(e2[1]-e1[1])<48){const m=(e1[1]+e2[1])/2,sg=e2[1]>=e1[1]?1:-1;e1[1]=m-24*sg;e2[1]=m+24*sg}
+  [c1,c2].forEach((el,k)=>{const e=k?e2:e1;const q=ce[k];const f=ceInit?1-Math.exp(-dt*7):1;q[0]+=(e[0]-q[0])*f;q[1]+=(e[1]-q[1])*f;
+    const room=right?cssW-q[0]>250:q[0]>250;
+    el.classList.toggle('on',settled&&room&&q[1]>90&&q[1]<cssH-110);el.classList.toggle('l',!right);
+    el.style.transform=right?`translate(${q[0].toFixed(1)}px,${q[1].toFixed(1)}px) translateY(-50%)`:`translate(${q[0].toFixed(1)}px,${q[1].toFixed(1)}px) translate(-100%,-50%)`});
+  ceInit=true;
+  if(++hudTick%4===0){
+    const deg=v=>Math.round(v/D2R);
+    c1t.textContent=`twist ${deg(p.tA)}° · tilt ${Math.abs(deg(p.ux))}°`;
+    const l=stat.hi-stat.lo<.06?`${((stat.lo+stat.hi)/2).toFixed(2)} m`:`${stat.lo.toFixed(2)}–${stat.hi.toFixed(2)} m`;
+    c2t.textContent=`${l} · ${noteName(stat.mlo)}–${noteName(stat.mhi)}`;
+    const i=Math.round(ff);if(i!==nearest||hudTick===4){nearest=i;stepEls.forEach((e,k)=>e.classList.toggle('on',k===i));tn.textContent=FORMS[i].name==='Open'?'Open':FORMS[i].name}
+  }
+  if(noteDirty){noteDirty=false;nn.textContent=noteName(lastNote);nf.textContent=noteHz(lastNote).toFixed(1)+' Hz'}
+}
+
+/* ---------- frame ---------- */
+let acc=0,cnt=0,ups=0,slowRuns=0;
+function adapt(ms){acc+=ms;cnt++;if(cnt<45)return;const avg=acc/cnt;acc=0;cnt=0;api.ms=avg;
+  if(avg>21){if(++slowRuns>=2&&scale>.75){scale=Math.max(.75,scale*.8);slowRuns=0;resize()}}
+  else{slowRuns=0;if(avg<11&&scale<maxScale&&ups<2){scale=Math.min(maxScale,scale*1.2);ups++;resize()}}}
+function bindU(pr){gl.useProgram(pr.p);return pr.u}
+function frame(now){
+  requestAnimationFrame(frame);
+  if(document.hidden){last=now;return}
+  const raw=now-last;last=now;const dt=Math.min(.05,raw/1000);time+=dt;if(raw<200)adapt(raw);
+  ff+=(ffT-ff)*(1-Math.exp(-dt*(reduce?30:4.2)));
+  pmx+=(mx-pmx)*(1-Math.exp(-dt*3));pmy+=(my-pmy)*(1-Math.exp(-dt*3));
+  if(!drag){if(!reduce)yaw+=dt*.055+yawV;yawV*=Math.exp(-dt*4);dragPitch*=Math.exp(-dt*1.2)}
+  build(dt);
+  const fi=Math.round(ff);if(fi!==lastForm&&Math.abs(ff-fi)<.12){lastForm=fi;if(!reduce)strum(true)}
+  if(!reduce&&time-lastInput>7&&!queue.length&&time-idleAt>8){idleAt=time;strum(true)}
+  runQueue();
+  gl.bindBuffer(gl.ARRAY_BUFFER,instBuf);gl.bufferSubData(gl.ARRAY_BUFFER,0,inst);
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER,msFbo);gl.viewport(0,0,W,H);
+  gl.disable(gl.BLEND);gl.disable(gl.DEPTH_TEST);gl.depthMask(true);gl.clearDepth(1);gl.clear(gl.DEPTH_BUFFER_BIT);
+  // backdrop
+  let u=bindU(pBg);const cw=VP[15];gl.uniform2f(u.uC,VP[12]/cw*.5+.5,VP[13]/cw*.5+.5);gl.uniform1f(u.uAsp,W/H);
+  gl.bindVertexArray(quadVAO);gl.drawArrays(gl.TRIANGLES,0,3);
+  // rings
+  gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);
+  u=bindU(pRing);gl.uniformMatrix4fv(u.uVP,false,VP);gl.uniform3fv(u.uCam,camPos);gl.uniform1f(u.uFocus,focus);gl.uniform1f(u.uTube,.02);gl.uniform1f(u.uR,1.022);
+  gl.bindVertexArray(ringVAO);
+  for(let k=0;k<2;k++){gl.uniformMatrix4fv(u.uM,false,ringM[k]);gl.drawElements(gl.TRIANGLES,RU*RV*6,gl.UNSIGNED_SHORT,0)}
+  // strings
+  gl.depthMask(false);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
+  u=bindU(pStr);gl.uniformMatrix4fv(u.uVP,false,VP);gl.uniform3fv(u.uCam,camPos);gl.uniform2f(u.uRes,W,H);
+  gl.uniform1f(u.uT,time);gl.uniform1f(u.uFocus,focus);gl.uniform1f(u.uPx,H/(2*Math.tan(16*D2R)));gl.uniform1f(u.uGain,HDR?.6:.36);gl.uniform1f(u.uDof,5*W/Math.max(cssW,1));
+  gl.bindVertexArray(strVAO);gl.drawArraysInstanced(gl.TRIANGLE_STRIP,0,(SEG+1)*2,S);
+  gl.depthMask(true);gl.disable(gl.BLEND);gl.disable(gl.DEPTH_TEST);
+  if(useMS){gl.bindFramebuffer(gl.READ_FRAMEBUFFER,msFbo);gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER,scene.f);gl.blitFramebuffer(0,0,W,H,0,0,W,H,gl.COLOR_BUFFER_BIT,gl.NEAREST)}
+  // glow
+  gl.bindVertexArray(quadVAO);gl.activeTexture(gl.TEXTURE0);
+  u=bindU(pDown);let src=scene;
+  for(let i=0;i<levels.length;i++){const d=levels[i];gl.bindFramebuffer(gl.FRAMEBUFFER,d.f);gl.viewport(0,0,d.w,d.h);gl.bindTexture(gl.TEXTURE_2D,src.t);
+    gl.uniform2f(u.uTx,1/src.w,1/src.h);gl.uniform1f(u.uCut,i===0?.012:0);gl.drawArrays(gl.TRIANGLES,0,3);src=d}
+  u=bindU(pUp);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
+  for(let i=levels.length-1;i>0;i--){const s=levels[i],d=levels[i-1];gl.bindFramebuffer(gl.FRAMEBUFFER,d.f);gl.viewport(0,0,d.w,d.h);gl.bindTexture(gl.TEXTURE_2D,s.t);
+    gl.uniform2f(u.uTx,.5/s.w,.5/s.h);gl.drawArrays(gl.TRIANGLES,0,3)}
+  gl.disable(gl.BLEND);
+  // to screen
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,W,H);
+  u=bindU(pOut);gl.uniform1i(u.uScene,0);gl.uniform1i(u.uBloom,1);gl.uniform1f(u.uT,time);gl.uniform1f(u.uB,.13);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,levels[0].t);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,scene.t);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  hud(dt);drawMap();
+}
+let idleAt=-4;
+const api=window.__vire={ms:0,get scale(){return scale},get hdr(){return HDR},get ms4(){return useMS},stat,
+  survey(){const out=[];const keep=ff;for(let i=0;i<FORMS.length;i++){ff=i;build(0);out.push({name:FORMS[i].name,lo:+stat.lo.toFixed(3),hi:+stat.hi.toFixed(3),notes:noteName(stat.mlo)+'–'+noteName(stat.mhi)})}ff=keep;build(0);return out},
+  strum,sweep};
+resize();measure();readScroll();ff=ffT;
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{measure();readScroll()});
+window.addEventListener('load',()=>{measure();readScroll();sizeMap()});
+// fill the two figures that depend on the leaning ring from the geometry itself
+{const keep=ff;ff=4;build(0);$('leanLen').textContent=stat.lo.toFixed(1)+'–'+stat.hi.toFixed(1)+' m';$('leanNotes').textContent=noteName(stat.mlo)+'–'+noteName(stat.mhi);
+ let lo=999,hi=0;for(let i=1;i<=5;i++){ff=i;build(0);lo=Math.min(lo,stat.mlo);hi=Math.max(hi,stat.mhi)}
+ $('rangeV').textContent=noteName(lo)+' to '+noteName(hi)+', in a five-note scale on D';ff=keep}
+requestAnimationFrame(frame);
+})();
+</script>
