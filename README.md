@@ -49,3 +49,7 @@ Newest first, roughly.
 ## Contributing
 
 Open work is tracked in [issues](https://github.com/lawyki/3d/issues); ones marked `good first issue` need no WebGL background. See [CONTRIBUTING.md](CONTRIBUTING.md) for how the repo is laid out and how to send a change.
+
+## License
+
+[MIT](LICENSE). Contributions are accepted under the same license.
