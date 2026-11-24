@@ -1,0 +1,15 @@
+This repository is under two licenses.
+
+Code: MIT License, see LICENSE-MIT.
+  The source code in this repository: HTML, CSS, JavaScript and shader code.
+
+Visual work: Creative Commons Attribution-NonCommercial 4.0 International
+(CC BY-NC 4.0), see LICENSE-CC-BY-NC-4.0.
+  The pages as designed works (their visual design, copy, names and made-up
+  brands), the screenshots in every stills/ folder, and the renders and video
+  in planetary-gearbox/.
+
+Copyright (c) 2026 lawyki.
+
+Third-party material keeps its own license, such as fonts loaded from
+Google Fonts (SIL Open Font License).
