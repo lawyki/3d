@@ -1,0 +1,480 @@
+<title>Jyvä Sand Foundry</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one fixed bed of grains fills the screen; the page is a single column of six short texts on the
+   left that scroll past it. Everything the grains do happens a layer at a time, and the only colour is the beam. */
+:root {
+  --bg: #e7e9e6; --fg: #14171a; --muted: #5a6166; --line: rgba(20, 23, 26, 0.16); --accent: #db1f5a;
+  --display: "Instrument Serif", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --body: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0c0d0f; --fg: #ecebe6; --muted: #8f959b; --line: rgba(236, 235, 230, 0.18); --accent: #ff4f8b; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0c0d0f; --fg: #ecebe6; --muted: #8f959b; --line: rgba(236, 235, 230, 0.18); --accent: #ff4f8b; color-scheme: dark; }
+
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 1.02rem/1.55 var(--body);
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+body.grab { cursor: grabbing; }
+canvas#bed { position: fixed; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.mono { font: 500 0.7rem/1.3 var(--mono); letter-spacing: 0.09em; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+
+.bar { position: fixed; inset: 0 0 auto; z-index: 5; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+  padding-block: calc(env(safe-area-inset-top, 0px) + 1.1rem) 0.6rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px), 4.5vw); padding-right: max(16px, env(safe-area-inset-right, 0px), 4.5vw); pointer-events: none; }
+.mark { font: 400 1.7rem/1 var(--display); letter-spacing: 0.01em; }
+.bar .mono { color: var(--muted); }
+.bar b { color: var(--fg); font-weight: 500; }
+
+main { position: relative; z-index: 2; }
+.step { min-height: 100vh; min-height: 100lvh; box-sizing: border-box; display: flex; align-items: center;
+  padding-block: 5.5rem 5rem; padding-left: max(16px, env(safe-area-inset-left, 0px), 4.5vw); padding-right: max(16px, env(safe-area-inset-right, 0px), 4.5vw); }
+.copy { width: min(27rem, 100%); min-width: 0; display: flex; flex-direction: column; gap: 1.15rem; }
+.copy .mono { color: var(--muted); }
+.copy .mono i { font-style: normal; color: var(--accent); }
+h1, h2 { margin: 0; font: 400 3rem/0.98 var(--display); letter-spacing: -0.012em; text-wrap: balance; }
+h1 { font-size: clamp(3.4rem, 8.2vw, 7.4rem); line-height: 0.9; }
+h2 { font-size: clamp(2.4rem, 4.4vw, 4.1rem); }
+h1 em, h2 em { font-style: italic; }
+p { margin: 0; color: var(--muted); max-width: 25rem; text-wrap: pretty; }
+p strong { color: var(--fg); font-weight: 500; }
+
+.count { display: flex; align-items: baseline; gap: 0.7rem; padding-top: 0.6rem; border-top: 1px solid var(--line); }
+.count output { font: 400 clamp(3rem, 5.4vw, 4.6rem)/1 var(--display); font-variant-numeric: tabular-nums; min-width: 4ch; }
+.count .mono { color: var(--muted); }
+
+dl.facts { margin: 0; display: grid; grid-template-columns: auto 1fr; border-top: 1px solid var(--line); }
+dl.facts dt, dl.facts dd { margin: 0; padding: 0.55rem 0; border-bottom: 1px solid var(--line); }
+dl.facts dt { color: var(--muted); padding-right: 1.5rem; }
+dl.facts dd { text-align: right; font-variant-numeric: tabular-nums; }
+
+.forms { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+.forms button { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: 1.4rem auto 1fr auto; align-items: baseline; column-gap: 0.4rem;
+  padding: 0.72rem 0; border-bottom: 1px solid var(--line); color: var(--muted); transition: color 0.25s, padding 0.35s; }
+.forms button::before { content: ""; width: 0.5rem; height: 0.5rem; border-radius: 50%; border: 1px solid var(--muted); align-self: center; transition: background 0.25s, border-color 0.25s; }
+.forms button b { font: 400 1.75rem/1 var(--display); color: var(--fg); padding-right: 0.7rem; }
+.forms button span { font-size: 0.92rem; }
+.forms button .mono { color: inherit; }
+.forms button:hover { color: var(--fg); }
+.forms button[aria-pressed="true"] { color: var(--fg); padding-left: 0.5rem; }
+.forms button[aria-pressed="true"]::before { background: var(--accent); border-color: var(--accent); }
+.forms button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.contact { display: flex; flex-direction: column; gap: 0.3rem; padding-top: 0.9rem; border-top: 1px solid var(--line); }
+.contact .addr { font: 400 clamp(1.6rem, 2.6vw, 2.1rem)/1.1 var(--display); -webkit-user-select: text; user-select: text; overflow-wrap: anywhere; }
+.foot { color: var(--muted); }
+
+/* the tag that rides the beam */
+#tag { position: fixed; left: 0; top: 0; z-index: 3; pointer-events: none; display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; color: var(--accent); opacity: 0; will-change: transform; }
+#tag::before { content: ""; width: 2.2rem; height: 1px; background: var(--accent); }
+#tag.flip { flex-direction: row-reverse; }
+#tag.flip::before { width: 0.9rem; }
+
+.rail { position: fixed; z-index: 5; left: max(16px, env(safe-area-inset-left, 0px), 4.5vw); bottom: calc(env(safe-area-inset-bottom, 0px) + 1.2rem); display: flex; gap: 1.4rem; }
+.rail button { all: unset; cursor: pointer; color: var(--muted); padding: 0.4rem 0; border-top: 1px solid transparent; transition: color 0.25s, border-color 0.25s; }
+.rail button:hover { color: var(--fg); }
+.rail button[aria-current="true"] { color: var(--fg); border-top-color: var(--accent); }
+.rail button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.hint { position: fixed; z-index: 5; right: max(16px, env(safe-area-inset-right, 0px), 4.5vw); bottom: calc(env(safe-area-inset-bottom, 0px) + 1.6rem); color: var(--muted); }
+
+@media (max-width: 760px) {
+  #tag { display: none; }
+  .step { align-items: flex-end; padding-block: 5rem 0; padding-left: 0; padding-right: 0; }
+  .copy { width: 100%; box-sizing: border-box; padding-block: 4.5rem 2.2rem; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+    background: linear-gradient(to top, var(--bg) 62%, transparent); gap: 0.9rem; }
+  .rail, .hint { display: none; }
+  h1 { font-size: clamp(3.2rem, 15vw, 4.6rem); }
+  .forms button b { font-size: 1.5rem; }
+}
+@media (prefers-reduced-motion: reduce) { .forms button { transition: none; } }
+</style>
+
+<canvas id="bed" role="img" aria-label="A box of sand grains. A pink beam climbs through it layer by layer and an object forms inside; the loose sand is brushed away, the layers are pulled apart, and at the end everything returns to the box."></canvas>
+
+<header class="bar">
+  <span class="mark">Jyvä</span>
+  <span class="mono"><b id="stepNo">01</b> / 06 &nbsp;<span id="stepName">Bed</span></span>
+</header>
+
+<main id="track">
+  <section class="step"><div class="copy">
+    <span class="mono">Sand foundry, Helsinki</span>
+    <h1>Objects grown from <em>sand.</em></h1>
+    <p>Jyvä prints vessels and furniture out of quartz sand, one 0.4&nbsp;mm layer at a time. <strong>This page is a bed of <span id="nGrains">120,000</span> grains.</strong> Scroll, and it runs.</p>
+  </div></section>
+
+  <section class="step"><div class="copy">
+    <span class="mono"><i>02</i> &nbsp;Bind</span>
+    <h2>A layer is spread. A layer is <em>bound.</em></h2>
+    <p>A blade lays down a sheet of sand. The head crosses it once and wets one outline with binder. The bed drops 0.4&nbsp;mm and the blade comes back.</p>
+    <div class="count"><output id="layerNo" for="track">0000</output><span class="mono">of 1,500 layers</span></div>
+  </div></section>
+
+  <section class="step"><div class="copy">
+    <span class="mono"><i>03</i> &nbsp;Brush</span>
+    <h2>Then we brush it <em>out.</em></h2>
+    <p>The piece cures for a day, buried in its own material. Loose sand comes off from the top down, by hand and by air, and falls through the floor to be sieved.</p>
+  </div></section>
+
+  <section class="step"><div class="copy">
+    <span class="mono"><i>04</i> &nbsp;Stack</span>
+    <h2>Fifteen hundred drawings, <em>stacked.</em></h2>
+    <p>Pull the layers apart and every piece is a pile of outlines. There is no mould, so no outline is off limits.</p>
+    <dl class="facts">
+      <dt>Layer</dt><dd>0.4 mm</dd>
+      <dt>Grain</dt><dd>0.14 mm washed quartz</dd>
+      <dt>Bed</dt><dd>450 × 450 × 600 mm</dd>
+      <dt>Shown here</dt><dd>one layer in twenty</dd>
+    </dl>
+  </div></section>
+
+  <section class="step"><div class="copy">
+    <span class="mono"><i>05</i> &nbsp;Forms</span>
+    <h2>Four forms in the bed this <em>winter.</em></h2>
+    <div class="forms" id="forms" role="group" aria-label="Choose a form to print">
+      <button type="button" id="form-onkalo" aria-pressed="true"><b>Onkalo</b><span>Lattice sphere, Ø 420</span><span class="mono">€1,900</span></button>
+      <button type="button" id="form-kierto" aria-pressed="false"><b>Kierto</b><span>Vessel, 400 × 560</span><span class="mono">€2,400</span></button>
+      <button type="button" id="form-pilari" aria-pressed="false"><b>Pilari</b><span>Side table, 370 × 560</span><span class="mono">€2,150</span></button>
+      <button type="button" id="form-kivet" aria-pressed="false"><b>Kivet</b><span>Floor piece, 400 × 580</span><span class="mono">€2,800</span></button>
+    </div>
+    <p>Choose one and the bed prints it again. Drag to turn it.</p>
+  </div></section>
+
+  <section class="step"><div class="copy">
+    <span class="mono"><i>06</i> &nbsp;Return</span>
+    <h2>Nothing leaves as <em>waste.</em></h2>
+    <p>Sand that was never bound goes straight back into the bed. A piece that comes home is crushed, sieved and printed as something else.</p>
+    <div class="contact"><span class="mono">Commission a piece</span><span class="addr">bed@jyva.example</span></div>
+    <span class="mono foot">Jyvä Oy · Sörnäinen, Helsinki · Beds run Tuesday and Friday</span>
+  </div></section>
+</main>
+
+<div id="tag" class="mono" aria-hidden="true"><span id="tagText">Layer 0000</span></div>
+<nav class="rail mono" id="rail" aria-label="Process">
+  <button type="button">Bed</button><button type="button">Bind</button><button type="button">Brush</button><button type="button">Stack</button><button type="button">Forms</button><button type="button">Return</button>
+</nav>
+<span class="hint mono" id="hint">Scroll to print</span>
+
+<script>
+(function () {
+  var canvas = document.getElementById('bed'), steps = document.querySelectorAll('.step'), NS = steps.length;
+  var gl = canvas.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'high-performance' });
+  if (!gl) return;
+  var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var N = window.innerWidth < 760 ? 64000 : 120000, M = Math.floor(N * 0.62);   // M grains become the object, the rest stay loose
+  document.getElementById('nGrains').textContent = N.toLocaleString('en-US');
+  var seed = 11; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+  function gauss() { return (rnd() + rnd() + rnd() - 1.5) * 2; }
+  var TAU = Math.PI * 2;
+
+  /* ---------- the bed: 75 sheets of sand, 2.4 high, 1.8 square ---------- */
+  var LAYERS = 75, BH = 1.2, BW = 0.9, DY = 2 * BH / LAYERS;
+  function ly(k) { return -BH + (k + 0.5) * DY; }
+
+  /* ---------- forms: each is a surface f = 0, sampled only where the sheets cut it ---------- */
+  function slices(f, o) {
+    var pos = new Float32Array(M * 3), nrm = new Float32Array(M * 3), lay = new Uint8Array(M), i = 0, e = 0.002, guard = 0;
+    (o.caps || []).forEach(function (c) { var n = Math.floor(M * c.share), y = ly(c.k), end = i + n;
+      while (i < end && guard++ < 4e6) { var x = (rnd() * 2 - 1) * 0.86, z = (rnd() * 2 - 1) * 0.86; if (f(x, y, z) > 0) continue;
+        pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z; nrm[i * 3 + 1] = c.up; lay[i] = c.k; i++; } });
+    while (i < M && guard++ < 3e7) {
+      var k = o.k0 + Math.floor(rnd() * (o.k1 - o.k0 + 1)), y = ly(k), x = (rnd() * 2 - 1) * 0.88, z = (rnd() * 2 - 1) * 0.88, v = f(x, y, z);
+      if (Math.abs(v) > o.band) continue;
+      for (var it = 0; it < 8 && Math.abs(v) > o.tol; it++) {   // walk to the outline without leaving the sheet
+        var gx = (f(x + e, y, z) - v) / e, gz = (f(x, y, z + e) - v) / e, g2 = gx * gx + gz * gz; if (g2 < 1e-5) break;
+        var stp = Math.max(-0.08, Math.min(0.08, v / g2 * Math.sqrt(g2))) / Math.sqrt(g2); x -= stp * gx; z -= stp * gz; v = f(x, y, z); }
+      if (Math.abs(v) > o.tol || Math.abs(x) > 0.88 || Math.abs(z) > 0.88 || (o.keep && !o.keep(x, y, z))) continue;
+      var nx = f(x + e, y, z) - f(x - e, y, z), ny = f(x, y + e, z) - f(x, y - e, z), nz = f(x, y, z + e) - f(x, y, z - e), l = Math.hypot(nx, ny, nz) || 1;
+      pos[i * 3] = x + gauss() * 0.003; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z + gauss() * 0.003; nrm[i * 3] = nx / l; nrm[i * 3 + 1] = ny / l; nrm[i * 3 + 2] = nz / l; lay[i] = k; i++;
+    }
+    // order grains by sheet, then round the axis, so one form can be printed over another with short moves
+    var idx = new Uint32Array(M), key = new Float64Array(M);
+    for (var j = 0; j < M; j++) { idx[j] = j; key[j] = lay[j] * 10 + (Math.atan2(pos[j * 3 + 2], pos[j * 3]) + Math.PI); }
+    var order = Array.prototype.slice.call(idx).sort(function (a, b) { return key[a] - key[b]; });
+    var P = new Float32Array(N * 3), Q = new Float32Array(N * 3), L = new Uint8Array(M);
+    for (j = 0; j < M; j++) { var s = order[j]; P[j * 3] = pos[s * 3]; P[j * 3 + 1] = pos[s * 3 + 1]; P[j * 3 + 2] = pos[s * 3 + 2];
+      Q[j * 3] = nrm[s * 3]; Q[j * 3 + 1] = nrm[s * 3 + 1]; Q[j * 3 + 2] = nrm[s * 3 + 2]; L[j] = lay[s]; }
+    return { pos: P, nrm: Q, lay: L };
+  }
+  function kOf(y) { return Math.max(0, Math.min(LAYERS - 1, Math.round((y + BH) / DY - 0.5))); }
+  var FORMS = [
+    function onkalo() { var a = 5.4, R = 0.84;
+      return slices(function (x, y, z) { return Math.sin(a * x) * Math.cos(a * y) + Math.sin(a * y) * Math.cos(a * z) + Math.sin(a * z) * Math.cos(a * x); },
+        { k0: kOf(-R), k1: kOf(R), band: 0.55, tol: 0.012, keep: function (x, y, z) { return x * x + y * y + z * z < R * R; } }); },
+    function kierto() {
+      function R(y) { var t = (y + 1) / 2, b = (t - 0.36) / 0.27, lip = Math.max(0, Math.min(1, (t - 0.78) / 0.22)); return 0.25 + 0.44 * Math.exp(-b * b) + 0.17 * lip * lip * (3 - 2 * lip); }
+      return slices(function (x, y, z) { return Math.hypot(x, z) - R(y) * (1 + 0.13 * Math.cos(6 * Math.atan2(z, x) + 2.6 * y)); },
+        { k0: kOf(-1), k1: kOf(1), band: 0.05, tol: 0.0015, caps: [{ k: kOf(-1), share: 0.035, up: -1 }] }); },
+    function pilari() {
+      return slices(function (x, y, z) { var a = 1.7 * y, c = Math.cos(a), s = Math.sin(a), u = c * x + s * z, w = -s * x + c * z; return Math.sqrt(Math.sqrt(u * u * u * u + w * w * w * w)) - (0.33 + 0.27 * y * y); },
+        { k0: kOf(-1), k1: kOf(1), band: 0.05, tol: 0.0015, caps: [{ k: kOf(1), share: 0.06, up: 1 }, { k: kOf(-1), share: 0.04, up: -1 }] }); },
+    function kivet() {
+      var S = [[0, -0.68, 0, 0.72, 0.37, 0.62], [0.09, -0.07, -0.04, 0.53, 0.3, 0.5], [-0.07, 0.43, 0.05, 0.39, 0.24, 0.36], [0.03, 0.83, 0, 0.23, 0.19, 0.22]], K = 0.1;
+      return slices(function (x, y, z) { var d = 9;
+          for (var i = 0; i < 4; i++) { var s = S[i], q = (Math.hypot((x - s[0]) / s[3], (y - s[1]) / s[4], (z - s[2]) / s[5]) - 1) * s[4], h = Math.max(0, Math.min(1, 0.5 + 0.5 * (q - d) / K)); d = q + (d - q) * h - K * h * (1 - h); }
+          return d; },
+        { k0: kOf(-1.05), k1: kOf(1.03), band: 0.045, tol: 0.0015 }); }
+  ];
+  var built = [];
+  function form(i) { if (!built[i]) { seed = 101 + i * 977; built[i] = FORMS[i](); } return built[i]; }
+
+  // the bed keeps every object grain on the sheet it will be bound in, and tops the sheets up evenly with loose sand
+  function bedFor(F) {
+    var a = new Float32Array(N * 3), hist = new Float32Array(LAYERS), j, k;
+    for (j = 0; j < M; j++) { k = F.lay[j]; if (Math.abs(F.nrm[j * 3 + 1]) > 0.999) k = Math.max(0, Math.min(LAYERS - 1, k + Math.round((rnd() - 0.5) * 12)));
+      hist[k]++; a[j * 3] = (rnd() * 2 - 1) * BW; a[j * 3 + 1] = ly(k); a[j * 3 + 2] = (rnd() * 2 - 1) * BW; }
+    var want = N / LAYERS, cum = new Float32Array(LAYERS), tot = 0;
+    for (k = 0; k < LAYERS; k++) { tot += Math.max(want * 0.25, want - hist[k]); cum[k] = tot; }
+    for (j = M; j < N; j++) { var r = rnd() * tot; k = 0; while (cum[k] < r) k++; a[j * 3] = (rnd() * 2 - 1) * BW; a[j * 3 + 1] = ly(k); a[j * 3 + 2] = (rnd() * 2 - 1) * BW; }
+    return a; }
+  function floorDisc() { var a = new Float32Array(N * 3);
+    for (var j = 0; j < N; j++) { var r = 1.28 * Math.sqrt(rnd()) + gauss() * 0.07, t = rnd() * TAU; a[j * 3] = Math.cos(t) * r; a[j * 3 + 1] = -1.31 + gauss() * 0.006; a[j * 3 + 2] = Math.sin(t) * r; }
+    return a; }
+
+  /* ---------- the grain shader ---------- */
+  var VERT = [
+    'attribute vec3 aBed, aA, aNA, aB, aNB, aFloor; attribute vec4 aRnd; attribute float aKind;',
+    'uniform float uP, uTime, uScanH, uScanAmp, uSweepH, uSweepAmp, uExplode, uPx, uAspect, uScale, uHover;',
+    'uniform mat3 uRot; uniform vec3 uOff; uniform vec2 uMouse, uMVel; uniform vec4 uPulse[4];',
+    'varying float vTint, vFade;',
+    'void main(){',
+    // printing one form over another: a grain changes hands when the sweep passes its new sheet
+    '  float m = smoothstep(0.0, 0.1, uSweepH - aB.y - aRnd.x * 0.05);',
+    '  vec3 obj = mix(aA, aB, m); vec3 nrm = normalize(mix(aNA, aNB, m) + 1e-4);',
+    '  obj.xz *= 1.0 + 0.1 * sin(3.14159 * m);',
+    '  obj.y = -1.1 + (obj.y + 1.1) * (1.0 + 0.78 * uExplode);',
+    '  float tx = clamp((uP - 1.05) / 0.85, 0.0, 1.0), tr = clamp((uP - 4.08) / 0.84, 0.0, 1.0);',
+    '  float yb = (aBed.y + 1.2) / 2.4, solid = 0.0, turb = 0.0, glow = 0.0, loose = 0.34; vec3 p;',
+    '  if (aKind > 0.5) {',
+    '    float fused = smoothstep(0.0, 0.045, uScanH - aB.y - aRnd.x * 0.02);',
+    '    float k = clamp((tr - 0.52 * yb - 0.1 * aRnd.y) / 0.36, 0.0, 1.0); k = k * k * (3.0 - 2.0 * k);',   // the bed rises and takes the piece back
+    '    p = mix(mix(aBed, obj, fused), aBed, k); solid = fused * (1.0 - k); turb = sin(3.14159 * k) * 0.5;',
+    '    glow = uScanAmp * exp(-pow((aB.y - uScanH) * 30.0, 2.0)) + uSweepAmp * exp(-pow((aB.y - uSweepH + 0.05) * 16.0, 2.0));',
+    '  } else {',
+    '    float k = clamp((tx - 0.55 * (1.0 - yb) - 0.12 * aRnd.y) / 0.33, 0.0, 1.0), ks = k * k * (3.0 - 2.0 * k);',   // brushed off from the top down
+    '    float kr = clamp((tr - 0.52 * yb - 0.1 * aRnd.y) / 0.36, 0.0, 1.0); kr = kr * kr * (3.0 - 2.0 * kr);',
+    '    p.xz = mix(aBed.xz, aFloor.xz, ks); p.y = mix(aBed.y, aFloor.y, k * k);',
+    '    p.xz += normalize(aBed.xz + 1e-3) * 0.38 * sin(3.14159 * k); p.y += 0.16 * sin(3.14159 * k) * (aRnd.z - 0.25);',
+    '    p = mix(p, aBed, kr); turb = sin(3.14159 * k) * 0.55 + sin(3.14159 * kr) * 0.5;',
+    '    loose = mix(0.34, 0.5, ks * (1.0 - kr));',
+    '    glow = 0.5 * uScanAmp * exp(-pow((aBed.y - uScanH) * 30.0, 2.0));',
+    '  }',
+    '  p += 0.2 * turb * vec3(sin(p.y * 3.1 + uTime * 0.7 + aRnd.y * 6.283), sin(p.z * 2.7 + uTime * 0.9 + aRnd.z * 6.283), sin(p.x * 3.3 + uTime * 0.8 + aRnd.w * 6.283));',
+    '  p += 0.0035 * sin(uTime * vec3(0.9, 0.7, 1.1) + aRnd.yzw * 40.0);',
+    '  vec3 v = uRot * p * uScale + uOff; float z = 5.2 - v.z;',
+    '  vec2 ndc = vec2(v.x * 3.2 / uAspect, v.y * 3.2) / z;',
+    // the pointer brushes grains aside and drags them a little
+    '  vec2 dm = ndc - uMouse; dm.x *= uAspect; float l = length(dm) + 1e-4, near = exp(-l * l * 18.0) * uHover;',
+    '  vec2 push = dm / l * 0.02 * near * (0.4 + aRnd.z) + vec2(uMVel.x * uAspect, uMVel.y) * 0.03 * exp(-l * l * 10.0) * uHover * aRnd.y;',
+    '  for (int k = 0; k < 4; k++) {',
+    '    vec2 dp = ndc - uPulse[k].xy; dp.x *= uAspect; float lp = length(dp) + 1e-4, age = uPulse[k].z;',
+    '    float w = exp(-pow((lp - age * 0.9) * 8.0, 2.0)) * exp(-age * 1.5) * step(0.0, age);',
+    '    push += dp / lp * 0.04 * w; glow += w * 0.9; }',
+    '  push.x /= uAspect; ndc += push;',
+    '  gl_Position = vec4(ndc * z, 0.0, z);',
+    '  gl_PointSize = uPx * (0.65 + 0.8 * aRnd.x) * 5.2 / z * (1.0 + 0.55 * min(glow, 1.5));',
+    // a bound grain is lit like a surface: it faces a lamp, and faces turned away step back
+    '  vec3 nv = uRot * nrm; float lit = 0.5 + 0.5 * dot(nv, normalize(vec3(-0.55, 0.6, 0.58)));',
+    '  float shade = mix(0.3, 1.0, smoothstep(-0.4, 0.3, nv.z)) * (0.42 + 0.78 * lit);',
+    '  vTint = clamp(glow + near * 0.35, 0.0, 1.0);',
+    '  vFade = mix(loose, shade, solid) * clamp(1.45 - 0.5 * (z - 4.2), 0.2, 1.0) * (1.0 - 0.4 * clamp(turb, 0.0, 1.0));',
+    '}'].join('\n');
+  var FRAG = [
+    'precision mediump float;',
+    'uniform vec3 uInk, uAccent; uniform float uAlpha; varying float vTint, vFade;',
+    'void main(){ float r = length(gl_PointCoord - 0.5); float a = smoothstep(0.5, 0.18, r);',
+    '  gl_FragColor = vec4(mix(uInk, uAccent, vTint), a * uAlpha * vFade * (1.0 + 0.9 * vTint)); }'].join('\n');
+  // the build box and the beam frame, drawn as hairlines
+  var LV = [
+    'attribute vec3 aP; uniform float uY, uYMul, uAspect, uScale; uniform mat3 uRot; uniform vec3 uOff;',
+    'void main(){ vec3 v = uRot * vec3(aP.x, aP.y * uYMul + uY, aP.z) * uScale + uOff; float z = 5.2 - v.z;',
+    '  gl_Position = vec4(vec2(v.x * 3.2 / uAspect, v.y * 3.2), 0.0, z); }'].join('\n');
+  var LF = 'precision mediump float; uniform vec4 uCol; void main(){ gl_FragColor = uCol; }';
+  function shader(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.error(gl.getShaderInfoLog(s)); return null; } return s; }
+  function program(v, f) { var a = shader(gl.VERTEX_SHADER, v), b = shader(gl.FRAGMENT_SHADER, f), p = gl.createProgram(); if (!a || !b) return null;
+    gl.attachShader(p, a); gl.attachShader(p, b); gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) { console.error(gl.getProgramInfoLog(p)); return null; } return p; }
+  var prog = program(VERT, FRAG), lprog = program(LV, LF); if (!prog || !lprog) return;
+
+  var NAMES = ['aBed', 'aA', 'aNA', 'aB', 'aNB', 'aFloor', 'aRnd', 'aKind'], SIZES = [3, 3, 3, 3, 3, 3, 4, 1], bufs = {}, locs = {};
+  NAMES.forEach(function (n) { bufs[n] = gl.createBuffer(); locs[n] = gl.getAttribLocation(prog, n); });
+  function put(name, data) { gl.bindBuffer(gl.ARRAY_BUFFER, bufs[name]); gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW); }
+  var r4 = new Float32Array(N * 4), kind = new Float32Array(N); for (var i = 0; i < N * 4; i++) r4[i] = rnd(); for (i = 0; i < M; i++) kind[i] = 1;
+  put('aRnd', r4); put('aKind', kind); put('aFloor', floorDisc());
+  var cur = 0, F0 = form(0);
+  put('aA', F0.pos); put('aNA', F0.nrm); put('aB', F0.pos); put('aNB', F0.nrm); put('aBed', bedFor(F0));
+
+  var lineBuf = gl.createBuffer(), lp = [], c = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+  for (i = 0; i < 4; i++) { var a = c[i], b = c[(i + 1) % 4];
+    lp.push(a[0] * BW, -BH, a[1] * BW, b[0] * BW, -BH, b[1] * BW, a[0] * BW, BH, a[1] * BW, b[0] * BW, BH, b[1] * BW, a[0] * BW, -BH, a[1] * BW, a[0] * BW, BH, a[1] * BW); }
+  for (i = 0; i < 4; i++) { a = c[i]; b = c[(i + 1) % 4]; lp.push(a[0] * BW, 0, a[1] * BW, b[0] * BW, 0, b[1] * BW); }
+  gl.bindBuffer(gl.ARRAY_BUFFER, lineBuf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lp), gl.STATIC_DRAW);
+  var lLoc = gl.getAttribLocation(lprog, 'aP');
+
+  var U = {}, LU = {};
+  ['uP', 'uTime', 'uScanH', 'uScanAmp', 'uSweepH', 'uSweepAmp', 'uExplode', 'uPx', 'uAspect', 'uScale', 'uHover', 'uRot', 'uOff', 'uMouse', 'uMVel', 'uPulse', 'uInk', 'uAccent', 'uAlpha']
+    .forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+  ['uY', 'uYMul', 'uAspect', 'uScale', 'uRot', 'uOff', 'uCol'].forEach(function (n) { LU[n] = gl.getUniformLocation(lprog, n); });
+  gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND);
+
+  /* ---------- choosing a form prints it over the last one ---------- */
+  var sweep = 9, sweeping = false, btns = document.querySelectorAll('#forms button');
+  function choose(i) {
+    if (i === cur) return; var A = form(cur), B = form(i); cur = i;
+    put('aA', A.pos); put('aNA', A.nrm); put('aB', B.pos); put('aNB', B.nrm); put('aBed', bedFor(B));
+    sweep = calm ? 9 : -1.3; sweeping = !calm;
+    btns.forEach(function (b, k) { b.setAttribute('aria-pressed', k === i ? 'true' : 'false'); }); }
+  btns.forEach(function (b, k) { b.addEventListener('click', function () { choose(k); }); });
+  window.__form = choose;
+  setTimeout(function () { for (var k = 1; k < FORMS.length; k++) form(k); }, 600);   // slice the other three while the first is on screen
+
+  /* ---------- how the bed is held at each step ---------- */
+  var POSE = [
+    { tilt: 0.36, spin: 0, x: 0.68, y: -0.02, s: 0.8 },
+    { tilt: 0.36, spin: 0, x: 0.68, y: -0.02, s: 0.86 },
+    { tilt: 0.3, spin: 1, x: 0.92, y: 0.02, s: 0.9 },
+    { tilt: 0.2, spin: 0.55, x: 0.92, y: -0.42, s: 0.62 },
+    { tilt: 0.3, spin: 1, x: 0.92, y: 0.0, s: 0.95 },
+    { tilt: 0.36, spin: 0, x: 0.68, y: -0.02, s: 0.8 }
+  ];
+  var NARROW = [{ y: 0.52, s: 0.5 }, { y: 0.56, s: 0.5 }, { y: 0.6, s: 0.52 }, { y: 0.3, s: 0.4 }, { y: 0.7, s: 0.5 }, { y: 0.52, s: 0.5 }];
+  var YAW0 = 0.62, QT = TAU / 4;
+
+  var ink = [0, 0, 0], accent = [1, 0, 0], bg = [1, 1, 1], dark = false;
+  function rgb(v) { var h = v.trim().replace('#', ''); return [parseInt(h.substr(0, 2), 16) / 255, parseInt(h.substr(2, 2), 16) / 255, parseInt(h.substr(4, 2), 16) / 255]; }
+  function theme() { var cs = getComputedStyle(document.documentElement);
+    bg = rgb(cs.getPropertyValue('--bg')); ink = rgb(cs.getPropertyValue('--fg')); accent = rgb(cs.getPropertyValue('--accent')); dark = (bg[0] + bg[1] + bg[2]) / 3 < 0.4; }
+  theme();
+  if (window.matchMedia) { var mq = matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', theme); }
+  new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  var dpr = 1;
+  function size() { dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(canvas.clientWidth * dpr); canvas.height = Math.round(canvas.clientHeight * dpr); gl.viewport(0, 0, canvas.width, canvas.height); }
+  window.addEventListener('resize', size); size();
+
+  /* ---------- scroll: a critically damped spring ---------- */
+  var target = 0, pos = 0, posVel = 0;
+  function readScroll() { target = Math.max(0, Math.min(NS - 1, window.scrollY / Math.max(1, steps[0].offsetHeight))); }
+  window.addEventListener('scroll', readScroll, { passive: true }); readScroll(); pos = target;
+  var rail = document.querySelectorAll('#rail button'), RN = ['Bed', 'Bind', 'Brush', 'Stack', 'Forms', 'Return'];
+  rail.forEach(function (b, k) { b.addEventListener('click', function () { window.scrollTo({ top: k * steps[0].offsetHeight, behavior: calm ? 'auto' : 'smooth' }); }); });
+
+  /* ---------- pointer: brush, drag to turn, tap for a ring ---------- */
+  var mouse = { x: 0, y: 0, on: 0, want: 0, vx: 0, vy: 0, lt: 0 }, down = null, drag = { yaw: 0, pitch: 0, vy: 0, vp: 0 };
+  var pulses = [], nextPulse = 0, pulseData = new Float32Array(16);
+  for (i = 0; i < 4; i++) pulses.push({ x: 0, y: 0, t: -1 });
+  function ndcOf(e) { return [e.clientX / window.innerWidth * 2 - 1, -(e.clientY / window.innerHeight * 2 - 1)]; }
+  window.addEventListener('pointermove', function (e) {
+    var n = ndcOf(e), now = performance.now(), dt = Math.max(8, now - mouse.lt) / 1000;
+    if (mouse.lt && mouse.want) { mouse.vx += ((n[0] - mouse.x) / dt - mouse.vx) * 0.5; mouse.vy += ((n[1] - mouse.y) / dt - mouse.vy) * 0.5; }
+    mouse.x = n[0]; mouse.y = n[1]; mouse.lt = now; mouse.want = e.pointerType === 'touch' ? 0 : 1;
+    if (down && down.id === e.pointerId) {
+      var dx = e.clientX - down.cx, dy = e.clientY - down.cy;
+      if (!down.moved && Math.hypot(dx, dy) > 7) { down.moved = true; if (e.pointerType !== 'touch') document.body.classList.add('grab'); }
+      if (down.moved && e.pointerType !== 'touch') { var ddx = (e.clientX - down.lx) / window.innerWidth, ddy = (e.clientY - down.ly) / window.innerHeight;
+        drag.yaw += ddx * 3.4; drag.pitch = Math.max(-0.7, Math.min(0.9, drag.pitch + ddy * 2.4)); drag.vy = ddx * 3.4 / dt; drag.vp = ddy * 2.4 / dt; }
+      down.lx = e.clientX; down.ly = e.clientY; }
+  });
+  document.addEventListener('pointerleave', function () { mouse.want = 0; });
+  window.addEventListener('pointerdown', function (e) {
+    if (e.button > 0 || (e.target.closest && e.target.closest('button, .addr'))) return; var n = ndcOf(e);
+    down = { id: e.pointerId, cx: e.clientX, cy: e.clientY, lx: e.clientX, ly: e.clientY, moved: false, x: n[0], y: n[1] }; });
+  function release(e, fire) {
+    if (!down || down.id !== e.pointerId) return;
+    if (fire && !down.moved) { var p = pulses[nextPulse]; p.x = down.x; p.y = down.y; p.t = performance.now(); nextPulse = (nextPulse + 1) % 4; }
+    if (fire && down.moved) { drag.vy = Math.max(-6, Math.min(6, drag.vy)); drag.vp = Math.max(-4, Math.min(4, drag.vp)); } else { drag.vy = drag.vp = 0; }
+    down = null; document.body.classList.remove('grab'); }
+  window.addEventListener('pointerup', function (e) { release(e, true); });
+  window.addEventListener('pointercancel', function (e) { release(e, false); });
+
+  var tag = document.getElementById('tag'), tagText = document.getElementById('tagText'), layerNo = document.getElementById('layerNo');
+  var stepNo = document.getElementById('stepNo'), stepName = document.getElementById('stepName'), hint = document.getElementById('hint'), shownStep = -1, shownLayer = -1;
+  function pad(n) { n = String(n); while (n.length < 4) n = '0' + n; return n; }
+
+  var last = performance.now(), t0 = last, spinAcc = 0;
+  function sm(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000); last = now;
+    var time = calm ? 0 : (now - t0) / 1000;
+    if (window.__pos !== undefined) target = window.__pos;
+    if (calm || window.__pos !== undefined) { pos = target; posVel = 0; } else { posVel += ((target - pos) * 30 - posVel * 10.95) * dt; pos += posVel * dt; }
+    mouse.on += (mouse.want - mouse.on) * Math.min(1, dt * 4);
+    mouse.vx *= Math.exp(-dt * 5); mouse.vy *= Math.exp(-dt * 5);
+    var mv = Math.hypot(mouse.vx, mouse.vy), mk = mv > 2.5 ? 2.5 / mv : 1;
+    if (!down || !down.moved) {
+      drag.yaw += drag.vy * dt; drag.pitch += drag.vp * dt; drag.vy *= Math.exp(-dt * 2.2); drag.vp *= Math.exp(-dt * 2.6);
+      var home = Math.round(drag.yaw / QT) * QT; drag.yaw += (home - drag.yaw) * Math.min(1, dt * 0.9); drag.pitch += (0 - drag.pitch) * Math.min(1, dt * 1.2); }
+
+    var i = Math.max(0, Math.min(POSE.length - 2, Math.floor(pos))), f = sm((pos - i - 0.04) / 0.92);
+    var narrow = canvas.clientWidth < 760, A = POSE[i], B = POSE[i + 1];
+    function mix(a, b) { return a + (b - a) * f; }
+    // the slow turn runs while a piece stands free, and settles on the nearest quarter turn when the box is back
+    var wSpin = mix(A.spin, B.spin); spinAcc += dt * (calm ? 0 : 0.2) * wSpin;
+    var pull = 1 - sm(wSpin / 0.3); spinAcc += (Math.round(spinAcc / QT) * QT - spinAcc) * Math.min(1, dt * 2.4 * pull);
+    var tilt = mix(A.tilt, B.tilt) + 0.012 * Math.sin(time * 0.4) + drag.pitch, turn = YAW0 + spinAcc + 0.03 * Math.sin(time * 0.3) + mouse.x * 0.05 * mouse.on + drag.yaw;
+    var ct = Math.cos(tilt), st = Math.sin(tilt), C = Math.cos(turn), S = Math.sin(turn);
+    var rot = [C, st * S, -ct * S, 0, ct, st, S, -st * C, ct * C];   // turn about the upright axis, then tip the top toward the eye
+    var asp = canvas.width / canvas.height;
+    var sc = narrow ? NARROW[i].s + (NARROW[i + 1].s - NARROW[i].s) * f : mix(A.s, B.s) * Math.min(1, 0.62 + asp * 0.25);
+    var off = narrow ? [0, NARROW[i].y + (NARROW[i + 1].y - NARROW[i].y) * f, 0] : [mix(A.x, B.x) * Math.min(1.15, asp / 1.75), mix(A.y, B.y), 0];
+
+    // the beam: parked on the first sheet, then it climbs with the scroll
+    var scanT = Math.max(0, Math.min(1, (pos - 0.12) / 0.8)), scanH = -BH + DY * 0.5 + (2 * BH + 0.1) * scanT;
+    var scanAmp = (scanT <= 0 ? 0.75 : 1) * (1 - sm((scanT - 0.965) / 0.035)) * (1 - sm((pos - 4.2) / 0.3));
+    if (pos > 4.5) { scanH = 9; scanAmp = 0; }
+    if (pos > 4.2 && pos <= 4.5) scanH = 9;
+    if (sweeping) { sweep += dt * 1.45; if (sweep > 1.4) { sweep = 9; sweeping = false; } }
+    var sweepAmp = sweeping ? sm((sweep + 1.3) / 0.1) * (1 - sm((sweep - 1.2) / 0.2)) : 0;
+    var explode = sm((pos - 2.1) / 0.8) * (1 - sm((pos - 3.12) / 0.7));
+    var boxA = Math.max(1 - sm((pos - 1.2) / 0.5), sm((pos - 4.25) / 0.6));
+
+    gl.clearColor(bg[0], bg[1], bg[2], 1); gl.clear(gl.COLOR_BUFFER_BIT);
+    if (dark) gl.blendFunc(gl.SRC_ALPHA, gl.ONE); else gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);   // light adds in the dark, ink covers on paper
+
+    gl.useProgram(prog);
+    for (var n = 0; n < NAMES.length; n++) { gl.bindBuffer(gl.ARRAY_BUFFER, bufs[NAMES[n]]); gl.enableVertexAttribArray(locs[NAMES[n]]); gl.vertexAttribPointer(locs[NAMES[n]], SIZES[n], gl.FLOAT, false, 0, 0); }
+    gl.uniformMatrix3fv(U.uRot, false, rot); gl.uniform3f(U.uOff, off[0], off[1], 0); gl.uniform1f(U.uScale, sc);
+    gl.uniform1f(U.uP, pos); gl.uniform1f(U.uTime, time); gl.uniform1f(U.uAspect, asp);
+    gl.uniform1f(U.uScanH, scanH); gl.uniform1f(U.uScanAmp, scanAmp); gl.uniform1f(U.uSweepH, sweep); gl.uniform1f(U.uSweepAmp, sweepAmp); gl.uniform1f(U.uExplode, explode);
+    gl.uniform1f(U.uPx, (narrow ? 1.45 : 1.7) * dpr); gl.uniform1f(U.uHover, mouse.on); gl.uniform2f(U.uMouse, mouse.x, mouse.y); gl.uniform2f(U.uMVel, mouse.vx * mk, mouse.vy * mk);
+    for (var k = 0; k < 4; k++) { var P = pulses[k], age = P.t < 0 ? -1 : (now - P.t) / 1000; if (age > 4) { P.t = -1; age = -1; }
+      pulseData[k * 4] = P.x; pulseData[k * 4 + 1] = P.y; pulseData[k * 4 + 2] = age; pulseData[k * 4 + 3] = 1; }
+    gl.uniform4fv(U.uPulse, pulseData);
+    gl.uniform3fv(U.uInk, ink); gl.uniform3fv(U.uAccent, accent); gl.uniform1f(U.uAlpha, dark ? 0.3 : 0.62);
+    gl.drawArrays(gl.POINTS, 0, N);
+
+    gl.useProgram(lprog);
+    for (n = 0; n < NAMES.length; n++) gl.disableVertexAttribArray(locs[NAMES[n]]);
+    gl.bindBuffer(gl.ARRAY_BUFFER, lineBuf); gl.enableVertexAttribArray(lLoc); gl.vertexAttribPointer(lLoc, 3, gl.FLOAT, false, 0, 0);
+    gl.uniformMatrix3fv(LU.uRot, false, rot); gl.uniform3f(LU.uOff, off[0], off[1], 0); gl.uniform1f(LU.uScale, sc); gl.uniform1f(LU.uAspect, asp);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    if (boxA > 0.01) { gl.uniform1f(LU.uY, 0); gl.uniform1f(LU.uYMul, 1); gl.uniform4f(LU.uCol, ink[0], ink[1], ink[2], 0.3 * boxA); gl.drawArrays(gl.LINES, 0, 24); }
+    var beamY = sweeping ? -1.1 + (sweep + 1.1) * (1 + 0.78 * explode) : scanH, beamA = sweeping ? sweepAmp : scanAmp;
+    if (beamA > 0.01) { gl.uniform1f(LU.uY, beamY); gl.uniform4f(LU.uCol, accent[0], accent[1], accent[2], 0.95 * beamA); gl.drawArrays(gl.LINES, 24, 8); }
+    gl.disableVertexAttribArray(lLoc);
+
+    // the tag rides the beam, on whichever corner of the box sits furthest right
+    if (beamA > 0.01) {
+      var bx = -9, by = 0;
+      for (k = 0; k < 4; k++) { var X = c[k][0] * BW, Z = c[k][1] * BW, vx = (rot[0] * X + rot[3] * beamY + rot[6] * Z) * sc + off[0], vy = (rot[1] * X + rot[4] * beamY + rot[7] * Z) * sc + off[1],
+        vz = 5.2 - (rot[2] * X + rot[5] * beamY + rot[8] * Z) * sc, nx = vx * 3.2 / asp / vz; if (nx > bx) { bx = nx; by = vy * 3.2 / vz; } }
+      var W = window.innerWidth, H = window.innerHeight, px = (bx * 0.5 + 0.5) * W, py = (0.5 - by * 0.5) * H, tw = tag.offsetWidth, th = tag.offsetHeight;
+      var flip = px + tw + 14 > W; tag.classList.toggle('flip', flip);
+      tag.style.transform = 'translate(' + (flip ? px - tw - 4 : px + 6).toFixed(1) + 'px,' + (flip ? py - th - 9 : py - th / 2).toFixed(1) + 'px)';
+      tag.style.opacity = Math.min(1, beamA * 1.4).toFixed(2);
+      var layer = sweeping ? Math.round(sm((sweep + 1.1) / 2.2) * 1500) : Math.round(scanT * 1500);
+      if (layer !== shownLayer) { shownLayer = layer; tagText.textContent = 'Layer ' + pad(layer) + ' · ' + (layer * 0.4).toFixed(1) + ' mm'; }
+    } else if (tag.style.opacity !== '0') tag.style.opacity = '0';
+    var ln = pad(Math.round(scanT * 1500)); if (layerNo.textContent !== ln) layerNo.textContent = ln;
+    var stepNow = Math.max(0, Math.min(NS - 1, Math.round(pos)));
+    if (stepNow !== shownStep) { shownStep = stepNow; stepNo.textContent = '0' + (stepNow + 1); stepName.textContent = RN[stepNow];
+      rail.forEach(function (b, k) { if (k === stepNow) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+      hint.textContent = ['Scroll to print', 'Scroll moves the beam', 'Drag to turn', 'Drag to turn', 'Pick a form', 'Back to the top to print again'][stepNow]; }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>

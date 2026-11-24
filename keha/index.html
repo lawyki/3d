@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kehä K116 Actuator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#07080a;--ink:#ece9e2;--dim:#8d9096;--line:rgba(236,233,226,.16);--acc:#ff5b24;--sans:"Archivo",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{overflow-x:hidden}
+#gl{position:fixed;inset:0;width:100vw;height:100vh;height:100lvh;display:block}
+#track{height:1000vh;pointer-events:none}
+.ui{position:fixed;inset:0;pointer-events:none;z-index:2}
+header{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;justify-content:space-between;padding:22px 32px;pointer-events:auto}
+.brand{font-weight:700;font-stretch:118%;letter-spacing:.14em;font-size:15px}
+.brand small{font-family:var(--mono);font-weight:400;letter-spacing:.02em;color:var(--dim);margin-left:14px;font-size:11px}
+nav{display:flex;gap:26px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+nav button{all:unset;cursor:pointer;color:var(--dim);padding:6px 0;border-bottom:1px solid transparent;transition:color .25s,border-color .25s}
+nav button:hover,nav button.on{color:var(--ink)}
+nav button.on{border-color:var(--acc)}
+nav button:focus-visible,.btn:focus-visible{outline:1px solid var(--acc);outline-offset:4px}
+.btn{all:unset;cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:10px 16px;border:1px solid var(--line);border-radius:2px;transition:background .25s,color .25s,border-color .25s}
+.btn:hover{background:var(--ink);color:#0a0a0a;border-color:var(--ink)}
+.btn.solid{background:var(--acc);border-color:var(--acc);color:#0a0a0a}
+.btn.solid:hover{background:var(--ink);border-color:var(--ink)}
+.copy{position:absolute;left:32px;bottom:92px;width:min(440px,calc(100vw - 64px));opacity:0;visibility:hidden;will-change:opacity,transform}
+.copy.top{bottom:auto;top:112px}
+.copy.on{pointer-events:auto}.copy{text-shadow:0 1px 16px rgba(0,0,0,.6)}.copy .btn{text-shadow:none}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);display:flex;gap:12px;align-items:center;margin:0 0 18px}
+.eyebrow b{color:var(--acc);font-weight:500}
+.eyebrow::after{content:"";height:1px;width:44px;background:var(--line)}
+h1,h2{font-weight:600;font-stretch:112%;letter-spacing:-.022em;line-height:.98;margin:0 0 20px;font-size:clamp(38px,4.6vw,68px);text-wrap:balance}
+h2{font-size:clamp(32px,3.5vw,52px)}
+.copy p{font-size:15.5px;line-height:1.55;color:#bfc0c1;margin:0 0 22px;max-width:40ch;font-weight:400}
+.figs{display:flex;gap:28px;border-top:1px solid var(--line);padding-top:14px}
+.figs div{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);line-height:1.5}
+.figs b{display:block;font-family:var(--sans);font-stretch:112%;font-weight:500;font-size:24px;letter-spacing:-.01em;color:var(--ink);text-transform:none;font-variant-numeric:tabular-nums}
+.figs b i{font-style:normal;font-size:13px;color:var(--dim);margin-left:3px}
+table{border-collapse:collapse;width:100%;margin:0 0 24px;font-size:13px}
+td{border-top:1px solid var(--line);padding:7px 0;font-family:var(--mono);font-size:11.5px}
+td:first-child{color:var(--dim);letter-spacing:.04em;text-transform:uppercase;font-size:10.5px}
+td:last-child{text-align:right}
+.row{display:flex;gap:10px}
+.hud{position:absolute;left:32px;right:32px;bottom:24px;display:flex;justify-content:space-between;align-items:flex-end;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-variant-numeric:tabular-nums}
+.hud span b{color:var(--ink);font-weight:400}
+.hud .r{display:flex;gap:26px}
+.prog{position:absolute;right:32px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:9px}
+.prog i{display:block;width:14px;height:1px;background:var(--line);transition:width .3s,background .3s;margin-left:auto}
+.prog i.on{width:26px;background:var(--acc)}
+.co{position:absolute;left:0;top:0;opacity:0;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;will-change:transform,opacity}
+.co::before{content:"";position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:50%;background:var(--acc);box-shadow:0 0 0 3px rgba(255,91,36,.18)}
+.co s{position:absolute;left:0;top:0;height:1px;background:rgba(236,233,226,.5);transform-origin:0 0}
+.co span{position:absolute;padding:5px 9px;line-height:1.35;color:var(--ink);background:rgba(7,8,10,.78);backdrop-filter:blur(6px);border-left:1px solid var(--acc)}
+.co span em{font-style:normal;color:var(--dim);display:block}
+.hint{position:absolute;right:32px;bottom:64px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);display:flex;flex-direction:row;align-items:center;gap:12px;transition:opacity .5s}
+.hint::after{content:"";width:1px;height:22px;background:linear-gradient(var(--ink),transparent);animation:dr 1.8s infinite}
+@keyframes dr{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+#load{position:fixed;inset:0;background:var(--bg);z-index:5;display:grid;place-items:center;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);transition:opacity .8s}
+@media (max-width:760px){
+ header{padding:16px 18px}nav{display:none}.brand small{display:none}
+ .copy,.copy.top{left:18px;top:auto;bottom:64px;width:calc(100vw - 36px)}
+ .copy p{font-size:14px;margin-bottom:14px}h1,h2{font-size:34px;margin-bottom:12px}.eyebrow{margin-bottom:10px}
+ .figs{gap:18px}.figs b{font-size:19px}
+ .hud{left:18px;right:18px;bottom:14px}.hud .l{display:none}.hud .r{gap:14px;width:100%;justify-content:space-between}
+ .prog,.hint{display:none}td{padding:4px 0}table{margin-bottom:12px}
+}
+@media (prefers-reduced-motion:reduce){.hint::after{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="gl" aria-hidden="true"></canvas>
+<div id="track"></div>
+<div id="load">Cutting 270 teeth</div>
+<div class="ui">
+ <header>
+  <div class="brand">KEHÄ<small>Joint actuators, Tampere</small></div>
+  <nav aria-label="Sections">
+   <button data-go="0">Drive</button><button data-go="1">Assembly</button><button data-go="2">Motor</button><button data-go="3">Gearing</button><button data-go="4">Bearing</button><button data-go="5">Data</button>
+  </nav>
+  <button class="btn" data-go="5">Request drawings</button>
+ </header>
+
+ <section class="copy" data-s="0">
+  <p class="eyebrow"><b>K116</b> Hollow-shaft joint actuator</p>
+  <h1>Four turns in. One turn out.</h1>
+  <p>A 48 volt motor, one planetary stage and a crossed-roller bearing in 107 millimetres. Scroll to take it apart. Every part keeps turning at its true ratio.</p>
+  <div class="figs"><div><b>28<i>N·m</i></b>rated</div><div><b>85<i>N·m</i></b>peak</div><div><b>1.9<i>kg</i></b>mass</div></div>
+ </section>
+
+ <section class="copy top" data-s="1">
+  <p class="eyebrow"><b>01</b> Assembly</p>
+  <h2>Nine assemblies on one axis.</h2>
+  <p>Six screws close the rear, twelve bolts clamp the stack, eight hold the flange. Nothing is glued and nothing is hidden.</p>
+ </section>
+
+ <section class="copy" data-s="2">
+  <p class="eyebrow"><b>02</b> Motor</p>
+  <h2>Wound for torque, not speed.</h2>
+  <p>Twelve slots and fourteen poles. Concentrated coils on a 22 mm stack, fourteen magnets on a hollow rotor, and 0.8 mm of air between them.</p>
+  <div class="figs"><div><b>12</b>slots</div><div><b>14</b>poles</div><div><b>0.8<i>mm</i></b>air gap</div></div>
+ </section>
+
+ <section class="copy" data-s="3">
+  <p class="eyebrow"><b>03</b> Gearing</p>
+  <h2>Thirty, thirty, ninety.</h2>
+  <p>A sun, five planets and a fixed ring, all module 1. The pitch circles roll on each other without slipping, so the carrier turns once for every four turns of the rotor. Scroll and count.</p>
+  <div class="figs"><div><b id="fRot">0.00</b>rotor turns</div><div><b id="fOut">0.00</b>output turns</div><div><b>0.04<i>mm</i></b>flank clearance</div></div>
+ </section>
+
+ <section class="copy" data-s="4">
+  <p class="eyebrow"><b>04</b> Bearing</p>
+  <h2>Fifty-six rollers, every other one crossed.</h2>
+  <p>Neighbouring rollers sit at ninety degrees, so a single row takes axial, radial and tilting load together. The set travels round at 48 % of flange speed.</p>
+  <div class="figs"><div><b>56</b>rollers</div><div><b>Ø5<i>mm</i></b>each</div><div><b>90°</b>V raceways</div></div>
+ </section>
+
+ <section class="copy" data-s="5">
+  <p class="eyebrow"><b>05</b> Data</p>
+  <h2>Back in one piece.</h2>
+  <table>
+   <tr><td>Ratio</td><td>4 : 1, single stage</td></tr>
+   <tr><td>Torque, rated / peak</td><td>28 / 85 N·m</td></tr>
+   <tr><td>No-load speed</td><td>420 rpm at 48 V</td></tr>
+   <tr><td>Encoder</td><td>19 bit absolute</td></tr>
+   <tr><td>Through-bore</td><td>Ø16 mm</td></tr>
+   <tr><td>Envelope</td><td>Ø116 × 107 mm</td></tr>
+   <tr><td>Flange</td><td>ISO 9409-1-50-4-M6</td></tr>
+  </table>
+  <div class="row"><button class="btn solid">Request STEP files</button><button class="btn">Datasheet</button></div>
+ </section>
+
+ <div id="cos"></div>
+ <div class="prog" id="prog"></div>
+ <div class="hint" id="hint">Scroll to disassemble</div>
+ <div class="hud">
+  <span class="l">K116-4 · Rev C · all dimensions in mm</span>
+  <div class="r"><span>Rotor <b id="hRot">0.0°</b></span><span>Output <b id="hOut">0.0°</b></span><span>Ratio <b>4.000 : 1</b></span></div>
+ </div>
+</div>
+
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script>
+(async function () {
+'use strict';
+const T = THREE, PI = Math.PI, TAU = PI * 2;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+const ease = t => t * t * t * (t * (6 * t - 15) + 10);
+const lerp = (a, b, t) => a + (b - a) * t;
+
+
+// ---- Involute gear profiles (mm). 20 deg pressure angle, standard proportions. ----
+const PA = 20 * Math.PI / 180, MOD = 1, ZS = 30, ZP = 30, ZR = 90, NPL = 5;
+const CTR = MOD * (ZS + ZP) / 2;            // centre distance sun-planet
+const FLANK_GAP = 0.02;                      // thinning per flank (backlash allowance)
+const inv = a => Math.tan(a) - a;
+const pol = (R, t) => [R * Math.cos(t), R * Math.sin(t)];
+function bez(a, c, b, n, out) { for (let i = 1; i <= n; i++) { const t = i / n, u = 1 - t; out.push([u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]); } }
+function gearExt(Z, m, nf = 8) {
+  const r = m * Z / 2, rb = r * Math.cos(PA), ra = r + m, rf = r - 1.25 * m;
+  const tp = Math.PI / (2 * Z) - FLANK_GAP / r;
+  const half = R => tp + inv(PA) - inv(Math.acos(Math.min(1, rb / R)));
+  const hb = half(Math.max(rb, rf));
+  const land = Math.PI / Z - hb;                        // half root land (angle)
+  const f = Math.min(0.3 * m, land * rf * 0.85);
+  const r0 = rf + f;
+  const pts = [];
+  for (let k = 0; k < Z; k++) {
+    const th = k * 2 * Math.PI / Z;
+    const side = s => {                                 // s=-1 rising flank, s=+1 falling flank
+      const fl = [];
+      const hr0 = r0 <= rb ? hb : half(r0);
+      const P1 = pol(rf, th + s * (hb + f / rf)), C = pol(rf, th + s * hb), P2 = pol(r0, th + s * hr0);
+      const fil = [P1]; bez(P1, C, P2, 4, fil);
+      const rs = Math.max(r0, rb);
+      for (let i = (rs > r0 + 1e-6 ? 0 : 1); i < nf; i++) { const t = i / (nf - 1), R = Math.sqrt(rs * rs + t * (ra * ra - rs * rs)); fl.push(pol(R, th + s * half(R))); }
+      return fil.concat(fl);
+    };
+    const a = side(-1), b = side(1).reverse();
+    pts.push(...a, pol(ra, th), ...b);
+    pts.push(pol(rf, th + Math.PI / Z));               // mid root land
+  }
+  return pts;
+}
+function gearInt(Z, m, nf = 7) {                        // inner contour of a ring gear; material tooth centred at angle 0
+  const r = m * Z / 2, rb = r * Math.cos(PA), ri = r - m, ro = r + 1.25 * m;
+  const sp = Math.PI / (2 * Z) + FLANK_GAP / r;
+  const half = R => sp + inv(PA) - inv(Math.acos(Math.min(1, rb / R)));
+  const hro = half(ro), f = Math.min(0.25 * m, hro * ro * 0.8), r1 = ro - f;
+  const pts = [];
+  for (let k = 0; k < Z; k++) {
+    const th = (k + 0.5) * 2 * Math.PI / Z;
+    const side = s => {
+      const fl = [];
+      for (let i = 0; i < nf; i++) { const t = i / (nf - 1), R = Math.sqrt(ri * ri + t * (r1 * r1 - ri * ri)); fl.push(pol(R, th + s * half(R))); }
+      const P2 = fl[fl.length - 1], C = pol(ro, th + s * hro), P1 = pol(ro, th + s * (hro - f / ro));
+      bez(P2, C, P1, 4, fl);
+      return fl;
+    };
+    const a = side(-1), b = side(1).reverse();
+    pts.push(pol(ri, th - Math.PI / Z), ...a, pol(ro, th), ...b);
+  }
+  return pts;
+}
+// Kinematics: ring fixed. Given rotor (sun) angle, return carrier angle and each planet's spin.
+function kin(ths) {
+  const phi = ths * ZS / (ZS + ZR);
+  const pl = [];
+  for (let i = 0; i < NPL; i++) { const p = phi + i * 2 * Math.PI / NPL; pl.push([p, p - Math.PI / ZP - (ZS / ZP) * (ths - p)]); }
+  return { phi, pl };
+}
+
+
+// ------------------------------------------------------------------ geometry helpers
+function orient(g) {                                   // make faces point outward (positive volume)
+  const p = g.attributes.position.array; let v = 0;
+  for (let i = 0; i < p.length; i += 9) v += p[i] * (p[i + 4] * p[i + 8] - p[i + 5] * p[i + 7]) - p[i + 1] * (p[i + 3] * p[i + 8] - p[i + 5] * p[i + 6]) + p[i + 2] * (p[i + 3] * p[i + 7] - p[i + 4] * p[i + 6]);
+  if (v < 0) for (let i = 0; i < p.length; i += 9) for (let k = 0; k < 3; k++) { const t = p[i + 3 + k]; p[i + 3 + k] = p[i + 6 + k]; p[i + 6 + k] = t; }
+  return g;
+}
+function crease(g, deg = 30, fix = false) {            // normals: smooth below the crease angle, sharp above
+  if (g.index) g = g.toNonIndexed();
+  for (const k of Object.keys(g.attributes)) if (k !== 'position') g.deleteAttribute(k);
+  if (fix) orient(g);
+  const p = g.attributes.position.array, nv = p.length / 3, nf = nv / 3;
+  const fr = new Float32Array(nf * 3), fu = new Float32Array(nf * 3);
+  for (let f = 0; f < nf; f++) {
+    const i = f * 9, ax = p[i + 3] - p[i], ay = p[i + 4] - p[i + 1], az = p[i + 5] - p[i + 2], bx = p[i + 6] - p[i], by = p[i + 7] - p[i + 1], bz = p[i + 8] - p[i + 2];
+    const x = ay * bz - az * by, y = az * bx - ax * bz, z = ax * by - ay * bx, l = Math.hypot(x, y, z) || 1;
+    fr[f * 3] = x; fr[f * 3 + 1] = y; fr[f * 3 + 2] = z; fu[f * 3] = x / l; fu[f * 3 + 1] = y / l; fu[f * 3 + 2] = z / l;
+  }
+  const map = new Map(), vid = new Int32Array(nv), lists = [];
+  for (let v = 0; v < nv; v++) {
+    const k = Math.round(p[v * 3] * 400) + '_' + Math.round(p[v * 3 + 1] * 400) + '_' + Math.round(p[v * 3 + 2] * 400);
+    let id = map.get(k); if (id === undefined) { id = lists.length; map.set(k, id); lists.push([]); }
+    vid[v] = id; lists[id].push((v / 3) | 0);
+  }
+  const cs = Math.cos(deg * PI / 180), n = new Float32Array(nv * 3);
+  for (let v = 0; v < nv; v++) {
+    const f = (v / 3) | 0, L = lists[vid[v]], ux = fu[f * 3], uy = fu[f * 3 + 1], uz = fu[f * 3 + 2];
+    let x = 0, y = 0, z = 0;
+    for (let j = 0; j < L.length; j++) { const g2 = L[j] * 3; if (ux * fu[g2] + uy * fu[g2 + 1] + uz * fu[g2 + 2] > cs) { x += fr[g2]; y += fr[g2 + 1]; z += fr[g2 + 2]; } }
+    const l = Math.hypot(x, y, z);
+    if (l > 0) { n[v * 3] = x / l; n[v * 3 + 1] = y / l; n[v * 3 + 2] = z / l; } else n[v * 3 + 2] = 1;
+  }
+  g.setAttribute('normal', new T.BufferAttribute(n, 3));
+  return g;
+}
+const circ = (R, n, cx = 0, cy = 0, a0 = 0) => { const o = []; for (let i = 0; i < n; i++) { const a = a0 + i / n * TAU; o.push([cx + R * Math.cos(a), cy + R * Math.sin(a)]); } return o; };
+const ringOf = (n, R, r, seg = 20, a0 = 0) => { const o = []; for (let i = 0; i < n; i++) { const a = a0 + i / n * TAU; o.push(circ(r, seg, R * Math.cos(a), R * Math.sin(a))); } return o; };
+const v2 = P => P.map(p => new T.Vector2(p[0], p[1]));
+function ext(outer, holes, z0, z1, b = 0.15, deg = 30) { // prism between z0 and z1 with chamfered edges, true size
+  const sh = new T.Shape(v2(outer)); sh.holes = holes.map(h => new T.Path(v2(h)));
+  const g = new T.ExtrudeGeometry(sh, { depth: z1 - z0 - 2 * b, bevelEnabled: true, bevelThickness: b, bevelSize: b, bevelOffset: -b, bevelSegments: 1, steps: 1, curveSegments: 1 });
+  g.translate(0, 0, z0 + b); return crease(g, deg);
+}
+function cham(P, c) {                                  // chamfer every corner of a closed profile; third entry overrides size
+  const o = [], n = P.length;
+  for (let i = 0; i < n; i++) {
+    const v = P[i], a = P[(i + n - 1) % n], b = P[(i + 1) % n], cc = v[2] === undefined ? c : v[2];
+    if (!cc) { o.push([v[0], v[1]]); continue; }
+    const la = Math.hypot(a[0] - v[0], a[1] - v[1]), lb = Math.hypot(b[0] - v[0], b[1] - v[1]), da = Math.min(cc, la * .45), db = Math.min(cc, lb * .45);
+    o.push([v[0] + (a[0] - v[0]) / la * da, v[1] + (a[1] - v[1]) / la * da], [v[0] + (b[0] - v[0]) / lb * db, v[1] + (b[1] - v[1]) / lb * db]);
+  }
+  return o;
+}
+function lathe(P, seg = 160, c = 0.35, deg = 30) {     // closed profile of [radius, z] turned about the z axis
+  const Q = cham(P, c); Q.push(Q[0]);
+  const g = new T.LatheGeometry(v2(Q), seg); g.rotateX(PI / 2);
+  return crease(g, deg, true);
+}
+function merge(list) {
+  let n = 0; for (const g of list) n += g.attributes.position.count;
+  const p = new Float32Array(n * 3), nn = new Float32Array(n * 3); let o = 0;
+  for (const g of list) { p.set(g.attributes.position.array, o); nn.set(g.attributes.normal.array, o); o += g.attributes.position.count * 3; }
+  const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(p, 3)); g.setAttribute('normal', new T.BufferAttribute(nn, 3)); return g;
+}
+const moved = (g, x, y, z, rz = 0) => { const c = g.clone(); if (rz) c.rotateZ(rz); c.translate(x, y, z); return c; };
+
+// ------------------------------------------------------------------ renderer
+const canvas = document.getElementById('gl');
+const renderer = new T.WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
+renderer.toneMapping = T.NoToneMapping; renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+const BG = new T.Color(0x06070a);
+renderer.setClearColor(BG, 0);
+const scene = new T.Scene(); scene.fog = new T.Fog(BG, 620, 1700);
+const camera = new T.PerspectiveCamera(28, 1, 20, 4000);
+
+// environment: a dark studio with soft boxes, prefiltered for reflections
+{
+  const es = new T.Scene(), box = (w, h, c, pos, look) => { const m = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ color: new T.Color(c[0], c[1], c[2]), side: T.DoubleSide })); m.position.set(...pos); m.lookAt(...look); es.add(m); };
+  es.add(new T.Mesh(new T.BoxGeometry(3000, 3000, 3000), new T.MeshBasicMaterial({ color: new T.Color(.045, .046, .05), side: T.BackSide })));
+  box(2600, 1500, [4.5, 4.55, 4.7], [0, 900, 100], [0, 0, 0]);          // overhead bank
+  box(900, 900, [7, 6.8, 6.5], [600, 520, 820], [0, 0, 0]);         // key box, front right
+  box(140, 1100, [15, 15.5, 17], [-900, 250, 500], [0, 0, 0]);         // cool strip, camera left
+  box(110, 900, [13, 11.5, 9.5], [950, 150, -350], [0, 0, 0]);          // warm strip, back right
+  box(1600, 90, [11, 11, 11.5], [0, 260, -1000], [0, 0, 0]);           // rim line behind
+  box(900, 700, [2.4, 2.4, 2.5], [1300, 150, 0], [0, 0, 0]);             // end boxes, so faces square to the axis have something to reflect
+  box(900, 700, [2.4, 2.4, 2.5], [-1300, 150, 0], [0, 0, 0]);
+  box(1800, 500, [1.4, 1.4, 1.45], [0, 120, 1300], [0, 0, 0]);            // low front fill
+  box(1600, 1600, [.05, .05, .055], [0, -500, 0], [0, 0, 0]);
+  const pm = new T.PMREMGenerator(renderer); scene.environment = pm.fromScene(es, 0.012, 1, 6000).texture; pm.dispose();
+}
+const key = new T.DirectionalLight(0xfff4e6, 3.0); key.castShadow = true;
+key.shadow.mapSize.set(4096, 4096); key.shadow.bias = -0.0004; key.shadow.normalBias = 0.35; key.shadow.camera.near = 50; key.shadow.camera.far = 1400;
+scene.add(key, key.target);
+const KDIR = new T.Vector3();
+
+// ------------------------------------------------------------------ materials
+const std = o => new T.MeshStandardMaterial(o);
+const M = {
+  steel: std({ color: 0xb9bcc0, metalness: 1, roughness: .3 }),
+  steelDk: std({ color: 0x5d6065, metalness: 1, roughness: .38 }),
+  ground: std({ color: 0xcfd2d6, metalness: 1, roughness: .2 }),
+  alu: std({ color: 0xd9dbde, metalness: 1, roughness: .36 }),
+  ano: std({ color: 0x15161a, metalness: .85, roughness: .46 }),
+  blk: std({ color: 0x18191b, metalness: 1, roughness: .42 }),
+  lam: std({ color: 0x53565c, metalness: 1, roughness: .55 }),
+  cu: new T.MeshPhysicalMaterial({ color: 0xd0723a, metalness: 1, roughness: .3, clearcoat: .6, clearcoatRoughness: .25 }),
+  brass: std({ color: 0xc9a25a, metalness: 1, roughness: .3 }),
+  mag: std({ color: 0xaeb0b0, metalness: 1, roughness: .22 }),
+  pcb: std({ color: 0x0c3a2b, metalness: 0, roughness: .42 }),
+  chip: std({ color: 0x0c0c0d, metalness: 0, roughness: .5 }),
+  tan: std({ color: 0xd8cfb8, metalness: 0, roughness: .6 }),
+  gold: std({ color: 0xd9b25a, metalness: 1, roughness: .35 }),
+  ferr: std({ color: 0x101012, metalness: .2, roughness: .6 }),
+  floor: std({ color: 0x1b1c1f, metalness: 0, roughness: .9, envMapIntensity: .1 }),
+};
+
+// ------------------------------------------------------------------ the actuator. Local z is the axis, mm, 0 at the rear face.
+const root = new T.Group(); root.rotation.y = PI / 2; root.position.x = -50; scene.add(root);
+const parts = {};
+function part(name, off, k) { const g = new T.Group(); g.userData = { off, k }; root.add(g); parts[name] = g; return g; }
+function add(g, geo, mat) { const m = new T.Mesh(geo, mat); m.castShadow = m.receiveShadow = true; g.add(m); return m; }
+function inst(g, geo, mat, mats) { const m = new T.InstancedMesh(geo, mat, mats.length); mats.forEach((x, i) => m.setMatrixAt(i, x)); m.castShadow = m.receiveShadow = true; g.add(m); return m; }
+const mtx = (x, y, z, rz = 0, rx = 0) => new T.Matrix4().compose(new T.Vector3(x, y, z), new T.Quaternion().setFromEuler(new T.Euler(rx, 0, rz)), new T.Vector3(1, 1, 1));
+const aroundZ = (n, R, z, a0 = 0, rx = 0) => { const o = []; for (let i = 0; i < n; i++) { const a = a0 + i / n * TAU; o.push(mtx(R * Math.cos(a), R * Math.sin(a), z, a, rx)); } return o; };
+
+// socket head cap screw, head up (+z), underside of head at z = 0
+function screw(L, hr = 3.5, hh = 4, af = 3, sr = 2) {
+  const hex = circ(af / Math.sqrt(3), 6);
+  return merge([ext(circ(hr, 28), [hex], hh * .42, hh, .28, 40), lathe([[0, 0], [hr, 0], [hr, hh * .42], [0, hh * .42]], 28, 0, 40), lathe([[0, -L], [sr - .4, -L, 0], [sr, -L + .5, 0], [sr, 0], [0, 0]], 16, 0, 50)]);
+}
+
+const BOLT_R = 53.5, RO = 58;
+// 01 rear cap
+{
+  const g = part('cap', -180, .1);
+  add(g, lathe([[9, -1.5], [26, -1.5], [27.5, 0], [RO, 0], [RO, 8], [20, 8], [20, 15.5], [16.05, 15.5], [16.05, 8.8], [9, 8.8]], 180, .4), M.ano);
+  // M8 signal connector and power gland on the rear face
+  const con = merge([ext(circ(6.4, 6), [], -3.2, 0, .3, 40), lathe([[0, -13], [3.4, -13], [3.4, -10.5], [4.2, -10.5], [4.2, -4.2], [3.6, -4.2], [3.6, -3.2], [0, -3.2]], 28, .2, 40)]);
+  add(g, moved(con, 38 * Math.cos(2.2), 38 * Math.sin(2.2), 0), M.steel);
+  add(g, moved(con, 38 * Math.cos(2.75), 38 * Math.sin(2.75), 0), M.steel);
+  const s = part('capScrews', -202, 0); const sg = screw(12); sg.rotateX(PI);
+  inst(s, sg, M.blk, aroundZ(6, BOLT_R, 0, PI / 6));
+}
+// 02 rear bearing 6804-ZZ
+{
+  const g = part('brg', -150, .2);
+  add(g, lathe([[10, 9], [12.3, 9], [12.3, 16], [10, 16]], 96, .3), M.ground);
+  add(g, lathe([[13.7, 9], [16, 9], [16, 16], [13.7, 16]], 96, .3), M.ground);
+  add(g, lathe([[12.35, 9.5], [13.65, 9.5], [13.65, 15.5], [12.35, 15.5]], 96, 0), M.steelDk);
+}
+// 03 encoder board
+{
+  const g = part('pcb', -125, .3);
+  add(g, ext(circ(33, 120), [circ(15, 72), ...ringOf(3, 29.5, 1.3, 16, .5)], 17, 18.6, .06), M.pcb);
+  const bx = (w, h, d, R, a, mat, tw = 0) => { const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat); m.position.set(R * Math.cos(a), R * Math.sin(a), 18.6 + d / 2); m.rotation.z = a + tw; m.castShadow = true; g.add(m); };
+  bx(4, 4, .9, 18.6, 1.1, M.chip); bx(7, 7, 1, 24.5, 2.6, M.chip, .78); bx(5, 4.4, 1.1, 25, 4.3, M.chip); bx(4, 9, 2.6, 27.5, 5.5, M.tan);
+  for (let i = 0; i < 14; i++) bx(.9, 1.7, .7, 21 + (i % 3) * 3.6, .2 + i * .43 + (i % 2) * .11, i % 4 ? M.tan : M.chip, (i % 2) * PI / 2);
+  add(g, ext(circ(16.4, 72), [circ(15.5, 72)], 18.6, 18.66, .01), M.gold);
+}
+// 04 housing
+{
+  const g = part('housing', -88, .45);
+  const P = [[49.05, 8], [RO, 8]];
+  for (let i = 0; i < 6; i++) { const z = 13 + i * 5.2; P.push([RO, z], [54.6, z], [54.6, z + 2.7], [RO, z + 2.7]); }
+  P.push([RO, 59], [49.05, 59]);
+  add(g, lathe(P, 200, .35), M.ano);
+  add(g, ext(circ(RO, 200), [circ(49.05, 160), ...ringOf(12, BOLT_R, 1.7, 16, PI / 12)], 59, 62, .3), M.ano);
+}
+// 05 stator, 12 slots
+{
+  const g = part('stator', -20, .7);
+  const C = [], loc = (th, u, v) => [u * Math.cos(th) - v * Math.sin(th), u * Math.sin(th) + v * Math.cos(th)], hw = 3.25, sh = 0.2215, ub = Math.sqrt(44 * 44 - hw * hw), ab = Math.asin(hw / 44);
+  for (let k = 0; k < 12; k++) {
+    const th = k * TAU / 12;
+    C.push(loc(th, ub, -hw), loc(th, 34.4, -hw), pol(32.4, th - sh), pol(31, th - sh));
+    for (let i = 1; i < 8; i++) C.push(pol(31, th - sh + 2 * sh * i / 8));
+    C.push(pol(31, th + sh), pol(32.4, th + sh), loc(th, 34.4, hw), loc(th, ub, hw));
+    for (let i = 1; i < 6; i++) C.push(pol(44, th + ab + (TAU / 12 - 2 * ab) * i / 6));
+  }
+  add(g, ext(circ(49, 180), [C], 24, 46, .12), M.lam);
+  // one coil: two layers of enamelled wire, each turn a closed loop round the tooth
+  const turns = [], wr = .62, NS = 8;
+  const loop = (u, hv, hz, cr) => {
+    const path = [];
+    const corner = (cx, cz, a0) => { for (let i = 0; i <= 5; i++) { const a = a0 + i / 5 * PI / 2; path.push([cx + cr * Math.cos(a), cz + cr * Math.sin(a), Math.cos(a), Math.sin(a)]); } };
+    corner(hv - cr, hz - cr, 0); corner(-hv + cr, hz - cr, PI / 2); corner(-hv + cr, -hz + cr, PI); corner(hv - cr, -hz + cr, 1.5 * PI);
+    const n = path.length, pos = [];
+    const vert = (i, j) => { const q = path[i % n], a = j / NS * TAU, c = Math.cos(a) * wr, s = Math.sin(a) * wr; return [u + c, q[0] + s * q[2], 35 + q[1] + s * q[3]]; };
+    for (let i = 0; i < n; i++) for (let j = 0; j < NS; j++) { const a = vert(i, j), b = vert(i + 1, j), c = vert(i + 1, j + 1), d = vert(i, j + 1); pos.push(...a, ...b, ...c, ...a, ...c, ...d); }
+    const gg = new T.BufferGeometry(); gg.setAttribute('position', new T.BufferAttribute(new Float32Array(pos), 3)); return gg;
+  };
+  for (let i = 0; i < 6; i++) turns.push(loop(35.5 + i * 1.34, hw + .95, 11.95, 1.5));
+  for (let i = 0; i < 5; i++) turns.push(loop(36.17 + i * 1.34, hw + .95 + 1.16, 11.95 + 1.16, 2.6));
+  const coil = crease(merge(turns.map(t => crease(t, 60, true))), 60);
+  inst(g, coil, M.cu, aroundZ(12, 0, 0));
+}
+// 06 rotor: hollow shaft, hub, 14 magnets, encoder ring
+{
+  const g = part('rotor', 6, .7);
+  const sp = new T.Group(); g.add(sp); g.userData.spin = sp;
+  add(sp, lathe([[8, 8.5], [10, 8.5], [10, 23], [12, 23], [12, 48], [11, 48], [11, 62], [10.45, 62], [10.45, 77.4], [8, 77.4]], 96, .3), M.ground);
+  add(sp, ext(circ(28.4, 140), [circ(12, 72), ...ringOf(7, 20, 5.6, 40)], 24, 46, .2), M.steelDk);
+  const mg = []; { const a = 22.6 * PI / 180 / 2; for (let i = 0; i <= 10; i++) mg.push(pol(30.2, -a + 2 * a * i / 10)); for (let i = 10; i >= 0; i--) mg.push(pol(28.42, -a + 2 * a * i / 10)); }
+  inst(sp, ext(mg, [], 24.4, 45.6, .22), M.mag, aroundZ(14, 0, 0));
+  add(sp, lathe([[10, 16.6], [13.5, 16.6], [13.5, 19.4], [10, 19.4]], 96, .25), M.ferr);
+}
+// 07 planetary stage: ring 90, sun 30, five planets 30, carrier
+const pitch = [];
+{
+  const g = part('gears', 130, .45);
+  add(g, ext(circ(RO, 220), [gearInt(ZR, MOD), ...ringOf(12, BOLT_R, 2.2, 20, PI / 12)], 62, 78, .15), M.steelDk);
+  const sun = add(g, ext(gearExt(ZS, MOD), [circ(10.5, 72)], 63, 77, .15), M.steel); g.userData.sun = sun;
+  const car = new T.Group(); g.add(car); g.userData.car = car;
+  add(car, lathe([[9, 78.3], [40, 78.3], [40, 82.3], [9, 82.3]], 160, .35), M.steelDk);
+  const pg = ext(gearExt(ZP, MOD), [circ(6, 48)], 63, 77, .15), bush = lathe([[4.03, 62.85], [6, 62.85], [6, 77.15], [4.03, 77.15]], 48, .2), pin = lathe([[0, 62.5], [1.2, 62.5, 0], [1.6, 63.1, 0], [3.5, 63.1, 0], [4, 63.6, 0], [4, 78.3], [0, 78.3]], 40, 0);
+  g.userData.pl = [];
+  for (let i = 0; i < NPL; i++) {
+    const a = i * TAU / NPL, p = new T.Group(); car.add(p); p.position.set(CTR * Math.cos(a), CTR * Math.sin(a), 0);
+    add(p, pg, M.steel); add(p, bush, M.brass); g.userData.pl.push(p);
+    const pn = add(car, pin, M.ground); pn.position.copy(p.position);
+  }
+  // pitch circles, drawn 0.4 mm proud of the rear faces
+  const pm = new T.MeshBasicMaterial({ color: new T.Color(1.7, .5, .14), transparent: true, opacity: 0, depthWrite: false, side: T.DoubleSide, blending: T.CustomBlending, blendSrc: T.SrcAlphaFactor, blendDst: T.OneMinusSrcAlphaFactor, blendSrcAlpha: T.ZeroFactor, blendDstAlpha: T.OneMinusSrcAlphaFactor, fog: false });
+  g.userData.pm = pm;
+  const ringLine = (R, w = .1) => new T.RingGeometry(R - w, R + w, 160);
+  const add2 = (par, R, x = 0, y = 0, z = 62.6) => { const m = new T.Mesh(ringLine(R), pm); m.position.set(x, y, z); m.renderOrder = 5; par.add(m); };
+  add2(g, MOD * ZR / 2, 0, 0, 61.7); add2(g, MOD * ZS / 2);
+  for (let i = 0; i < NPL; i++) { const a = i * TAU / NPL; add2(car, MOD * ZP / 2, CTR * Math.cos(a), CTR * Math.sin(a)); }
+}
+// 08 crossed-roller bearing
+const NROL = 56, ROLR = 46.75, ROLZ = 88, VD = 2.29;
+{
+  const g = part('crbOut', 215, .3);
+  add(g, lathe([[48, 78], [RO, 78], [RO, 93], [48, 93], [48, ROLZ + VD, .12], [48 + VD, ROLZ, 0], [48, ROLZ - VD, .12]], 220, .35), M.steel);
+  add(g, ext(circ(RO, 220), [circ(48, 180), ...ringOf(12, BOLT_R, 2.2, 20, PI / 12)], 93, 95, .3), M.steel);
+  const rol = lathe([[0, -2.4], [2.2, -2.4, 0], [2.5, -2.1, 0], [2.5, 2.1, 0], [2.2, 2.4, 0], [0, 2.4]], 24, 0, 40);
+  g.userData.rol = inst(g, rol, M.ground, new Array(NROL).fill(new T.Matrix4()));
+  const gi = part('crbIn', 245, .2), sp = new T.Group(); gi.add(sp); gi.userData.spin = sp;
+  add(sp, lathe([[30, 83], [45.5, 83], [45.5, ROLZ - VD, .12], [45.5 - VD, ROLZ, 0], [45.5, ROLZ + VD, .12], [45.5, 91], [30, 91]], 200, .35), M.steel);
+  add(sp, ext(circ(45.5, 200), [circ(30, 140), ...ringOf(8, 37.5, 1.7, 18, PI / 8)], 91, 93, .3), M.steel);
+}
+// 09 output flange, ISO 9409-1-50-4-M6
+{
+  const g = part('flange', 285, .1), sp = new T.Group(); g.add(sp); g.userData.spin = sp;
+  add(sp, ext(circ(45.5, 200), [circ(15.75, 96), ...ringOf(4, 25, 2.5, 28, PI / 4), circ(3, 28, 25, 0), ...ringOf(8, 37.5, 2.25, 20, PI / 8)], 93.4, 99.4, .35), M.alu);
+  add(sp, lathe([[8, 82.3], [29.9, 82.3], [29.9, 93.4, 0], [15.7, 93.4, 0], [15.7, 97.9], [8, 97.9]], 140, .35), M.alu);
+  g.userData.face = sp;
+  const s = part('flScrews', 311, 0), ss = new T.Group(); s.add(ss); s.userData.spin = ss;
+  inst(ss, screw(10), M.blk, aroundZ(8, 37.5, 99.4, PI / 8));
+  const b = part('bolts', 297, 0);
+  inst(b, screw(36), M.blk, aroundZ(12, BOLT_R, 95, PI / 12));
+}
+const order = ['capScrews', 'cap', 'brg', 'pcb', 'housing', 'stator', 'rotor', 'gears', 'crbOut', 'crbIn', 'flange', 'flScrews', 'bolts'];
+for (const n of order) parts[n].traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+
+// ------------------------------------------------------------------ floor and the drawing printed on it
+const FY = -82;
+{
+  const f = new T.Mesh(new T.PlaneGeometry(6000, 6000), M.floor); f.rotation.x = -PI / 2; f.position.y = FY; f.receiveShadow = true; scene.add(f);
+}
+await Promise.race([Promise.all([document.fonts.load('700 100px Archivo'), document.fonts.load('500 30px Archivo'), document.fonts.load('400 20px "IBM Plex Mono"')]), new Promise(r => setTimeout(r, 2500))]).catch(() => { });
+const maxAniso = renderer.capabilities.getMaxAnisotropy();
+function printed(w, h, pxmm, draw) {                    // a patch of paint on the floor; w,h in mm
+  const c = document.createElement('canvas'); c.width = Math.round(w * pxmm); c.height = Math.round(h * pxmm);
+  const x = c.getContext('2d'); x.scale(pxmm, pxmm); x.fillStyle = '#fff'; x.textBaseline = 'alphabetic'; draw(x);
+  const t = new T.CanvasTexture(c); t.anisotropy = maxAniso; t.colorSpace = T.SRGBColorSpace; t.generateMipmaps = true; t.minFilter = T.LinearMipmapLinearFilter;
+  const m = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshStandardMaterial({ map: t, transparent: true, roughness: .85, metalness: 0, depthWrite: false, color: 0xe2e0da, envMapIntensity: .1 }));
+  m.rotation.x = -PI / 2; m.receiveShadow = true; return m;
+}
+const floorArt = { ex: [], asm: [] };
+const LBL = [
+  ['01', 'Rear cap', ['6061-T6, hard anodised', '6 × M4, two M8 ports'], -176, 0, 'cap'],
+  ['02', 'Rotor bearing', ['6804-ZZ', '20 × 32 × 7'], -138, 1, 'brg'],
+  ['03', 'Encoder', ['19 bit absolute', 'off-axis, magnetic'], -107, 0, 'pcb'],
+  ['04', 'Housing', ['Ø116 h7 × 54', 'six cooling fins'], -53, 1, 'housing'],
+  ['05', 'Stator', ['12 slots, 22 mm stack', '11 turns per tooth'], 15, 0, 'stator'],
+  ['06', 'Rotor', ['14 poles, N48SH', 'Ø16 through-bore'], 52, 1, 'rotor'],
+  ['07', 'Planetary stage', ['30 / 30 / 90 T, module 1', '4 : 1, ring fixed'], 202, 0, 'gears'],
+  ['08', 'Crossed-roller bearing', ['56 rollers Ø5 × 4.8', '90° V raceways'], 314, 1, 'crbOut'],
+  ['09', 'Output flange', ['ISO 9409-1-50-4-M6', '8 × M4, pilot Ø31.5 H7'], 381, 0, 'flange'],
+];
+const lineMat = new T.MeshBasicMaterial({ color: 0x55585c, transparent: true, opacity: 1, depthWrite: false });
+function strip(x0, z0, x1, z1, w = .22) { const dx = x1 - x0, dz = z1 - z0, l = Math.hypot(dx, dz), g = new T.PlaneGeometry(l, w); const m = new T.Mesh(g, lineMat); m.rotation.x = -PI / 2; m.rotation.z = -Math.atan2(dz, dx); m.position.set((x0 + x1) / 2, FY + .03, (z0 + z1) / 2); return m; }
+const labelGroups = [];
+for (const [no, name, spec, zc, row, pn] of LBL) {
+  const lg = new T.Group(); lg.userData = { part: pn }; scene.add(lg); labelGroups.push(lg);
+  const x0 = zc - 50, zr = row ? 142 : 88;
+  const m = printed(92, 46, 9, x => {
+    x.font = '700 22px Archivo'; x.fillText(no, 0, 18);
+    x.font = '600 5.6px Archivo'; x.fillText(name, 0, 28.5);
+    x.font = '400 3.3px "IBM Plex Mono"'; x.globalAlpha = .75; spec.forEach((s, i) => x.fillText(s.toUpperCase(), .2, 35 + i * 5));
+  });
+  m.position.set(x0 + 46 + 3, FY + .04, zr + 23); lg.add(m); floorArt.ex.push(m);
+  const l = strip(x0, 0, x0, zr + 44); lg.add(l); floorArt.ex.push(l);
+}
+{ // millimetre scale along the axis
+  const g = [];
+  for (let z = -260; z <= 440; z += 10) { const big = z % 50 === 0, p = new T.PlaneGeometry(.3, big ? 7 : 3); p.rotateX(-PI / 2); p.translate(z - 50, FY + .03, 70 - (big ? 3.5 : 1.5)); g.push(p); }
+  const p = new T.PlaneGeometry(700, .3); p.rotateX(-PI / 2); p.translate(40, FY + .03, 70); g.push(p);
+  const mg = merge(g.map(q => q.toNonIndexed())); scene.add(new T.Mesh(mg, lineMat));
+  for (let z = -250; z <= 400; z += 50) { const m = printed(24, 7, 9, x => { x.font = '400 5px "IBM Plex Mono"'; x.globalAlpha = .6; x.fillText(String(z), 0, 5.6); }); m.position.set(z - 50 + 13, FY + .04, 76.5); scene.add(m); }
+}
+{ // assembled title block
+  const m = printed(140, 52, 10, x => {
+    x.font = '700 32px Archivo'; x.fillText('K116', -1.4, 27);
+    x.font = '600 4.6px Archivo'; x.fillText('Hollow-shaft joint actuator', 0, 36);
+    x.font = '400 2.7px "IBM Plex Mono"'; x.globalAlpha = .75; x.fillText('Ø116 × 107   ·   4 : 1   ·   48 V   ·   1.9 KG', .2, 42); x.fillText('REV C   ·   SCALE 1 : 1   ·   ISO 2768-mK', .2, 46.5);
+  });
+  m.position.set(-22 + 70, FY + .04, 75 + 26); scene.add(m); floorArt.asm.push(m);
+}
+{ // laser marking on the flange face
+  const S = 72, m = printed(S, S, 14, x => {
+    x.translate(S / 2, S / 2); x.fillStyle = '#17181a'; x.font = '600 2.2px Archivo'; x.textAlign = 'center';
+    const arc = (s, R, a0, dir) => { const st = 1.72 / R; let a = a0 - dir * st * (s.length - 1) / 2; for (const ch of s) { x.save(); x.rotate(a); x.translate(0, -dir * R); x.fillText(ch, 0, dir > 0 ? 0 : 1.6); x.restore(); a += dir * st; } };
+    arc('KEHÄ  K116-4', 28.3, 0, 1); arc('SN 0417 · 48 V', 29.9, 0, -1);
+  });
+  m.material.color.set(0xffffff); m.material.roughness = .9; m.material.polygonOffset = true; m.material.polygonOffsetFactor = -2;
+  m.rotation.set(0, 0, 0); m.position.set(0, 0, 99.42); m.receiveShadow = true; parts.flange.userData.face.add(m);
+}
+
+// ------------------------------------------------------------------ post: ambient occlusion, bloom, film response
+const fsq = new T.Mesh(new T.PlaneGeometry(2, 2)), pscene = new T.Scene(), pcam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1); pscene.add(fsq); fsq.frustumCulled = false;
+const VS = 'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}';
+const pass = (fs, u) => new T.ShaderMaterial({ vertexShader: VS, fragmentShader: fs, uniforms: u, depthTest: false, depthWrite: false });
+const mAO = pass(`precision highp float;varying vec2 vUv;uniform sampler2D tD;uniform mat4 ipm;uniform vec2 px;uniform float p11,asp,rad;
+vec3 vp(vec2 uv){float d=texture2D(tD,uv).x;vec4 c=ipm*vec4(uv*2.-1.,d*2.-1.,1.);return c.xyz/c.w;}
+void main(){float d0=texture2D(tD,vUv).x;if(d0>=1.){gl_FragColor=vec4(1.);return;}
+vec3 p=vp(vUv);vec3 a=vp(vUv+vec2(px.x,0.))-p,b=p-vp(vUv-vec2(px.x,0.));vec3 dx=abs(a.z)<abs(b.z)?a:b;
+a=vp(vUv+vec2(0.,px.y))-p;b=p-vp(vUv-vec2(0.,px.y));vec3 dy=abs(a.z)<abs(b.z)?a:b;vec3 n=normalize(cross(dx,dy));
+float ruv=rad*p11/(-p.z)*.5;float ns=fract(52.9829189*fract(dot(gl_FragCoord.xy,vec2(.06711056,.00583715))));float o=0.;
+for(int i=0;i<14;i++){float fi=float(i);float an=(fi+ns)*2.399963;float r=sqrt((fi+.5)/14.)*ruv;vec3 s=vp(vUv+r*vec2(cos(an)/asp,sin(an)));vec3 v=s-p;float vv=dot(v,v);float vn=dot(v,n)-.012*(-p.z)*.1-.04;
+o+=max(vn,0.)/(vv+.6)*clamp(1.-vv/(rad*rad*2.2),0.,1.);}
+float ao=clamp(1.-o*rad*.14,0.,1.);gl_FragColor=vec4(ao,d0,0.,1.);}`, { tD: { value: null }, ipm: { value: new T.Matrix4() }, px: { value: new T.Vector2() }, p11: { value: 1 }, asp: { value: 1 }, rad: { value: 7 } });
+const mAOB = pass(`precision highp float;varying vec2 vUv;uniform sampler2D tA;uniform vec2 px;
+void main(){vec2 c=texture2D(tA,vUv).xy;float s=0.,w=0.;for(int i=-2;i<=2;i++)for(int j=-2;j<=2;j++){vec2 t=texture2D(tA,vUv+vec2(float(i),float(j))*px*1.5).xy;float k=1./(1.+abs(t.y-c.y)*30000.);s+=t.x*k;w+=k;}
+gl_FragColor=vec4(s/w,c.y,0.,1.);}`, { tA: { value: null }, px: { value: new T.Vector2() } });
+const mPre = pass(`precision highp float;varying vec2 vUv;uniform sampler2D tS;uniform vec2 px;
+void main(){vec3 c=vec3(0.);c+=min(texture2D(tS,vUv+px*vec2(-1.,-1.)).rgb,8.);c+=min(texture2D(tS,vUv+px*vec2(1.,-1.)).rgb,8.);c+=min(texture2D(tS,vUv+px*vec2(-1.,1.)).rgb,8.);c+=min(texture2D(tS,vUv+px*vec2(1.,1.)).rgb,8.);c*=.25;
+float l=max(c.r,max(c.g,c.b));c*=max(l-1.15,0.)/max(l,1e-4);gl_FragColor=vec4(c,1.);}`, { tS: { value: null }, px: { value: new T.Vector2() } });
+const mBlur = pass(`precision highp float;varying vec2 vUv;uniform sampler2D tS;uniform vec2 d;
+void main(){vec3 c=texture2D(tS,vUv).rgb*.2270270;c+=(texture2D(tS,vUv+d*1.3846).rgb+texture2D(tS,vUv-d*1.3846).rgb)*.3162162;c+=(texture2D(tS,vUv+d*3.2308).rgb+texture2D(tS,vUv-d*3.2308).rgb)*.0702703;gl_FragColor=vec4(c,1.);}`, { tS: { value: null }, d: { value: new T.Vector2() } });
+const mOut = pass(`precision highp float;varying vec2 vUv;uniform sampler2D tS,tA,tB1,tB2;uniform float t,asp,dbg;uniform vec3 bg;
+vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
+void main(){vec4 s=texture2D(tS,vUv);float ao=texture2D(tA,vUv).x;vec3 c=mix(bg,s.rgb,step(1e-4,s.a+dot(s.rgb,vec3(1.))));
+if(dbg<.5)c*=mix(1.,ao*ao*.55+ao*.45,clamp(s.a,0.,1.));if(dbg>1.5)c=vec3(ao)*.5;
+c+=texture2D(tB1,vUv).rgb*.07+texture2D(tB2,vUv).rgb*.10;
+vec2 q=(vUv-.5)*vec2(asp,1.);c*=1.-.42*smoothstep(.25,1.05,length(q));
+c=aces(c*.92);c=pow(c,vec3(1./2.2));
+float n=fract(sin(dot(gl_FragCoord.xy+t*61.,vec2(12.9898,78.233)))*43758.5453);c+=(n-.5)*.022;gl_FragColor=vec4(c,1.);}`, { tS: { value: null }, tA: { value: null }, tB1: { value: null }, tB2: { value: null }, t: { value: 0 }, asp: { value: 1 }, bg: { value: BG }, dbg: { value: +(new URLSearchParams(location.search).get('dbg') || 0) } });
+let RT = null;
+function targets(w, h) {
+  if (RT) for (const k in RT) RT[k].dispose();
+  const o = { type: T.HalfFloatType, depthBuffer: false, minFilter: T.LinearFilter, magFilter: T.LinearFilter };
+  const main = new T.WebGLRenderTarget(w, h, { type: T.HalfFloatType, samples: 4, depthBuffer: true });
+  main.depthTexture = new T.DepthTexture(w, h); main.depthTexture.type = T.UnsignedIntType; main.depthTexture.minFilter = main.depthTexture.magFilter = T.NearestFilter;
+  const q = (s, oo = o) => new T.WebGLRenderTarget(Math.max(2, w >> s), Math.max(2, h >> s), oo);
+  const ao8 = { type: T.HalfFloatType, depthBuffer: false, minFilter: T.LinearFilter, magFilter: T.LinearFilter };
+  RT = { main, ao: q(0, ao8), aob: q(0, ao8), b1: q(2), b1t: q(2), b2: q(3), b2t: q(3) };
+}
+function run(mat, target) { fsq.material = mat; renderer.setRenderTarget(target); renderer.render(pscene, pcam); }
+
+// ------------------------------------------------------------------ choreography
+// camera stops: p, position and target in axis coordinates (x along the axis, mm from the rear face), ox = sideways framing shift
+const KEYS = [
+  { p: 0, pos: [296, 150, 330], tgt: [58, -36, 0], ox: .15, oy: 0 },
+  { p: .07, pos: [286, 154, 338], tgt: [58, -36, 0], ox: .15, oy: 0 },
+  { p: .21, pos: [140, 228, 880], tgt: [112, -20, 0], ox: 0, oy: .1 },
+  { p: .29, pos: [120, 218, 880], tgt: [112, -20, 0], ox: 0, oy: .1 },
+  { p: .37, pos: [222, 82, 236], tgt: [40, -6, 0], ox: .13, oy: 0 },
+  { p: .45, pos: [208, 78, 246], tgt: [40, -6, 0], ox: .13, oy: 0 },
+  { p: .53, pos: [70, 64, 180], tgt: [202, -4, 0], ox: .12, oy: 0 },
+  { p: .64, pos: [84, 58, 186], tgt: [202, -4, 0], ox: .12, oy: 0 },
+  { p: .72, pos: [140, 98, 256], tgt: [305, -4, 0], ox: .12, oy: 0 },
+  { p: .79, pos: [152, 92, 262], tgt: [305, -4, 0], ox: .12, oy: 0 },
+  { p: .94, pos: [326, 136, 304], tgt: [58, -36, 0], ox: .16, oy: 0 },
+  { p: 1, pos: [336, 130, 294], tgt: [58, -36, 0], ox: .16, oy: 0 },
+];
+const SECT = [[-1, .085], [.19, .305], [.355, .465], [.515, .655], [.705, .805], [.925, 2]], GO = [0, .25, .41, .585, .755, 1];
+const explodeAt = p => p < .5 ? sstep(.07, .2, p) : 1 - sstep(.8, .93, p);
+const copies = [...document.querySelectorAll('.copy')], navB = [...document.querySelectorAll('nav button')], prog = document.getElementById('prog');
+SECT.forEach(() => prog.appendChild(document.createElement('i')));
+const progI = [...prog.children];
+const scrollMax = () => document.documentElement.scrollHeight - innerHeight;
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => scrollTo({ top: GO[+b.dataset.go] * scrollMax(), behavior: 'smooth' })));
+
+// callouts: labels that follow points on the machine
+const cosEl = document.getElementById('cos');
+const CO = [
+  { s: 2, part: 'stator', at: () => [41 * Math.cos(1.05), 41 * Math.sin(1.05), 47.5], t: 'Coil', e: '11 turns, two layers', d: [70, -64] },
+  { s: 2, part: 'rotor', spin: 0, at: () => [0, 29.6, 46], t: 'Magnets', e: '14 poles', d: [84, -30] },
+  { s: 2, part: 'rotor', at: () => [0, 0, 77.4], t: 'Hollow shaft', e: 'Ø16 bore', d: [60, 40] },
+  { s: 3, part: 'gears', at: () => [0, 0, 63], t: 'Sun', e: '30 T, input', d: [-150, 190] },
+  { s: 3, part: 'gears', car: 1, at: () => [CTR * Math.cos(TAU * 2 / 5), CTR * Math.sin(TAU * 2 / 5), 63], t: 'Planet', e: '30 T, one of five', d: [54, -64] },
+  { s: 3, part: 'gears', at: () => [0, -45, 62], t: 'Ring', e: '90 T, fixed', d: [84, 46] },
+  { s: 4, part: 'crbOut', at: () => [ROLR * Math.cos(.5), ROLR * Math.sin(.5), 88], t: 'Rollers', e: 'alternating ±45°', d: [-80, -76] },
+  { s: 4, part: 'crbOut', at: () => [0, -RO, 86], t: 'Outer ring', e: 'fixed to housing', d: [-70, 44] },
+  { s: 4, part: 'crbIn', at: () => [0, 45.5, 92], t: 'Inner ring', e: 'carries the flange', d: [64, -58] },
+];
+for (const c of CO) {
+  const el = document.createElement('div'); el.className = 'co';
+  const L = Math.hypot(c.d[0], c.d[1]), a = Math.atan2(c.d[1], c.d[0]);
+  el.innerHTML = `<s style="width:${L}px;transform:rotate(${a}rad)"></s><span style="${c.d[0] < 0 ? 'right:' + (-c.d[0]) + 'px;text-align:right;border-left:0;border-right:1px solid var(--acc)' : 'left:' + c.d[0] + 'px'};top:${c.d[1] - 12}px">${c.t}<em>${c.e}</em></span>`;
+  cosEl.appendChild(el); c.el = el;
+}
+
+// ------------------------------------------------------------------ state
+let W = 0, H = 0, scale = Math.min(devicePixelRatio || 1, 2), pS = 0, pT = 0, rot = 0, rotV = 0, lastY = scrollY, lastT = performance.now(), forced = null, mx = 0, my = 0, mxs = 0, mys = 0;
+function resize() {
+  W = innerWidth; H = innerHeight; renderer.setPixelRatio(1); renderer.setSize(W, H, false);
+  const w = Math.round(W * scale), h = Math.round(H * scale); canvas.width = w; canvas.height = h; targets(w, h);
+  camera.aspect = W / H;
+}
+addEventListener('resize', resize); resize();
+addEventListener('pointermove', e => { mx = e.clientX / W * 2 - 1; my = e.clientY / H * 2 - 1; });
+const hRot = document.getElementById('hRot'), hOut = document.getElementById('hOut'), fRot = document.getElementById('fRot'), fOut = document.getElementById('fOut'), hint = document.getElementById('hint');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const tmpV = new T.Vector3(), tmpQ = new T.Quaternion(), tmpM = new T.Matrix4(), ZAX = new T.Vector3(0, 0, 1), ONE = new T.Vector3(1, 1, 1), tmpP = new T.Vector3(), tmpD = new T.Vector3();
+const cp = new T.Vector3(), ct = new T.Vector3();
+let rot0 = null, slow = 0, frames = 0;
+
+function frame(now) {
+  const dt = Math.min(.05, (now - lastT) / 1000); lastT = now;
+  const y = scrollY, dy = y - lastY; lastY = y;
+  pT = forced !== null ? forced : clamp(y / Math.max(1, scrollMax()));
+  pS = forced !== null ? forced : pS + (pT - pS) * (1 - Math.exp(-dt * 5.5));
+  const p = pS;
+  // mechanism: idles slowly, and scrolling turns it by hand
+  rotV += ((reduce ? 0 : 1.15) - rotV) * (1 - Math.exp(-dt * 3)); rotV += dy * .0105 / Math.max(dt, .008) * (1 - Math.exp(-dt * 12)) * .12;
+  rotV = clamp(rotV, -26, 26);
+  if (forced === null) rot += rotV * dt;
+  const K = kin(rot), e = explodeAt(p);
+  const fb = sstep(.64, .72, p) * (1 - sstep(.79, .85, p));       // the train opens up round the bearing while it is being looked at
+  for (const n of order) { const g = parts[n], u = g.userData; g.position.z = u.off * ease(clamp(e * 1.5 - .5 * u.k)) + (u.off < 200 ? -110 : u.off > 280 ? 70 : 0) * fb; }
+  for (const lg of labelGroups) { const g = parts[lg.userData.part]; lg.position.x = g.position.z - g.userData.off; }
+  parts.rotor.userData.spin.rotation.z = rot;
+  const G = parts.gears.userData; G.sun.rotation.z = rot; G.car.rotation.z = K.phi;
+  for (let i = 0; i < NPL; i++) G.pl[i].rotation.z = K.pl[i][1] - K.phi;
+  parts.crbIn.userData.spin.rotation.z = parts.flange.userData.spin.rotation.z = parts.flScrews.userData.spin.rotation.z = K.phi;
+  { // rollers: the set orbits at (1 - d cos45 / D) / 2 of the inner ring, each roller spins on its own crossed axis
+    const cage = K.phi * .5 * (1 - 5 * Math.SQRT1_2 / (2 * ROLR)), im = parts.crbOut.userData.rol;
+    for (let i = 0; i < NROL; i++) {
+      const a = cage + i / NROL * TAU, c = Math.cos(a), s = Math.sin(a), sg = i % 2 ? 1 : -1;
+      tmpV.set(c * Math.SQRT1_2, s * Math.SQRT1_2, sg * Math.SQRT1_2); tmpQ.setFromUnitVectors(ZAX, tmpV);
+      tmpM.compose(tmpP.set(ROLR * c, ROLR * s, ROLZ), tmpQ, ONE); im.setMatrixAt(i, tmpM);
+    }
+    im.instanceMatrix.needsUpdate = true;
+  }
+  // camera
+  let i = 0; while (i < KEYS.length - 2 && p > KEYS[i + 1].p) i++;
+  const A = KEYS[i], B = KEYS[i + 1], t = ease(clamp((p - A.p) / (B.p - A.p)));
+  const asp = W / H, wide = clamp((asp - .7) / .8), far = asp < 1.5 ? Math.min(2, Math.pow(1.5 / asp, .8)) : 1;
+  cp.set(lerp(A.pos[0], B.pos[0], t) - 50, lerp(A.pos[1], B.pos[1], t), lerp(A.pos[2], B.pos[2], t));
+  ct.set(lerp(A.tgt[0], B.tgt[0], t) - 50, lerp(A.tgt[1], B.tgt[1], t), lerp(A.tgt[2], B.tgt[2], t));
+  mxs += (mx - mxs) * (1 - Math.exp(-dt * 3)); mys += (my - mys) * (1 - Math.exp(-dt * 3));
+  tmpD.subVectors(cp, ct); const dist = tmpD.length() * far; tmpD.normalize(); scene.fog.near = 620 * far; scene.fog.far = 1700 * far;
+  const yaw = Math.atan2(tmpD.x, tmpD.z) - mxs * .07, pit = Math.asin(tmpD.y) + mys * .035;
+  cp.set(ct.x + dist * Math.sin(yaw) * Math.cos(pit), ct.y + dist * Math.sin(pit), ct.z + dist * Math.cos(yaw) * Math.cos(pit));
+  camera.position.copy(cp); camera.lookAt(ct);
+  const ox = lerp(A.ox, B.ox, t) * wide, oy = -(1 - wide) * .2 + lerp(A.oy, B.oy, t) * wide;
+  if (window.__crop) { const c = window.__crop; camera.setViewOffset(W, H, c[0] - ox * W, c[1] - oy * H, c[2], c[3]); } else camera.setViewOffset(W, H, -ox * W, -oy * H, W, H);
+  camera.updateMatrixWorld();
+  // light follows the subject
+  const fr = clamp(dist * .42, 120, 420); const sc = key.shadow.camera; sc.left = -fr; sc.right = fr; sc.top = fr; sc.bottom = -fr; sc.updateProjectionMatrix();
+  { const a = yaw - .75; KDIR.set(Math.sin(a) * .8, 1, Math.cos(a) * .8).normalize(); }
+  key.target.position.copy(ct); key.position.copy(ct).addScaledVector(KDIR, 700);
+  // floor print and pitch circles
+  { const o = sstep(.3, .85, e); for (const m of floorArt.ex) m.material.opacity = o; } lineMat.opacity = .45 + .55 * e;
+  for (const m of floorArt.asm) m.material.opacity = 1 - sstep(0, .28, e);
+  for (const m of floorArt.ex) m.visible = e > .3; for (const m of floorArt.asm) m.visible = e < .28;
+  G.pm.opacity = sstep(.47, .54, p) * (1 - sstep(.64, .7, p));
+  // page copy
+  let cur = 0;
+  copies.forEach((el, k) => {
+    const [a, b] = SECT[k], o = sstep(a, a + .03, p) * (1 - sstep(b - .03, b, p));
+    el.style.opacity = o; el.style.visibility = o > .01 ? 'visible' : 'hidden'; el.style.transform = `translateY(${(1 - o) * (p < (a + b) / 2 ? 18 : -18)}px)`; el.classList.toggle('on', o > .5);
+    if (p > a - .04) cur = k;
+  });
+  navB.forEach((b, k) => b.classList.toggle('on', k === cur)); progI.forEach((b, k) => b.classList.toggle('on', k === cur));
+  hint.style.opacity = p < .02 ? 1 : 0;
+  // callouts
+  for (const c of CO) {
+    const [a, b] = SECT[c.s], o = sstep(a + .01, a + .04, p) * (1 - sstep(b - .04, b - .01, p)) * (W >= 1100 ? 1 : 0);
+    if (o < .01) { c.el.style.opacity = 0; continue; }
+    const g = parts[c.part], l = c.at(); tmpV.set(l[0], l[1], l[2]);
+    const fr2 = c.car ? g.userData.car : (c.spin ? g.userData.spin : g); fr2.updateWorldMatrix(true, false); tmpV.applyMatrix4(fr2.matrixWorld).project(camera);
+    c.el.style.opacity = o; c.el.style.transform = `translate(${(tmpV.x * .5 + .5) * W}px,${(-tmpV.y * .5 + .5) * H}px)`;
+  }
+  // readouts
+  const deg = x => ((x * 180 / PI % 360 + 360) % 360).toFixed(1).padStart(5, '0') + '°';
+  hRot.textContent = deg(rot); hOut.textContent = deg(K.phi);
+  if (p > .5 && p < .68) { if (rot0 === null) rot0 = rot; fRot.textContent = (Math.abs(rot - rot0) / TAU).toFixed(2); fOut.textContent = (Math.abs(rot - rot0) / TAU / 4).toFixed(2); } else rot0 = null;
+
+  // render
+  const w = RT.main.width, h = RT.main.height;
+  renderer.setRenderTarget(RT.main); renderer.clear(); renderer.render(scene, camera);
+  mAO.uniforms.tD.value = RT.main.depthTexture; mAO.uniforms.ipm.value.copy(camera.projectionMatrixInverse); mAO.uniforms.px.value.set(1 / w, 1 / h); mAO.uniforms.p11.value = camera.projectionMatrix.elements[5]; mAO.uniforms.asp.value = w / h;
+  run(mAO, RT.ao); mAOB.uniforms.tA.value = RT.ao.texture; mAOB.uniforms.px.value.set(1 / w, 1 / h); run(mAOB, RT.aob);
+  mPre.uniforms.tS.value = RT.main.texture; mPre.uniforms.px.value.set(1 / w, 1 / h); run(mPre, RT.b1);
+  const blur = (src, tmp, s) => { mBlur.uniforms.tS.value = src.texture; mBlur.uniforms.d.value.set(s / src.width, 0); run(mBlur, tmp); mBlur.uniforms.tS.value = tmp.texture; mBlur.uniforms.d.value.set(0, s / src.height); run(mBlur, src); };
+  blur(RT.b1, RT.b1t, 1); mBlur.uniforms.tS.value = RT.b1.texture; mBlur.uniforms.d.value.set(0, 0); run(mBlur, RT.b2); blur(RT.b2, RT.b2t, 1.6); blur(RT.b2, RT.b2t, 1.6);
+  const u = mOut.uniforms; u.tS.value = RT.main.texture; u.tA.value = RT.aob.texture; u.tB1.value = RT.b1.texture; u.tB2.value = RT.b2.texture; u.t.value = (now * .001) % 10; u.asp.value = w / h;
+  run(mOut, null);
+
+  // keep the frame rate: step the drawing scale down on slow machines
+  if (!window.__noAdapt && forced === null) { frames++; if (dt > .03) slow++; if (frames >= 50) { if (slow > 30 && scale > 1) { scale = Math.max(1, scale - .25); resize(); } frames = slow = 0; } }
+  requestAnimationFrame(frame);
+}
+window.__set = (p, r) => { forced = p; if (r !== undefined) rot = r; };
+window.__ready = true;
+const ld = document.getElementById('load'); ld.style.opacity = 0; setTimeout(() => ld.remove(), 900);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>body{margin:0}</style>
+</head>
+<body>
+<title>Nivel J120 Actuator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one drawing sheet. The machine is fixed in the sheet; a narrow text column scrolls past on the left
+   (bottom on phones); callouts, balloons and dimensions are pinned to the parts themselves. */
+:root{
+  color-scheme:light;
+  --paper:#d9dde0; --paper-hi:#e6e9eb; --paper-lo:#c9ced2;
+  --ink:#101214; --ink-2:#4b5158; --rule:rgba(16,18,20,.26);
+  --signal:#f2b705;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+html{background:var(--paper)}
+body{background:radial-gradient(120vmax 90vmax at 66% 42%,var(--paper-hi),var(--paper) 45%,var(--paper-lo));background-attachment:fixed;color:var(--ink);font-family:var(--display);font-size:16px;line-height:1.5;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+#back{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#back span{position:absolute;left:var(--cx,66%);top:var(--cy,50%);transform:translate(-50%,-52%);font:800 23vw/1 var(--display);font-stretch:125%;letter-spacing:-.04em;color:var(--paper-lo);white-space:nowrap;opacity:0;transition:opacity .5s}
+#back span.on{opacity:.75}
+#gl{position:fixed;inset:0;width:100%;height:100%;z-index:1;display:block}
+#ov{position:fixed;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}
+#ov polyline,#ov path{fill:none;stroke:var(--ink);stroke-width:1}
+#ov circle{fill:var(--signal);stroke:var(--ink);stroke-width:1}
+#labels{position:fixed;inset:0;z-index:4;pointer-events:none}
+.tag{position:absolute;left:0;top:0;font:500 11px/1 var(--mono);letter-spacing:.04em;text-transform:uppercase;background:var(--ink);color:var(--paper-hi);padding:5px 7px 5px;white-space:nowrap;will-change:transform}
+.tag b{font-weight:500;color:var(--signal)}
+.tag.dim{background:var(--paper-hi);color:var(--ink);border:1px solid var(--ink)}
+.bal{position:absolute;left:0;top:0;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;border:1px solid var(--ink);background:var(--paper-hi);color:var(--ink);font:500 11px/22px var(--mono);text-align:center;pointer-events:auto;cursor:pointer;will-change:transform;padding:0}
+.bal.on{background:var(--signal)}
+.bal:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+.frame{position:fixed;inset:12px;border:1px solid var(--rule);z-index:2;pointer-events:none}
+.block{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;border:1px solid var(--rule);border-right:0;border-bottom:0;font:400 10px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);pointer-events:none}
+.block span{padding:7px 10px;border-right:1px solid var(--rule)}
+.block b{font-weight:500;color:var(--ink)}
+
+.nav{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);z-index:6;display:flex;justify-content:space-between;align-items:center;gap:16px;padding-block:26px 0;padding-left:max(32px,env(safe-area-inset-left,0px));padding-right:max(32px,env(safe-area-inset-right,0px));pointer-events:none}
+.mark{font:800 17px/1 var(--display);font-stretch:125%;letter-spacing:.14em}
+.mark i{font-style:normal;font-weight:400;letter-spacing:.06em;color:var(--ink-2);margin-left:10px;font-family:var(--mono);font-size:11px}
+.live{font:400 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-variant-numeric:tabular-nums;display:flex;gap:18px}
+.live b{font-weight:500;color:var(--ink)}
+
+main{position:relative;z-index:3;pointer-events:none}
+.sc{height:190vh}
+.sc:last-child{height:100vh;height:100svh}
+.pin{position:sticky;top:0;height:100vh;height:100svh;display:flex;align-items:center;padding-left:max(32px,env(safe-area-inset-left,0px));padding-right:max(32px,env(safe-area-inset-right,0px))}
+.col{width:min(410px,32vw);pointer-events:auto;display:flex;flex-direction:column;gap:20px}
+.eye{font:500 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:10px}
+.eye::before{content:"";width:22px;height:1px;background:var(--ink)}
+h1,h2{margin:0;font-weight:700;font-stretch:112%;letter-spacing:-.022em;line-height:1.02;text-wrap:balance}
+h1{font-size:clamp(32px,3.3vw,48px)}
+h2{font-size:clamp(28px,3.1vw,44px)}
+.col p{margin:0;color:var(--ink-2);max-width:38ch;font-size:15.5px}
+.stats{display:grid;grid-template-columns:repeat(3,auto);justify-content:start;gap:0 26px;border-top:1px solid var(--ink);padding-top:12px}
+.stats div{font:400 10.5px/1.3 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2)}
+.stats b{display:block;font:700 24px/1.1 var(--display);font-stretch:112%;letter-spacing:-.01em;color:var(--ink);text-transform:none;font-variant-numeric:tabular-nums}
+.eq{font:400 13px/1.5 var(--mono);border-top:1px solid var(--ink);border-bottom:1px solid var(--rule);padding:12px 0;display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}
+.eq b{font-weight:500}
+.bom{border-top:1px solid var(--ink);font:400 11px/1 var(--mono);letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.bom button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:22px 1fr auto 22px;gap:8px;width:100%;padding:6px 4px;border-bottom:1px solid var(--rule);cursor:pointer;color:var(--ink)}
+.bom button span:nth-child(3){color:var(--ink-2)}
+.bom button span:last-child{text-align:right}
+.bom button.on{background:var(--signal)}
+.bom button.on span:nth-child(3){color:var(--ink)}
+.bom button:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+.ctl{border-top:1px solid var(--ink);padding-top:14px;display:flex;flex-direction:column;gap:12px}
+.ctl label{display:flex;justify-content:space-between;font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.ctl output{font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;margin:0;cursor:ew-resize}
+input[type=range]::-webkit-slider-runnable-track{height:1px;background:var(--ink)}
+input[type=range]::-moz-range-track{height:1px;background:var(--ink)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:24px;margin-top:-12px;background:var(--signal);border:1px solid var(--ink);border-radius:0}
+input[type=range]::-moz-range-thumb{width:10px;height:22px;background:var(--signal);border:1px solid var(--ink);border-radius:0}
+input[type=range]:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.read{display:grid;grid-template-columns:1fr auto;font:400 12px/1 var(--mono);font-variant-numeric:tabular-nums}
+.read span,.read b{padding:7px 0;border-bottom:1px solid var(--rule)}
+.read span{color:var(--ink-2)}
+.read b{font-weight:500;text-align:right}
+.note{font:400 10.5px/1.4 var(--mono);letter-spacing:.04em;color:var(--ink-2);text-transform:uppercase}
+.spec{display:grid;grid-template-columns:1fr auto;border-top:1px solid var(--ink);font:400 12px/1 var(--mono);font-variant-numeric:tabular-nums}
+.spec span,.spec b{padding:7px 0;border-bottom:1px solid var(--rule)}
+.spec span{color:var(--ink-2)}
+.spec b{font-weight:500;text-align:right}
+.ask{font:400 12px/1.5 var(--mono);color:var(--ink-2)}
+.ask b{color:var(--ink);font-weight:500;user-select:all}
+
+@media (max-width:760px){
+  .nav{padding-block:20px 0;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+  .mark i{display:none}
+  .frame{inset:8px}
+  .block{display:none}
+  .pin{align-items:flex-end;padding-left:0;padding-right:0}
+  .col{width:100%;gap:12px;padding-block:44px calc(22px + env(safe-area-inset-bottom,0px));padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));background:linear-gradient(to top,var(--paper) 78%,transparent)}
+  h1{font-size:31px} h2{font-size:27px}
+  .col p{font-size:14px;max-width:none}
+  .stats b{font-size:20px}
+  .bom{display:grid;grid-template-columns:1fr 1fr;column-gap:14px}
+  .bom button{grid-template-columns:18px 1fr 18px;padding:5px 2px;font-size:10px}
+  .bom button span:nth-child(3){display:none}
+  .bom button span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tag{font-size:9.5px;padding:4px 5px}
+  .bal{width:20px;height:20px;margin:-10px 0 0 -10px;line-height:18px;font-size:10px}
+  #back span{font-size:52vw}
+  .read span,.read b,.spec span,.spec b{padding:5px 0}
+}
+@media (prefers-reduced-motion:reduce){#back span{transition:none}}
+</style>
+
+<div id="back" aria-hidden="true"><span>J120</span><span>A–A</span><span>45</span><span>5:1</span><span>48 V</span></div>
+<canvas id="gl" aria-label="Rotating 3D model of the J120 joint actuator"></canvas>
+<svg id="ov" aria-hidden="true"></svg>
+<div id="labels"></div>
+<div class="frame" aria-hidden="true"></div>
+<div class="block" aria-hidden="true"><span>Nivel</span><span>J120-A</span><span>Sheet <b id="sheet">1</b>/5</span><span id="view">Isometric</span></div>
+
+<header class="nav">
+  <div class="mark">NIVEL<i>Joint actuators</i></div>
+  <div class="live"><span>In <b id="nin">0900</b></span><span>Out <b id="nout">0180</b> rpm</span></div>
+</header>
+
+<main>
+  <section class="sc"><div class="pin"><div class="col">
+    <div class="eye">J120 rotary joint actuator</div>
+    <h1>Motor, gear stage and bearing in one 87&nbsp;mm joint.</h1>
+    <p>The J120 holds a 48 V frameless motor, a 5 : 1 planetary stage and a crossed-roller bearing in a single housing, for legged and collaborative robots. Scrolling this page turns its input shaft.</p>
+    <div class="stats"><div><b>5 : 1</b>Ratio</div><div><b>18 N·m</b>Rated</div><div><b>1.18 kg</b>Mass</div></div>
+  </div></div></section>
+
+  <section class="sc"><div class="pin"><div class="col">
+    <div class="eye">Section A–A</div>
+    <h2>Cut along the axis.</h2>
+    <p>The rotor turns a 24-tooth sun gear. Four 36-tooth planets roll between the sun and a 96-tooth ring fixed in the housing, and carry the output flange round once for every five turns of the rotor.</p>
+    <div class="eq"><span>1 + 96 / 24 = <b>5</b></span><span><b id="eqin">900</b> → <b id="eqout">180</b> rpm</span></div>
+  </div></div></section>
+
+  <section class="sc"><div class="pin"><div class="col">
+    <div class="eye">Exploded view</div>
+    <h2>17 line items. 45 parts.</h2>
+    <div class="bom" id="bom"></div>
+  </div></div></section>
+
+  <section class="sc"><div class="pin"><div class="col">
+    <div class="eye">Section B–B</div>
+    <h2>One stage, always in mesh.</h2>
+    <p>Every planet meshes with the sun and the ring at once, so the load is shared across eight tooth contacts. Set the motor speed and read each member.</p>
+    <div class="ctl">
+      <label for="spd"><span>Motor speed</span><output id="spdo" for="spd">900 rpm</output></label>
+      <input type="range" id="spd" min="0" max="3000" step="50" value="900">
+      <div class="read"><span>Sun, input</span><b id="rs">900 rpm</b><span>Planet, about its pin</span><b id="rp">480 rpm</b><span>Carrier, output</span><b id="rc">180 rpm</b></div>
+      <div class="note">Motion shown 50 times slower than real</div>
+    </div>
+  </div></div></section>
+
+  <section class="sc"><div class="pin"><div class="col">
+    <div class="eye">Data</div>
+    <h2>J120 at 48 V.</h2>
+    <div class="spec">
+      <span>Ratio</span><b>5 : 1</b>
+      <span>Rated torque</span><b>18 N·m</b>
+      <span>Peak torque</span><b>54 N·m</b>
+      <span>No-load speed, output</span><b>600 rpm</b>
+      <span>Backlash</span><b>&lt; 8 arcmin</b>
+      <span>Encoder</span><b>19 bit absolute</b>
+      <span>Through bore</span><b>Ø 8 mm</b>
+      <span>Size</span><b>Ø 120 × 87.8 mm</b>
+      <span>Mass</span><b>1.18 kg</b>
+    </div>
+    <div class="ask">STEP model and drawings on request:<br><b>drawings@nivel.example</b></div>
+  </div></div></section>
+</main>
+
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+if(!window.THREE){document.getElementById('gl').replaceWith(Object.assign(document.createElement('p'),{textContent:'The 3D model could not load.',style:'position:fixed;right:10%;top:45%'}));return;}
+const T=THREE,PI=Math.PI,TAU=PI*2,cos=Math.cos,sin=Math.sin;
+const sm=(x)=>{x=x<0?0:x>1?1:x;return x*x*(3-2*x)};
+const seg=(x,a,b)=>sm((x-a)/(b-a));
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+/* ---------- geometry builders (all solids closed, winding fixed from normals) ---------- */
+const _v=new T.Vector3();
+class GB{
+  constructor(){this.p=[];this.n=[];this.m=null;this.nm=null}
+  xf(m){this.m=m;this.nm=m?new T.Matrix3().getNormalMatrix(m):null;return this}
+  put(a,n){
+    if(this.m){_v.set(a[0],a[1],a[2]).applyMatrix4(this.m);this.p.push(_v.x,_v.y,_v.z);_v.set(n[0],n[1],n[2]).applyMatrix3(this.nm).normalize();this.n.push(_v.x,_v.y,_v.z)}
+    else{this.p.push(a[0],a[1],a[2]);this.n.push(n[0],n[1],n[2])}
+  }
+  tri(a,b,c,na,nb,nc){
+    const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
+    const cx=uy*vz-uz*vy,cy=uz*vx-ux*vz,cz=ux*vy-uy*vx;
+    if(cx*cx+cy*cy+cz*cz<1e-14)return;
+    if(cx*(na[0]+nb[0]+nc[0])+cy*(na[1]+nb[1]+nc[1])+cz*(na[2]+nb[2]+nc[2])<0){this.put(a,na);this.put(c,nc);this.put(b,nb)}
+    else{this.put(a,na);this.put(b,nb);this.put(c,nc)}
+  }
+  geo(){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(this.p,3));g.setAttribute('normal',new T.Float32BufferAttribute(this.n,3));return g}
+}
+function strip(gb,cx,cy,rA,zA,rB,zB,n,sign){
+  const dr=rB-rA,dz=zB-zA,L=Math.hypot(dr,dz);if(L<1e-9)return;
+  const nr=sign*dz/L,nz=-sign*dr/L;
+  for(let k=0;k<n;k++){
+    const t0=k/n*TAU,t1=(k+1)/n*TAU,c0=cos(t0),s0=sin(t0),c1=cos(t1),s1=sin(t1);
+    const a0=[cx+rA*c0,cy+rA*s0,zA],b0=[cx+rB*c0,cy+rB*s0,zB],b1=[cx+rB*c1,cy+rB*s1,zB],a1=[cx+rA*c1,cy+rA*s1,zA];
+    const n0=[nr*c0,nr*s0,nz],n1=[nr*c1,nr*s1,nz];
+    gb.tri(a0,b0,b1,n0,n0,n1);gb.tri(a0,b1,a1,n0,n1,n1);
+  }
+}
+/* turned part: closed (r,z) profile, every corner chamfered */
+function turn(gb,prof,n=144,cham=.35){
+  let P=prof.map(q=>[q[0],q[1],q[2]===undefined?cham:q[2]]);
+  let A=0;for(let i=0;i<P.length;i++){const j=(i+1)%P.length;A+=P[i][0]*P[j][1]-P[j][0]*P[i][1]}
+  if(A<0)P.reverse();
+  const Q=[],m=P.length;
+  for(let i=0;i<m;i++){
+    const a=P[(i+m-1)%m],b=P[i],c=P[(i+1)%m];let d=b[2];
+    if(d<=0||b[0]<1e-6){Q.push([b[0],b[1]]);continue}
+    const l1=Math.hypot(a[0]-b[0],a[1]-b[1]),l2=Math.hypot(c[0]-b[0],c[1]-b[1]);d=Math.min(d,l1*.45,l2*.45);
+    Q.push([b[0]+(a[0]-b[0])/l1*d,b[1]+(a[1]-b[1])/l1*d],[b[0]+(c[0]-b[0])/l2*d,b[1]+(c[1]-b[1])/l2*d]);
+  }
+  for(let i=0;i<Q.length;i++){const a=Q[i],b=Q[(i+1)%Q.length];if(a[0]<1e-6&&b[0]<1e-6)continue;strip(gb,0,0,a[0],a[1],b[0],b[1],n,1)}
+}
+function norm2(outline,holes){
+  const o=outline.map(p=>new T.Vector2(p[0],p[1]));if(T.ShapeUtils.isClockWise(o))o.reverse();
+  const hs=holes.map(h=>{const v=h.map(p=>new T.Vector2(p[0],p[1]));if(!T.ShapeUtils.isClockWise(v))v.reverse();return v});
+  return [o,hs];
+}
+function caps(gb,o,hs,z0,z1){
+  const tris=T.ShapeUtils.triangulateShape(o.slice(),hs.map(h=>h.slice()));const all=o.concat(...hs);
+  const U=[0,0,1],D=[0,0,-1];
+  for(const t of tris){const a=all[t[0]],b=all[t[1]],c=all[t[2]];
+    gb.tri([a.x,a.y,z1],[b.x,b.y,z1],[c.x,c.y,z1],U,U,U);gb.tri([a.x,a.y,z0],[b.x,b.y,z0],[c.x,c.y,z0],D,D,D)}
+}
+function walls(gb,loop,z0,z1,cosT=.78){
+  const n=loop.length,en=[];
+  for(let i=0;i<n;i++){const a=loop[i],b=loop[(i+1)%n];const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1;en.push([dy/L,-dx/L])}
+  const mix=(e,f)=>{if(e[0]*f[0]+e[1]*f[1]>cosT){const x=e[0]+f[0],y=e[1]+f[1],L=Math.hypot(x,y);return [x/L,y/L,0]}return [e[0],e[1],0]};
+  for(let i=0;i<n;i++){const a=loop[i],b=loop[(i+1)%n];const na=mix(en[i],en[(i+n-1)%n]),nb=mix(en[i],en[(i+1)%n]);
+    const a0=[a.x,a.y,z0],b0=[b.x,b.y,z0],b1=[b.x,b.y,z1],a1=[a.x,a.y,z1];
+    gb.tri(a0,b0,b1,na,nb,nb);gb.tri(a0,b1,a1,na,nb,na)}
+}
+/* extruded profile */
+function prism(gb,outline,holes,z0,z1){const [o,hs]=norm2(outline,holes);caps(gb,o,hs,z0,z1);walls(gb,o,z0,z1);hs.forEach(h=>walls(gb,h,z0,z1))}
+const circ=(cx,cy,r,n,ph=0)=>Array.from({length:n},(_,i)=>[cx+r*cos(i/n*TAU+ph),cy+r*sin(i/n*TAU+ph)]);
+/* drilled, chamfered disc */
+function plate(gb,{ro,ri=0,holes=[],z0,z1,c=.3,n=144}){
+  const hc=Math.min(c,.2),ni=Math.max(32,n>>1),hn=h=>h.r>4?40:20;
+  const o=circ(0,0,ro-c,n),hs=[];if(ri>0)hs.push(circ(0,0,ri+c,ni));holes.forEach(h=>hs.push(circ(h.x,h.y,h.r+hc,hn(h))));
+  const [O,H]=norm2(o,hs);caps(gb,O,H,z0,z1);
+  strip(gb,0,0,ro-c,z0,ro,z0+c,n,1);strip(gb,0,0,ro,z0+c,ro,z1-c,n,1);strip(gb,0,0,ro,z1-c,ro-c,z1,n,1);
+  if(ri>0){strip(gb,0,0,ri+c,z0,ri,z0+c,ni,-1);strip(gb,0,0,ri,z0+c,ri,z1-c,ni,-1);strip(gb,0,0,ri,z1-c,ri+c,z1,ni,-1)}
+  holes.forEach(h=>{const k=hn(h);strip(gb,h.x,h.y,h.r+hc,z0,h.r,z0+hc,k,-1);strip(gb,h.x,h.y,h.r,z0+hc,h.r,z1-hc,k,-1);strip(gb,h.x,h.y,h.r,z1-hc,h.r+hc,z1,k,-1)});
+}
+/* involute gear outline, 20 degree pressure angle, tooth centred on angle rot */
+function gear(z,m,{add=1,ded=1.25,bl=.04,rot=0,nf=6}={}){
+  const r=m*z/2,al=20*PI/180,rb=r*cos(al),ra=r+add*m,rf=r-ded*m,inv=a=>Math.tan(a)-a,psi=PI/(2*z)-bl/(2*r);
+  const half=rho=>Math.max(.0015,psi+inv(al)-inv(Math.acos(Math.min(1,rb/rho))));
+  const r0=Math.max(rb,rf),pts=[],pol=(q,a)=>[q*cos(a),q*sin(a)];
+  for(let k=0;k<z;k++){const c=k*TAU/z+rot;
+    if(rf<rb)pts.push(pol(rf,c-half(rb)));
+    for(let i=0;i<=nf;i++){const q=r0+(ra-r0)*i/nf;pts.push(pol(q,c-half(q)))}
+    for(let i=nf;i>=0;i--){const q=r0+(ra-r0)*i/nf;pts.push(pol(q,c+half(q)))}
+    if(rf<rb)pts.push(pol(rf,c+half(rb)));
+    const a0=c+half(r0),a1=c+TAU/z-half(r0);pts.push(pol(rf,a0+(a1-a0)/3),pol(rf,a0+(a1-a0)*2/3));
+  }
+  return pts;
+}
+/* wound coil: rounded section swept round a racetrack */
+function coil(gb,w,h,rc,t,ht){
+  const path=[];const cs=[[w/2-rc,h/2-rc,0],[-w/2+rc,h/2-rc,PI/2],[-w/2+rc,-h/2+rc,PI],[w/2-rc,-h/2+rc,PI*1.5]];
+  for(const c of cs)for(let i=0;i<=6;i++){const a=c[2]+i/6*PI/2;path.push([c[0]+rc*cos(a),c[1]+rc*sin(a),cos(a),sin(a)])}
+  const sec=[],ns=16,a=t/2,b=ht/2;
+  for(let j=0;j<ns;j++){const q=j/ns*TAU,c=cos(q),s=sin(q),u=a*Math.sign(c)*Math.sqrt(Math.abs(c)),v=b*Math.sign(s)*Math.sqrt(Math.abs(s));
+    let nu=u*u*u/(a*a*a*a),nv=v*v*v/(b*b*b*b);const L=Math.hypot(nu,nv)||1;sec.push([u,v,nu/L,nv/L])}
+  const P=(p,s)=>[p[0]+p[2]*s[0],p[1]+p[3]*s[0],s[1]+b],N=(p,s)=>[p[2]*s[2],p[3]*s[2],s[3]];
+  for(let i=0;i<path.length;i++){const p=path[i],q=path[(i+1)%path.length];
+    for(let j=0;j<ns;j++){const s=sec[j],u=sec[(j+1)%ns];
+      gb.tri(P(p,s),P(q,s),P(q,u),N(p,s),N(q,s),N(q,u));gb.tri(P(p,s),P(q,u),P(p,u),N(p,s),N(q,u),N(p,u))}}
+}
+
+/* ---------- renderer, light ---------- */
+const canvas=document.getElementById('gl');
+const R=new T.WebGLRenderer({canvas,antialias:true,alpha:true,stencil:true,powerPreference:'high-performance'});
+R.setClearColor(0,0);R.toneMapping=T.ACESFilmicToneMapping;R.toneMappingExposure=1.08;R.outputColorSpace=T.SRGBColorSpace;
+R.shadowMap.enabled=true;R.shadowMap.type=T.PCFSoftShadowMap;R.localClippingEnabled=true;
+const scene=new T.Scene();
+const cam=new T.PerspectiveCamera(24,1,20,8000);
+{ // studio: grey room, soft boxes, black flags
+  const es=new T.Scene(),B=(c,v)=>new T.MeshBasicMaterial({color:new T.Color(c).multiplyScalar(v),side:T.DoubleSide,toneMapped:false});
+  const room=new T.Mesh(new T.BoxGeometry(2400,2400,2400),B(0xa9afb5,.55));es.add(room);
+  const pan=(w,h,x,y,z,c,v)=>{const m=new T.Mesh(new T.PlaneGeometry(w,h),B(c,v));m.position.set(x,y,z);m.lookAt(0,0,0);es.add(m)};
+  pan(1100,900,150,1000,250,0xffffff,7);
+  pan(260,1500,-1050,250,350,0xf4f8ff,9);
+  pan(700,500,950,150,700,0xfff4e6,3.2);
+  pan(1400,180,0,-250,-1100,0xffffff,5);
+  pan(900,600,-300,-1000,200,0x000000,1);
+  pan(500,900,1050,-200,-500,0x000000,1);
+  pan(380,1100,-200,300,1150,0x050505,1);
+  const pm=new T.PMREMGenerator(R);scene.environment=pm.fromScene(es,.02,1,6000).texture;pm.dispose();
+}
+const key=new T.DirectionalLight(0xffffff,2.4);key.position.set(210,300,260);key.castShadow=true;
+key.shadow.mapSize.set(2048,2048);key.shadow.bias=-.0004;key.shadow.normalBias=.5;key.shadow.radius=3;
+key.shadow.camera.near=50;key.shadow.camera.far=1400;scene.add(key,key.target);
+const root=new T.Group();scene.add(root);
+
+/* ---------- materials ---------- */
+const CUT=new Map();
+const clip=new T.Plane(new T.Vector3(-1,0,0),1e5);
+const M=(c,r,m)=>new T.MeshStandardMaterial({color:c,roughness:r,metalness:m,envMapIntensity:1});
+const mat={
+  anod:M(0x33373c,.4,.8),alu:M(0xcfd2d5,.36,1),steel:M(0xd3d6d9,.2,1),gear:M(0xbcc0c4,.3,1),
+  nitr:M(0x5a5e65,.36,1),lam:M(0x7c8289,.55,1),cu:M(0xc76a30,.33,1),mag:M(0xffffff,.24,1),
+  rotor:M(0x3b3e43,.46,1),bronze:M(0xb48a45,.34,1),black:M(0x1a1b1d,.46,.9),nickel:M(0xc9c7c0,.25,1)
+};
+CUT.set(mat.anod,[0xeceef0,.62,.2,0]).set(mat.alu,[0xd6d9dc,.6,.25,0]).set(mat.steel,[0xb3b8bd,.5,.35,0]).set(mat.gear,[0x9ba1a7,.5,.35,0]).set(mat.nitr,[0x6b7076,.5,.35,0]).set(mat.lam,[0x868c92,.65,.25,0]).set(mat.cu,[0xe08a50,.5,.4,1]).set(mat.mag,[0x4a4d52,.6,.3,0]).set(mat.rotor,[0x5d6167,.55,.3,0]).set(mat.bronze,[0xd2a458,.5,.4,0]).set(mat.black,[0x2c2d30,.6,.2,0]).set(mat.nickel,[0xc2c0b9,.45,.4,0]);
+const stBack=new T.MeshBasicMaterial({side:T.BackSide,colorWrite:false,depthWrite:false,depthTest:false,clippingPlanes:[clip],stencilWrite:true,stencilFunc:T.AlwaysStencilFunc,stencilFail:T.IncrementWrapStencilOp,stencilZFail:T.IncrementWrapStencilOp,stencilZPass:T.IncrementWrapStencilOp});
+const stFront=stBack.clone();stFront.clippingPlanes=[clip];stFront.side=T.FrontSide;stFront.stencilFail=stFront.stencilZFail=stFront.stencilZPass=T.DecrementWrapStencilOp;
+const capGeo=new T.PlaneGeometry(420,420);
+function capMat(i,src){
+  const c=CUT.get(src)||[0xc4c7ca,.5,.7,0];
+  const m=new T.MeshStandardMaterial({color:c[0],roughness:c[1],metalness:c[2],envMapIntensity:.85,side:T.DoubleSide,
+    stencilWrite:true,stencilRef:0,stencilFunc:T.NotEqualStencilFunc,stencilFail:T.ReplaceStencilOp,stencilZFail:T.ReplaceStencilOp,stencilZPass:T.ReplaceStencilOp});
+  const u={hAng:{value:(i%2?-1:1)*PI/4+(i%3)*.3},hSp:{value:1.3+(i%4)*.3},hMode:{value:c[3]}};
+  m.onBeforeCompile=sh=>{Object.assign(sh.uniforms,u);
+    sh.vertexShader='varying vec2 vP;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvP=position.xy;');
+    sh.fragmentShader='varying vec2 vP;uniform float hAng,hSp,hMode;\n'+sh.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
+      {float k;if(hMode>.5){vec2 g=vP/.82;g.x+=.5*floor(mod(g.y,2.));vec2 f=fract(g)-.5;float d=length(f);float w=fwidth(g.x);k=smoothstep(.36-w,.36+w,d)*clamp(.5/w,0.,1.)*1.6;}
+      else{float q=dot(vP,vec2(cos(hAng),sin(hAng)));float w=fwidth(q);float f=abs(fract(q/hSp+.5)-.5)*hSp;k=(1.-smoothstep(.05,.05+w*1.2,f))*clamp(hSp/(w*5.),0.,1.);}
+      diffuseColor.rgb*=1.-.17*k;}`)};
+  m.customProgramCacheKey=()=>'cut';
+  return m;
+}
+
+/* ---------- parts ---------- */
+const parts=[],spinners=[],dyn=[];
+const SIG=new T.Color(0xf2b705);
+function part(o){
+  const g=new T.Group();root.add(g);const idx=parts.length,base=10+idx*4;
+  const p=Object.assign({g,mats:[],sten:[]},o);
+  for(const it of o.items){
+    const m=it.mat.clone();m.clippingPlanes=[clip];m.clipShadows=true;p.mats.push(m);
+    let holder=g;if(it.spin){holder=new T.Group();g.add(holder);spinners.push({g:holder,k:it.spin})}
+    const mk=mm=>{let x;if(it.inst){x=new T.InstancedMesh(it.geo,mm,it.inst.length);it.inst.forEach((q,i)=>x.setMatrixAt(i,q))}else x=new T.Mesh(it.geo,mm);x.frustumCulled=false;holder.add(x);return x};
+    const main=mk(m);main.castShadow=main.receiveShadow=true;
+    if(it.colors)it.colors.forEach((c,i)=>main.setColorAt(i,c));
+    const b=mk(stBack),f=mk(stFront);
+    if(it.inst){b.instanceMatrix=main.instanceMatrix;f.instanceMatrix=main.instanceMatrix}
+    b.renderOrder=base+1;f.renderOrder=base+2;b.visible=f.visible=false;p.sten.push(b,f);
+    if(it.dyn)dyn.push({mesh:main,fn:it.dyn});
+  }
+  const cap=new T.Mesh(capGeo,capMat(idx,o.items[0].mat));cap.renderOrder=base+3;cap.receiveShadow=true;cap.frustumCulled=false;cap.visible=false;cap.onAfterRender=r=>r.clearStencil();g.add(cap);p.cap=cap;
+  parts.push(p);return p;
+}
+const mz=(x,y,z,rz=0)=>new T.Matrix4().makeRotationZ(rz).setPosition(x,y,z);
+const ring=(n,r,z,ph=0,flip=false)=>Array.from({length:n},(_,i)=>{const a=ph+i/n*TAU;const m=new T.Matrix4();if(flip)m.makeRotationX(PI);m.setPosition(r*cos(a),r*sin(a),z);return m});
+const hl=(n,r,rad,ph=0)=>Array.from({length:n},(_,i)=>({x:r*cos(ph+i/n*TAU),y:r*sin(ph+i/n*TAU),r:rad}));
+const S=24,P=36,RG=96,CD=30;
+
+{ // 1 housing
+  const gb=new GB(),pr=[[50,-52],[50,-9],[15,-9],[15,-4],[9.5,-4],[9.5,-2],[53,-2],[53,24.2],[60,24.2],[60,12],[56,10.4]];
+  for(let k=0;k<7;k++){const g0=-12-k*4.8;pr.push([56,g0],[53.4,g0],[53.4,g0-2.4],[56,g0-2.4])}
+  pr.push([56,-52]);turn(gb,pr,192,.4);
+  part({no:1,ex:0,zc:-14,R:57,items:[{geo:gb.geo(),mat:mat.anod}]});
+}
+{ // 2 rear cover + 17 connector
+  const gb=new GB();
+  turn(gb,[[4,-57.8],[42,-57.8],[42,-54],[22,-54],[22,-52],[16,-52],[16,-44.6],[12,-44.6],[12,-51.2],[7,-51.2],[7,-52.6],[4,-52.6]],128,.3);
+  const bh=hl(8,52.4,1.7,PI/8),ch=hl(8,52.4,2.9,PI/8);
+  plate(gb,{ro:56,ri:21,holes:bh,z0:-53.5,z1:-52,c:.2});plate(gb,{ro:56,ri:21,holes:ch,z0:-56.6,z1:-53.5,c:.3});
+  const cg=new GB(),ca=270*PI/180;cg.xf(new T.Matrix4().makeTranslation(30*cos(ca),30*sin(ca),-1.2));
+  turn(cg,[[0,-56.6,0],[8,-56.6],[8,-58.4],[5.2,-58.4],[5.2,-69],[4,-69],[4,-64],[0,-64,0]],48,.3);
+  const ng=new GB();ng.xf(new T.Matrix4().makeTranslation(30*cos(ca),30*sin(ca),-1.2));
+  prism(ng,circ(0,0,7.4,6),[circ(0,0,5.1,32)],-61.4,-58.4);
+  part({no:2,ex:-240,zc:-54,R:56,items:[{geo:gb.geo(),mat:mat.anod}]});part({no:17,ex:-240,zc:-64,R:36,dir:-1,items:[{geo:cg.geo(),mat:mat.black}]});part({no:17,nb:1,ex:-240,zc:-64,R:36,items:[{geo:ng.geo(),mat:mat.nickel}]});
+}
+{ // 3 stator: lamination stack + 18 coils
+  const gb=new GB(),N=18,inner=[],d=PI/180;
+  for(let k=0;k<N;k++){const c=k*TAU/N;const pol=(r,a)=>[r*cos(c+a),r*sin(c+a)];
+    inner.push(pol(46,-3.24*d),pol(37.7,-3.96*d),pol(37.4,-7.6*d));
+    for(let i=0;i<=4;i++)inner.push(pol(36,(-7.6+15.2*i/4)*d));
+    inner.push(pol(37.4,7.6*d),pol(37.7,3.96*d),pol(46,3.24*d));
+    for(let i=1;i<4;i++)inner.push(pol(46,(3.24+(20-6.48)*i/4)*d));}
+  prism(gb,circ(0,0,50,180),[inner],-41,-15);
+  const cg=new GB();coil(cg,8.9,29.9,2.4,3.1,7);
+  const inst=Array.from({length:N},(_,k)=>{const a=k*TAU/N,m=new T.Matrix4();
+    m.makeBasis(new T.Vector3(-sin(a),cos(a),0),new T.Vector3(0,0,1),new T.Vector3(cos(a),sin(a),0));m.setPosition(38.3*cos(a),38.3*sin(a),-28);return m});
+  part({no:3,ex:-70,zc:-28,R:50,items:[{geo:gb.geo(),mat:mat.lam}]});part({no:3,nb:1,ex:-70,zc:-28,R:50,items:[{geo:cg.geo(),mat:mat.cu,inst}]});
+}
+{ // 4 rotor: hub, web, rim, 20 magnets
+  const gb=new GB();
+  turn(gb,[[9,-42],[13,-42],[13,-14],[9,-14]],96,.4);turn(gb,[[29.6,-42],[32.6,-42],[32.6,-14],[29.6,-14]],144,.3);
+  plate(gb,{ro:30,ri:12.5,holes:hl(6,21.3,5.6),z0:-31,z1:-25,c:.3});
+  const mg=new GB(),sp=16.4*PI/180,o=[];
+  for(let i=0;i<=8;i++){const a=-sp/2+sp*i/8;o.push([35.4*cos(a),35.4*sin(a)])}
+  for(let i=8;i>=0;i--){const a=-sp/2+sp*i/8;o.push([32.55*cos(a),32.55*sin(a)])}
+  prism(mg,o,[],-41,-15);
+  const inst=Array.from({length:20},(_,k)=>mz(0,0,0,k*TAU/20));
+  const colors=inst.map((_,k)=>new T.Color(k%2?0xc9c6bd:0x9a9c9f));
+  part({no:4,ex:-118,zc:-28,R:35,items:[{geo:gb.geo(),mat:mat.rotor,spin:'rotor'}]});part({no:4,nb:1,ex:-118,zc:-28,R:35,items:[{geo:mg.geo(),mat:mat.mag,inst,colors,spin:'rotor'}]});
+}
+{ // 5 shaft
+  const gb=new GB();turn(gb,[[4,-51.6],[6,-51.6],[6,-44],[9,-44],[9,-12],[7.5,-12],[7.5,11],[4,11]],96,.35);
+  part({no:5,ex:-196,zc:-20,R:9,items:[{geo:gb.geo(),mat:mat.steel,spin:'rotor'}]});
+}
+function ballBearing(no,rin,rout,z0,z1,ex){
+  const t=(rout-rin)*.3,gi=new GB(),go=new GB();
+  turn(gi,[[rin,z0],[rin+t,z0],[rin+t,z1],[rin,z1]],96,.25);turn(go,[[rout-t,z0],[rout,z0],[rout,z1],[rout-t,z1]],96,.25);
+  const rb=(rout-rin-2*t)/2*1.12,Rm=(rin+rout)/2,n=Math.floor(TAU*Rm/(2.5*rb));
+  part({no,ex,zc:(z0+z1)/2,R:rout,items:[{geo:gi.geo(),mat:mat.steel,spin:'rotor'},{geo:go.geo(),mat:mat.steel},
+    {geo:new T.SphereGeometry(rb,24,16),mat:mat.steel,inst:ring(n,Rm,(z0+z1)/2),spin:'ballcage'}]});
+}
+ballBearing(6,6,12,-51,-45,-218);
+ballBearing(6,7.5,15,-9,-4,-56);
+{ // 7 sun
+  const gb=new GB();prism(gb,gear(S,1),[circ(0,0,7.4,48)],-1,11);
+  part({no:7,ex:78,zc:5,R:13,items:[{geo:gb.geo(),mat:mat.gear,spin:'rotor'}]});
+}
+{ // 8 ring gear, internal teeth
+  const gb=new GB();prism(gb,circ(0,0,53,192),[gear(RG,1,{add:1.25,ded:1,bl:-.04,rot:PI/RG,nf:4})],-2,11.2);
+  part({no:8,ex:42,zc:4.6,R:53,items:[{geo:gb.geo(),mat:mat.nitr}]});
+}
+const planetFn=(mesh,st)=>{const m=new T.Matrix4();
+  for(let i=0;i<4;i++){const f=st.c+i*PI/2;m.makeRotationZ(f*(1+S/P)-st.s*S/P+PI/P);m.setPosition(CD*cos(f),CD*sin(f),0);mesh.setMatrixAt(i,m)}
+  mesh.instanceMatrix.needsUpdate=true};
+{ // 9 planets
+  const gb=new GB();prism(gb,gear(P,1),[circ(0,0,5.2,40),...hl(6,11.2,2.6).map(h=>circ(h.x,h.y,h.r,20))],.8,11);
+  part({no:9,ex:122,zc:6,R:49,items:[{geo:gb.geo(),mat:mat.gear,inst:ring(4,CD,0),dyn:planetFn}]});
+}
+{ // 10 bushings
+  const gb=new GB();turn(gb,[[3.05,.8],[5.2,.8],[5.2,11],[3.05,11]],40,.25);
+  part({no:10,ex:146,zc:6,R:35,items:[{geo:gb.geo(),mat:mat.bronze,inst:ring(4,CD,0),spin:'carrier'}]});
+}
+{ // 11 carrier plate
+  const gb=new GB();plate(gb,{ro:38,ri:15,holes:hl(4,CD,3),z0:-1.6,z1:.4,c:.25});
+  part({no:11,ex:104,zc:-.6,R:38,items:[{geo:gb.geo(),mat:mat.alu,spin:'carrier'}]});
+}
+{ // 12 output flange + 13 pins
+  const gb=new GB();
+  turn(gb,[[10,11.8],[44.5,11.8],[44.5,13.6],[39,13.6],[39,24.1],[10,24.1]],160,.35);
+  plate(gb,{ro:43,ri:10,holes:[...hl(8,27,2,PI/8),{x:35,y:0,r:1.5},{x:-35,y:0,r:1.5}],z0:24,z1:30,c:.45,n:160});
+  const pg=new GB();turn(pg,[[0,-1.6,0],[3,-1.6],[3,13],[0,13,0]],40,.3);
+  part({no:12,ex:182,zc:21,R:44,items:[{geo:gb.geo(),mat:mat.alu,spin:'carrier'}]});
+  part({no:13,ex:160,zc:6,R:33,items:[{geo:pg.geo(),mat:mat.steel,inst:ring(4,CD,0),spin:'carrier'}]});
+}
+{ // 14 crossed-roller bearing
+  const gi=new GB(),go=new GB();
+  turn(go,[[53,13.8],[53,24],[47.6,24],[47.6,21.4],[49.7,18.9],[47.6,16.4],[47.6,13.8]],192,.25);
+  turn(gi,[[39,13.8],[44.6,13.8],[44.6,16.4],[42.5,18.9],[44.6,21.4],[44.6,24],[39,24]],192,.25);
+  const rg=new GB();turn(rg,[[0,-1.75,0],[1.9,-1.75],[1.9,1.75],[0,1.75,0]],20,.25);
+  const n=52,inst=Array.from({length:n},(_,i)=>{const a=i/n*TAU,m=new T.Matrix4();
+    const t=new T.Vector3(-sin(a),cos(a),0),ax=new T.Vector3(cos(a),sin(a),0).multiplyScalar(i%2?.7071:-.7071).add(new T.Vector3(0,0,.7071)),x=new T.Vector3().crossVectors(t,ax);
+    m.makeBasis(x,t,ax);m.setPosition(46.1*cos(a),46.1*sin(a),18.9);return m});
+  part({no:14,ex:222,zc:18.9,R:53,items:[{geo:go.geo(),mat:mat.steel},{geo:gi.geo(),mat:mat.steel,spin:'carrier'},{geo:rg.geo(),mat:mat.steel,inst,spin:'cage'}]});
+}
+{ // 15 retaining ring
+  const gb=new GB();
+  plate(gb,{ro:60,ri:45.4,holes:hl(12,56.2,1.7,PI/12),z0:24.2,z1:25.1,c:.2,n:192});plate(gb,{ro:60,ri:45.4,holes:hl(12,56.2,2.9,PI/12),z0:25.1,z1:28.2,c:.3,n:192});
+  part({no:15,ex:242,zc:26.2,R:60,items:[{geo:gb.geo(),mat:mat.anod}]});
+}
+{ // 16 screws M3, head up at z=0..3, shank down
+  const gb=new GB();turn(gb,[[0,-8,0],[1.5,-8],[1.5,0,0],[2.75,0,0],[2.75,3],[1.76,3,.1],[1.76,1.3,0],[0,1.3,0]],24,.3);
+  prism(gb,circ(0,0,1.78,24),[circ(0,0,1.32,6)],1.25,2.98);
+  const g=gb.geo();
+  part({no:16,ex:-272,zc:-55,R:55,items:[{geo:g,mat:mat.black,inst:ring(8,52.4,-53.5,PI/8,true)}]});
+  part({no:16,ex:270,zc:26.6,R:59,items:[{geo:g,mat:mat.black,inst:ring(12,56.2,25.1,PI/12)}]});
+}
+const maxEx=272;window.__parts=parts;
+
+/* ---------- bill of materials ---------- */
+const BOM=[[1,'Housing','7075-T6',1],[2,'Rear cover','7075-T6',1],[3,'Stator, 18 slots','M270 / Cu',1],[4,'Rotor, 20 poles','N48SH',1],[5,'Shaft, bore Ø 8','42CrMo4',1],[6,'Ball bearing','100Cr6',2],[7,'Sun gear, 24 T','18CrNiMo7',1],[8,'Ring gear, 96 T','Nitrided',1],[9,'Planet gear, 36 T','18CrNiMo7',4],[10,'Bushing','CuSn12',4],[11,'Carrier plate','7075-T6',1],[12,'Output flange','7075-T6',1],[13,'Planet pin','100Cr6',4],[14,'Crossed-roller brg','100Cr6',1],[15,'Retaining ring','7075-T6',1],[16,'Screw M3 × 8','12.9',20],[17,'Connector, 8-pole','M12',1]];
+const bomEl=document.getElementById('bom'),rows={};
+for(const b of BOM){const r=document.createElement('button');r.type='button';r.innerHTML=`<span>${String(b[0]).padStart(2,'0')}</span><span>${b[1]}</span><span>${b[2]}</span><span>${b[3]}</span>`;bomEl.appendChild(r);rows[b[0]]=r;
+  r.addEventListener('pointerenter',()=>hi(b[0]));r.addEventListener('pointerleave',()=>hi(0));r.addEventListener('focus',()=>hi(b[0]));r.addEventListener('blur',()=>hi(0));r.addEventListener('click',()=>hi(b[0]))}
+let hiNo=0;
+function hi(no){if(no===hiNo)return;hiNo=no;
+  for(const p of parts){const o=p.no===no;p.mats.forEach(m=>{m.emissive.copy(o?SIG:new T.Color(0));m.emissiveIntensity=o?.55:0})}
+  for(const k in rows)rows[k].classList.toggle('on',+k===no);
+  for(const l of labs)if(l.el&&l.no)l.el.classList.toggle('on',l.no===no);
+}
+
+/* ---------- labels pinned to the machine ---------- */
+const ov=document.getElementById('ov'),labEl=document.getElementById('labels'),NS='http://www.w3.org/2000/svg';
+const labs=[];
+const state={s:0,c:0};
+const V=(x,y,z)=>new T.Vector3(x,y,z);
+function call(sc,at,dx,dy,html,opt={}){
+  const el=document.createElement('div');el.className='tag';el.innerHTML=html;labEl.appendChild(el);
+  const ln=document.createElementNS(NS,'polyline'),dot=document.createElementNS(NS,'circle');dot.setAttribute('r',3);ov.append(ln,dot);
+  labs.push(Object.assign({k:'call',sc,at,dx,dy,el,ln,dot},opt));
+}
+function dim(sc,a,b,off,text){
+  const el=document.createElement('div');el.className='tag dim';el.textContent=text;labEl.appendChild(el);
+  const ln=document.createElementNS(NS,'path');ov.appendChild(ln);labs.push({k:'dim',sc,a,b,off,el,ln});
+}
+// section A-A
+call(1,()=>V(0,49.4,5),34,-112,'Ring gear <b>96 T</b> fixed');
+call(1,()=>V(0,50,19),-10,-150,'Crossed-roller bearing');
+call(1,()=>V(0,-11.5,5),36,172,'Sun gear <b>24 T</b>');
+call(1,()=>V(0,-26,27),-10,150,'Output flange',{wide:true});
+call(1,()=>V(0,43,-28),104,-100,'Stator <b>18 slots</b>');
+call(1,()=>V(0,-33.8,-30),70,140,'Rotor <b>20 poles</b>');
+call(1,()=>V(0,-5,-47),120,70,'Hollow shaft <b>Ø 8</b>');
+// section B-B
+call(3,()=>V(CD*cos(state.c),CD*sin(state.c),11),34,-30,'Planet <b>36 T</b>');
+call(3,()=>V(48.6*cos(-.62),48.6*sin(-.62),11.2),96,74,'Ring <b>96 T</b> held');
+call(3,()=>V(12*cos(2.5),12*sin(2.5),11),-110,-150,'Sun <b>24 T</b> in');
+call(3,()=>V(CD*cos(state.c+PI),CD*sin(state.c+PI),11.3),-30,34,'Pin, carrier out',{left:true});
+// data
+dim(4,V(0,60,18),V(0,-60,18),84,'Ø 120');dim(4,V(0,56,-52),V(0,-56,-52),-112,'Ø 112');
+dim(4,V(0,-60,-57.8),V(0,-60,30),-44,'87.8');
+call(4,()=>V(0,-30,-70.2),50,96,'M12, power and bus');
+// balloons
+{const seen=new Set();let i=0;
+  const order=parts.slice().sort((a,b)=>(a.ex+a.zc)-(b.ex+b.zc));
+  for(const p of order){if(p.nb)continue;const el=document.createElement('button');el.type='button';el.className='bal';el.textContent=p.no;el.setAttribute('aria-label',BOM[p.no-1][1]);labEl.appendChild(el);
+    const ln=document.createElementNS(NS,'polyline');ov.appendChild(ln);
+    el.addEventListener('pointerenter',()=>hi(p.no));el.addEventListener('pointerleave',()=>hi(0));el.addEventListener('click',()=>hi(p.no));
+    labs.push({k:'bal',sc:2,p,up:p.dir?p.dir>0:i%2===0,long:(i>>1)%2,el,ln,no:p.no});i++}
+}
+
+/* ---------- scenes ---------- */
+const K=[
+  {az:38,el:15,w:330,pw:205,tz:-12,cx:.67},
+  {az:64,el:9,w:320,pw:195,tz:-12,cx:.67},
+  {az:52,el:21,w:940,pw:640,tz:-18,cx:.64},
+  {az:9,el:5,w:300,pw:185,tz:6,cx:.67},
+  {az:99,el:7,w:340,pw:215,tz:-14,cx:.66}];
+const VIEW=['Isometric','Section A–A','Exploded','Section B–B','Side elevation'];
+let W=1,H=1,portrait=false,DPR=1;
+function resize(){W=window.innerWidth;H=window.innerHeight;portrait=W<760;DPR=Math.min(window.devicePixelRatio||1,2);R.setPixelRatio(DPR);R.setSize(W,H,false);cam.aspect=W/H;ov.setAttribute('viewBox',`0 0 ${W} ${H}`)}
+window.addEventListener('resize',resize);resize();
+
+let forced=null;window.__set=v=>{forced=v};
+let theta=0,omX=0,lastY=window.scrollY,mxT=0,myT=0,mx=0,my=0;
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const spd=document.getElementById('spd');
+window.addEventListener('scroll',()=>{const y=window.scrollY;omX+=(y-lastY)*.011;omX=Math.max(-6,Math.min(6,omX));lastY=y},{passive:true});
+window.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;mxT=e.clientX/W*2-1;myT=e.clientY/H*2-1},{passive:true});
+const $=id=>document.getElementById(id);
+const backs=[...document.querySelectorAll('#back span')];const colEl=document.querySelector('.col');
+const tmp=new T.Vector3(),tmp2=new T.Vector3(),camUp=new T.Vector3(),camRt=new T.Vector3();
+const pr=v=>{tmp.copy(v).project(cam);return [(tmp.x*.5+.5)*W,(-tmp.y*.5+.5)*H]};
+let last=performance.now(),lastSheet=-1,lastTxt=0;
+
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  // scroll position -> scene position (each scene holds, then eases to the next)
+  let q;if(forced!==null)q=forced;else{const raw=Math.max(0,Math.min(4,window.scrollY/(H*1.9)));const i=Math.min(3,Math.floor(raw)),f=raw-i;q=raw>=4?4:i+sm((f-.26)/.74)}
+  const i0=Math.min(3,Math.floor(q)),t=q-i0,a=K[i0],b=K[i0+1];
+  const cutA=seg(q,.15,1)-seg(q,1,1.4),ex=seg(q,1.3,2)-seg(q,2,2.62),cutB=seg(q,2.6,3)-seg(q,3,3.55);
+  // drive
+  const rpm=+spd.value,om=(reduce&&rpm===900?0:rpm/50*TAU/60)+omX;omX*=Math.exp(-dt*1.9);
+  theta+=om*dt;state.s=theta;state.c=theta/(1+RG/S);
+  for(const s of spinners)s.g.rotation.z=s.k==='rotor'?state.s:s.k==='carrier'?state.c:s.k==='cage'?state.c*.5:state.s*.42;
+  for(const d of dyn)d.fn(d.mesh,state);
+  // explode, outer parts leave first
+  for(const p of parts){const k=Math.abs(p.ex)/maxEx;p.g.position.z=p.ex*sm(ex*1.4-.4*(1-k))}
+  // section plane and hatched cut faces
+  const cutting=cutA>.002||cutB>.002;
+  if(cutA>.002){clip.normal.set(-1,0,0);clip.constant=lerp(64,0,cutA)}else if(cutB>.002){clip.normal.set(0,0,-1);clip.constant=lerp(34,11.3,cutB)}else{clip.constant=1e5}
+  for(const p of parts){for(const s of p.sten)s.visible=cutting;p.cap.visible=cutting;
+    if(cutting){if(cutA>.002){p.cap.rotation.set(0,PI/2,0);p.cap.position.set(clip.constant,0,-p.g.position.z)}else{p.cap.rotation.set(0,0,0);p.cap.position.set(0,0,clip.constant-p.g.position.z)}}}
+  // camera
+  mx+=(mxT-mx)*Math.min(1,dt*3);my+=(myT-my)*Math.min(1,dt*3);
+  const drift=reduce?0:sin(now*.00023)*2.2;
+  const az=(lerp(a.az,b.az,t)+mx*5+drift)*PI/180,el=(lerp(a.el,b.el,t)-my*3)*PI/180;
+  const vw=(portrait?lerp(a.pw,b.pw,t):lerp(a.w,b.w,t))/(window.__zoom||1);
+  const dist=vw/(2*Math.tan(cam.fov*PI/360)*cam.aspect);
+  const tz=lerp(a.tz,b.tz,t),cx=portrait?.5:lerp(a.cx,b.cx,t),cy=portrait?.3:.5;
+  cam.position.set(dist*sin(az)*cos(el),dist*sin(el),tz+dist*cos(az)*cos(el));cam.lookAt(0,0,tz);
+  cam.setViewOffset(W,H,-(cx-.5)*W,-(cy-.5)*H,W,H);cam.updateMatrixWorld();
+  const sb=70+300*ex,sc=key.shadow.camera;if(Math.abs(sc.right-sb)>1){sc.left=-sb;sc.right=sb;sc.top=sb;sc.bottom=-sb;sc.updateProjectionMatrix()}
+  key.target.position.set(0,0,tz);key.position.set(210,300,260+tz);
+  R.render(scene,cam);
+
+  // overlay
+  camUp.setFromMatrixColumn(cam.matrixWorld,1);
+  const u=Math.min(1,Math.min(W,H*1.2)/900);const colR=portrait?0:colEl.getBoundingClientRect().right;
+  for(const l of labs){
+    const w=(l.wide&&portrait)?0:sm(1-Math.abs(q-l.sc)/.22);const vis=w>.01;
+    l.el.style.opacity=w;l.el.style.visibility=vis?'visible':'hidden';l.ln.style.opacity=w;if(l.dot)l.dot.style.opacity=w;
+    if(!vis)continue;
+    if(l.k==='call'){const A=pr(l.at()),x=A[0]+l.dx*u,y=A[1]+l.dy*u,left=l.dx<0;
+      l.ln.setAttribute('points',`${A[0]},${A[1]} ${x},${y}`);l.dot.setAttribute('cx',A[0]);l.dot.setAttribute('cy',A[1]);
+      const tw=l.el.offsetWidth,th=l.el.offsetHeight;let tx=left?x-tw:x;tx=Math.max(portrait?6:colR+18,Math.min(W-tw-6,tx));
+      l.el.style.transform=`translate(${tx}px,${y-th/2}px)`;
+    }else if(l.k==='bal'){const p=l.p,dir=l.up?1:-1;
+      tmp2.copy(camUp);tmp2.z=0;tmp2.normalize().multiplyScalar(p.R*dir);tmp2.z=p.zc+p.g.position.z;
+      const A=pr(tmp2),len=(portrait?26:40)+l.long*(portrait?22:34),y=A[1]-dir*len;
+      l.ln.setAttribute('points',`${A[0]},${A[1]} ${A[0]},${y+dir*12}`);l.el.style.transform=`translate(${A[0]}px,${y}px)`;
+    }else{const A=pr(l.a),B=pr(l.b);let nx=-(B[1]-A[1]),ny=B[0]-A[0];const L=Math.hypot(nx,ny)||1;nx/=L;ny/=L;const o=l.off*u;
+      const A2=[A[0]+nx*o,A[1]+ny*o],B2=[B[0]+nx*o,B[1]+ny*o],e=Math.sign(o)*7,tx=(B[0]-A[0])/L*5,ty=(B[1]-A[1])/L*5;
+      l.ln.setAttribute('d',`M${A[0]},${A[1]}L${A2[0]+nx*e},${A2[1]+ny*e}M${B[0]},${B[1]}L${B2[0]+nx*e},${B2[1]+ny*e}M${A2[0]},${A2[1]}L${B2[0]},${B2[1]}M${A2[0]-tx-nx*5},${A2[1]-ty-ny*5}L${A2[0]+tx+nx*5},${A2[1]+ty+ny*5}M${B2[0]-tx-nx*5},${B2[1]-ty-ny*5}L${B2[0]+tx+nx*5},${B2[1]+ty+ny*5}`);
+      const tw=l.el.offsetWidth,th=l.el.offsetHeight;l.el.style.transform=`translate(${(A2[0]+B2[0])/2-tw/2}px,${(A2[1]+B2[1])/2-th/2}px)`;
+    }
+  }
+  // type that follows the machine
+  const si=Math.round(q);
+  if(si!==lastSheet){lastSheet=si;backs.forEach((s,i)=>s.classList.toggle('on',i===si));$('sheet').textContent=si+1;$('view').textContent=VIEW[si]}
+  document.documentElement.style.setProperty('--cx',(cx*100)+'%');document.documentElement.style.setProperty('--cy',(cy*100)+'%');
+  if(now-lastTxt>90){lastTxt=now;const rin=Math.abs(om)*60/TAU*50,ri=Math.round(rin/10)*10;
+    $('nin').textContent=String(ri).padStart(4,'0');$('nout').textContent=String(Math.round(rin/5)).padStart(4,'0');
+    $('eqin').textContent=ri;$('eqout').textContent=Math.round(rin/5);
+    $('spdo').textContent=rpm+' rpm';$('rs').textContent=ri+' rpm';$('rp').textContent=Math.round(rin*.8*S/P)+' rpm';$('rc').textContent=Math.round(rin/5)+' rpm'}
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

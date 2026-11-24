@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Untu Down Quilts</title>
+<meta name="theme-color" content="#cf3d18">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;900&family=Geist:wght@400;500&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --main:#cf3d18; --ink:#fff5e8; --ink2:rgba(255,245,232,.74); --dark:#17181c; --dark2:rgba(23,24,28,.66);
+  --pad:clamp(22px,3.4vw,52px); --nav:76px;
+  --disp:"Unbounded",system-ui,sans-serif; --text:"Geist",system-ui,sans-serif; --mono:"Geist Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--main)}
+body{background:var(--main);color:var(--ink);font:400 17px/1.5 var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;overscroll-behavior:none}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0}
+#page{position:fixed;top:0;left:0;width:100%;z-index:1;will-change:transform}
+#spacer{width:1px}
+.c{position:relative;min-width:0}
+.mono{font:500 11.5px/1.35 var(--mono);letter-spacing:.09em;text-transform:uppercase}
+.dim{color:var(--ink2)}
+[data-tone="acc"],[data-ov]{color:var(--dark)}
+[data-tone="acc"] .dim,[data-ov] .dim{color:var(--dark2)}
+:focus-visible{outline:2px solid currentColor;outline-offset:-8px;border-radius:6px}
+
+/* nav */
+.nav{display:grid;grid-template-columns:auto 1fr auto auto auto;height:var(--nav)}
+.nav>*{display:flex;align-items:center;padding:0 clamp(18px,2.4vw,34px)}
+.nav .link{font:500 14px/1 var(--text);letter-spacing:.01em}
+.nav .brand{gap:14px}
+.label{display:inline-flex;align-items:center;gap:10px;padding:9px 13px 8px;white-space:nowrap}
+.label b{font:900 12px/1 var(--disp);letter-spacing:.04em}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1.5fr 1fr 1fr 1.15fr;grid-template-rows:auto 1fr;min-height:calc(100vh - var(--nav) - 64px)}
+.puff{grid-column:1/-1;color:transparent;user-select:none;overflow:hidden;font:900 10px/1 var(--disp)}
+.hero>.cell{padding:var(--pad);display:flex;flex-direction:column;justify-content:space-between;gap:28px;min-height:200px}
+.lede{font:500 clamp(21px,2.05vw,31px)/1.16 var(--disp);letter-spacing:-.02em;max-width:15em}
+.stat b{display:block;font:500 clamp(34px,3.6vw,56px)/1 var(--disp);letter-spacing:-.04em}
+.band{height:64px}
+
+/* sections */
+.sec{display:grid}
+.sec .cell{padding:var(--pad)}
+h2{font:500 clamp(30px,3.7vw,58px)/1.02 var(--disp);letter-spacing:-.035em}
+.sec p{max-width:31em;color:var(--ink2)}
+.sec [data-tone="acc"] p{color:var(--dark2)}
+.kicker{margin-bottom:22px}
+
+#fill{grid-template-columns:minmax(90px,.55fr) 2.6fr 1.25fr;min-height:76vh}
+#fill .main{display:flex;flex-direction:column;justify-content:space-between;gap:44px}
+#fill .main p{margin-top:22px}
+.slider{position:relative;height:64px;border-radius:999px;margin:0 -6px}
+.slider input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:grab;margin:0}
+.slider input:active{cursor:grabbing}
+.ends{display:flex;justify-content:space-between;margin-top:12px}
+.reads{display:grid;grid-template-rows:1fr 1fr 1fr}
+.reads .cell{display:flex;flex-direction:column;justify-content:space-between;gap:14px;padding:calc(var(--pad)*.72) var(--pad)}
+.reads b{font:500 clamp(30px,3.2vw,50px)/1 var(--disp);letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.reads b i{font-style:normal;font-size:.42em;letter-spacing:0;margin-left:.3em;opacity:.75}
+
+#shell{grid-template-columns:1.25fr 2.6fr minmax(90px,.55fr);min-height:58vh}
+#shell .head{display:flex;flex-direction:column;justify-content:space-between;gap:30px}
+.swatches{display:grid;grid-template-columns:repeat(4,1fr);align-items:center;justify-items:center;gap:8px}
+.sw{width:min(150px,74%);aspect-ratio:1;border-radius:999px;display:grid;place-items:center}
+.sw span{width:9px;height:9px;border-radius:50%;background:#fff5e8;opacity:0;transform:scale(.3);transition:.35s cubic-bezier(.2,.9,.3,1.3)}
+.sw[aria-pressed="true"] span{opacity:1;transform:none}
+.sw[data-dark] span{background:#17181c}
+
+#order{grid-template-columns:2.2fr 1fr 1fr;grid-template-rows:auto auto;min-height:70vh}
+.buy{grid-row:1/3;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;gap:60px;text-align:left;width:100%}
+.buy strong{font:500 clamp(40px,6.2vw,104px)/.96 var(--disp);letter-spacing:-.045em;display:block}
+.buy .row{display:flex;justify-content:space-between;align-items:flex-end;width:100%;gap:20px}
+.buy .price{font:500 clamp(22px,2.4vw,36px)/1 var(--disp);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.info{display:flex;flex-direction:column;justify-content:space-between;gap:26px;min-height:190px}
+.info p{font-size:15.5px;line-height:1.45}
+.care{align-items:flex-start;grid-column:2/4}
+.care .label{white-space:normal;display:block;padding:14px 16px 13px;max-width:17em;line-height:1.5}
+.foot{display:grid;grid-template-columns:1fr auto;align-items:center;height:64px;padding:0 var(--pad)}
+
+@media (max-width:820px){
+  body{font-size:16px}
+  .nav{grid-template-columns:auto 1fr auto}
+  .nav .link:not(.go){display:none}
+  .hero{grid-template-columns:1fr 1fr}
+  .hero .lede-cell{grid-column:1/-1}
+  .hero .hint{display:none}
+  .hero>.cell{min-height:150px}
+  #fill{grid-template-columns:1fr}
+  #fill .side,#shell .side{display:none}
+  .reads{grid-template-rows:none;grid-template-columns:repeat(3,1fr)}
+  .reads .cell{padding:20px 16px}
+  .reads b i{display:block;margin:6px 0 0}
+  #shell{grid-template-columns:1fr}
+  .swatches{padding:34px 12px!important}
+  .sw{width:82%}
+  #order{grid-template-columns:1fr 1fr}
+  .buy{grid-column:1/-1;grid-row:auto;min-height:56vh}
+  .care{grid-column:1/-1}
+  .info{min-height:150px}
+  h2 br{display:none}
+  .foot{grid-template-columns:1fr;height:auto;padding:22px var(--pad);gap:6px}
+}
+.nogl #gl{display:none}
+.nogl .c{box-shadow:inset 0 0 0 1px rgba(0,0,0,.28)}
+.nogl .puff{color:var(--ink);font-size:22vw;text-align:center;padding:4vw 0}
+.nogl [data-tone="acc"],.nogl [data-ov]{background:#f3eadb}
+</style>
+</head>
+<body>
+<canvas id="gl" aria-hidden="true"></canvas>
+
+<div id="page">
+  <header class="nav">
+    <a class="c brand" href="#top" data-go="top" aria-label="Untu, home">
+      <span class="c label mono" data-ov="#ece5d6" data-r="7"><b>UNTU</b><span class="dim">Lahti · FI</span></span>
+    </a>
+    <div class="c"></div>
+    <a class="c link" data-press data-go="fill" href="#fill">Fill</a>
+    <a class="c link" data-press data-go="shell" href="#shell">Shell</a>
+    <a class="c link go" data-press data-tone="acc" data-go="order" href="#order">Order</a>
+  </header>
+
+  <section class="hero" id="top">
+    <h1 class="c puff" data-puff="UNTU" aria-label="Untu">Untu</h1>
+    <div class="c cell lede-cell">
+      <p class="lede">Down quilts that hold their air.</p>
+      <p class="mono dim">Sewn in Lahti since 1987</p>
+    </div>
+    <div class="c cell stat"><b>800</b><span class="mono dim">cuin goose down</span></div>
+    <div class="c cell stat"><b>37</b><span class="mono dim">box-sewn chambers</span></div>
+    <div class="c cell stat hint" data-tone="acc"><span class="mono">Try it</span><span class="lede" style="font-size:clamp(17px,1.45vw,22px)">Press anywhere. It comes back.</span></div>
+  </section>
+
+  <div class="c band" data-baffle="64"></div>
+
+  <section class="sec" id="fill">
+    <div class="c side" data-vbaffle="74"></div>
+    <div class="c cell main">
+      <div>
+        <p class="mono dim kicker">01 · Fill</p>
+        <h2>Choose how much air<br>you sleep under.</h2>
+        <p>Every chamber is filled by weight, then closed by hand. More down means more loft, and loft is the warmth. Move the bead and the whole quilt follows.</p>
+      </div>
+      <div>
+        <div class="c slider" id="track" data-r="14">
+          <input id="range" type="range" min="0" max="12" step="1" value="6" aria-label="Fill weight">
+        </div>
+        <div class="ends mono dim"><span>Summer · 600 g</span><span>Deep winter · 1 200 g</span></div>
+      </div>
+    </div>
+    <div class="reads">
+      <div class="c cell"><span class="mono dim">Fill weight</span><b id="rFill">900<i>g</i></b></div>
+      <div class="c cell"><span class="mono dim">Comfortable down to</span><b id="rTemp">−13<i>°C</i></b></div>
+      <div class="c cell" data-tone="acc"><span class="mono dim">Price</span><b id="rPrice">€339</b></div>
+    </div>
+  </section>
+
+  <div class="c band" data-baffle="64"></div>
+
+  <section class="sec" id="shell">
+    <div class="c cell head">
+      <div>
+        <p class="mono dim kicker">02 · Shell</p>
+        <h2>Four shells.</h2>
+      </div>
+      <p><span id="shellName" style="color:var(--ink)">Persimmon.</span> Recycled 20-denier ripstop, calendered so the down stays in and the air gets out slowly.</p>
+    </div>
+    <div class="c cell swatches" role="group" aria-label="Shell colour">
+      <button class="c sw" data-press data-sw="0" data-ov="#cf3d18" aria-pressed="true" aria-label="Persimmon"><span></span></button>
+      <button class="c sw" data-press data-sw="1" data-ov="#2138c8" aria-pressed="false" aria-label="Cobalt"><span></span></button>
+      <button class="c sw" data-press data-sw="2" data-ov="#1d4a39" aria-pressed="false" aria-label="Pine"><span></span></button>
+      <button class="c sw" data-press data-sw="3" data-ov="#1c1d21" aria-pressed="false" aria-label="Coal"><span></span></button>
+    </div>
+    <div class="c side" data-vbaffle="74"></div>
+  </section>
+
+  <div class="c band" data-baffle="64"></div>
+
+  <section class="sec" id="order">
+    <button class="c cell buy" id="buy" data-press data-tone="acc">
+      <span class="mono dim">03 · Order</span>
+      <span class="row"><strong id="buyText">Order<br>the quilt</strong><span class="price" id="buyPrice">€339</span></span>
+    </button>
+    <div class="c cell info"><span class="mono dim">Made to order</span><p>Filled and closed in nine working days. Shipped flat, in a cotton sack.</p></div>
+    <div class="c cell info"><span class="mono dim">Thirty nights</span><p>Sleep under it for a month. If it is not right, we collect it.</p></div>
+    <div class="c cell info care">
+      <span class="mono dim">Care</span>
+      <span class="c label mono" data-ov="#ece5d6" data-r="7">Wash cool, 30°. Tumble dry low with three tennis balls. Do not iron. Shake before bed.</span>
+    </div>
+  </section>
+
+  <footer class="c foot mono dim"><span>© 2026 Untu Oy · Vesijärvenkatu 14, Lahti</span><span>hello@untu.example</span></footer>
+</div>
+<div id="spacer"></div>
+
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const page=$('#page'), cv=$('#gl'), spacer=$('#spacer');
+const gl=cv.getContext('webgl2',{antialias:false,alpha:false,powerPreference:'high-performance'});
+if(!gl){document.documentElement.classList.add('nogl');return;}
+
+/* ---------- palettes ---------- */
+const PAL=[
+  {name:'Persimmon',main:'#cf3d18',acc:'#f3eadb'},
+  {name:'Cobalt',   main:'#2138c8',acc:'#f6ccd8'},
+  {name:'Pine',     main:'#1d4a39',acc:'#e8b84a'},
+  {name:'Coal',     main:'#1c1d21',acc:'#d5ee4b'}
+];
+const lin=h=>[1,3,5].map(i=>Math.pow(parseInt(h.slice(i,i+2),16)/255,2.2));
+
+/* ---------- shaders ---------- */
+const VS=`#version 300 es
+in vec2 a;void main(){gl_Position=vec4(a,0.,1.);}`;
+const FS=`#version 300 es
+precision highp float;
+uniform sampler2D uD,uA,uB,uH;
+uniform vec2 uRes,uView,uPage,uTilt,uLight;
+uniform float uPx,uScroll,uMaxScroll,uTime,uLoft,uIntro,uWipeOn;
+uniform vec4 uPtr,uPtr2;
+uniform vec3 uMain0,uAcc0,uMain1,uAcc1,uWipe,uKnob;
+uniform vec4 uRect[4];
+uniform float uRectV[4];
+out vec4 o;
+
+float hash(vec2 p){p=fract(p*vec2(.1031,.1030));p+=dot(p,p.yx+33.33);return fract((p.x+p.y)*p.x);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+  return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}
+
+// d = distance to nearest seam, R = chamber radius, z = accent weight, w = override weight
+vec4 S(vec2 p){
+  vec2 uv=p/uPage;
+  float d=texture(uD,uv).r; vec4 a=texture(uA,uv);
+  float R=max(a.b*128.,3.); float acc=a.r;
+  float dk=length(p-uKnob.xy)-uKnob.z;
+  if(dk<0.){d=-dk;R=uKnob.z*.92;acc=1.;}else d=min(d,dk);
+  return vec4(d,R,acc,a.g);
+}
+float base(float d,float R){
+  float x=clamp(d/R,0.,1.);float q=1.-(1.-x)*(1.-x);
+  return R*.80*pow(q,.58)+11.*(1.-exp(-max(d-R*.6,0.)/90.));
+}
+float knobH(vec2 p){float dk=uKnob.z-length(p-uKnob.xy);return dk>0.?base(dk,uKnob.z*.92)*1.22:-1.;}
+float Bq(vec2 p){float k=knobH(p);return k>=0.?k:texture(uH,p/uPage).r;}
+float Bs(vec2 p,float d){float k=knobH(p);return k>=0.?k:texture(uH,p/uPage).r*smoothstep(0.,2.6,d);}
+float infl(vec2 p){
+  float yv=p.y-uScroll;
+  float k=clamp((uMaxScroll-uScroll)/uView.y,0.,1.);
+  float sh=(1.-k)*uView.y*.55;
+  float r=smoothstep(uView.y*1.06+sh,uView.y*.62+sh,yv);
+  float w=clamp(uIntro*2.5-(yv/uView.y*.9+p.x/uView.x*.6),0.,1.);
+  w=w*w*(3.-2.*w); w+=.16*sin(w*3.14159)*(1.-w)*2.;
+  float br=1.+.028*sin(uTime*.8+p.y*.0045+p.x*.002);
+  return max(.05,r*w)*br;
+}
+float M(vec2 p){
+  float m=uLoft*infl(p);
+  for(int i=0;i<4;i++){vec4 r=uRect[i];vec2 q=abs(p-r.xy-r.zw*.5)-r.zw*.5;m*=1.+uRectV[i]*step(max(q.x,q.y),0.);}
+  vec2 a=p-uPtr.xy;float s2=uPtr.w*uPtr.w;
+  m*=1.-uPtr.z*.9*exp(-dot(a,a)/(2.*s2));
+  float rr=length(a);float b=(rr-uPtr.w*2.6)/(uPtr.w*.9);
+  m*=1.+uPtr.z*.12*exp(-b*b);
+  a=p-uPtr2.xy;m*=1.-uPtr2.z*.5*exp(-dot(a,a)/(2.*uPtr2.w*uPtr2.w));
+  float wr=length(p-uWipe.xy)-uWipe.z;
+  m*=1.+.26*uWipeOn*exp(-wr*wr/5200.);
+  return m;
+}
+float HW(vec2 p,vec2 td,out float inf){
+  vec4 s=S(p);float m=M(p);float d=s.x,R=s.y;
+  inf=clamp(m,0.,1.2);
+  float h=Bs(p,d)*m;
+  float slack=clamp(1.-uLoft*infl(p)*1.15,0.,1.);
+  float u=dot(p,td);
+  float fall=exp(-d/(R*.34))*smoothstep(1.,5.,d);
+  float n=noise(vec2(u*.105,d*.03)+R*3.1);
+  float r1=1.-abs(2.*n-1.);r1*=r1;
+  float n2=noise(vec2(u*.23+17.,d*.06));
+  float amp=(1.25+4.*slack)*min(R/38.,1.)*(1.-.75*s.w);
+  h+=fall*(r1+.35*n2)*amp;
+  h+=4.6*(noise(p*.011+R)-.5)*smoothstep(R*.4,R*1.4,d)*m;
+  h+=slack*(3.2*noise(p*.03+7.)+1.6*noise(p*.071))*smoothstep(0.,10.,d);
+  // creases pulled toward the pressing finger
+  vec2 a=p-uPtr.xy;float rr=length(a);float bb=(rr-uPtr.w*1.9)/(uPtr.w*1.1);
+  float cr=noise(a/max(rr,1.)*2.4+rr*.006+R);cr=1.-abs(2.*cr-1.);
+  h-=uPtr.z*3.4*exp(-bb*bb)*cr*cr*smoothstep(0.,8.,d)*min(m*1.4,1.);
+  return h;
+}
+float box(vec2 q,vec2 c,vec2 hs,float soft){
+  vec2 e=abs(q-c)-hs;
+  return (1.-smoothstep(-soft,soft,e.x))*(1.-smoothstep(-soft,soft,e.y));
+}
+void main(){
+  vec2 pv=vec2(gl_FragCoord.x,uRes.y-gl_FragCoord.y)*uPx;
+  vec2 p0=pv+vec2(0.,uScroll);
+  vec2 p=p0;
+  for(int i=0;i<2;i++){p=p0-uTilt*Bq(p)*M(p);}
+  vec4 s0=S(p);float d=s0.x,R=s0.y;
+  float m0=M(p);
+  float h0=Bs(p,d)*m0;
+
+  const float E=3.5;
+  float dx1=S(p+vec2(E,0)).x,dx0=S(p-vec2(E,0)).x,dy1=S(p+vec2(0,E)).x,dy0=S(p-vec2(0,E)).x;
+  vec2 gd=vec2(dx1-dx0,dy1-dy0);float gdl=length(gd);
+  vec2 nd=gdl>1e-3?gd/gdl:vec2(0.,1.);vec2 td=vec2(-nd.y,nd.x);
+  float dxx=dx1+dx0-2.*d,dyy=dy1+dy0-2.*d;
+
+  float e=1.,inf,t_;
+  float hx1=HW(p+vec2(e,0),td,inf),hx0=HW(p-vec2(e,0),td,t_);
+  float hy1=HW(p+vec2(0,e),td,t_),hy0=HW(p-vec2(0,e),td,t_);
+  vec3 N=normalize(vec3(hx0-hx1,hy0-hy1,2.*e));
+  // ripstop micro weave
+  vec2 fp=p/uPx;
+  N.xy+=(vec2(hash(floor(fp)),hash(floor(fp)+91.7))-.5)*.035;
+  N=normalize(N);
+
+  // colour
+  float wr=length(p-uWipe.xy)-uWipe.z;
+  float wm=mix(1.,smoothstep(30.,-30.,wr),uWipeOn);
+  vec3 mainC=mix(uMain0,uMain1,wm),accC=mix(uAcc0,uAcc1,wm);
+  vec3 ov=pow(texture(uB,p/uPage).rgb,vec3(2.2));
+  vec3 alb=mix(mix(mainC,accC,s0.z),ov,s0.w);
+  vec2 rg=abs(fract(p/5.5)-.5);
+  alb*=1.+.05*smoothstep(.42,.5,max(rg.x,rg.y));
+
+  // light
+  vec3 P=vec3(pv,h0);
+  vec3 L=normalize(vec3(uLight,860.)-P);
+  float ndl=dot(N,L);
+  vec2 ld=normalize(L.xy);float slope=L.z/length(L.xy);
+  float sh=1.;
+  for(int i=1;i<=7;i++){
+    float t=float(i*i)*1.5+1.;
+    float hq=Bq(p+ld*t)*m0;
+    float occ=hq-(h0+t*slope);
+    sh=min(sh,1.-smoothstep(0.,2.+t*.3,occ));
+  }
+  float lift=clamp(uLoft*infl(p),0.,1.);
+  vec2 pa=p-uPtr.xy;float dent=uPtr.z*exp(-dot(pa,pa)/(2.6*uPtr.w*uPtr.w));
+  float ao=mix(1.,.42+.58*smoothstep(0.,R*.55,d),lift);
+  float seam=1.-.46*smoothstep(1.6,0.,d);
+  float wrap=clamp((ndl+.32)/1.32,0.,1.);
+  float light=.30+.84*wrap*mix(.42,1.,sh);
+  vec3 col=alb*light;
+  col=mix(col,col*alb*1.6,.35*(1.-wrap*sh));       // deeper, more saturated shade
+  // sheen and reflections of two soft boxes that sit off screen
+  float nv=clamp(N.z,0.,1.);
+  float F=.06+.94*pow(1.-nv,5.);
+  vec3 Rr=reflect(vec3(0.,0.,-1.),N);
+  vec2 hit=pv+Rr.xy/max(Rr.z,.12)*520.;
+  float b1=box(hit,uLight*.62+vec2(-uView.x*.02,-uView.y*.04),vec2(uView.x*.24,uView.y*.3),230.);
+  float b2=box(hit,vec2(uView.x*1.32,uView.y*.55),vec2(uView.x*.07,uView.y*.6),120.);
+  float sky=.5+.5*Rr.z;
+  vec3 spec=vec3(1.,.98,.95)*(b1*3.2+b2*1.4)+vec3(.9,.95,1.)*.22*sky;
+  col+=F*spec*mix(.5,1.,sh)*(1.-.6*s0.w*step(.6,dot(ov,vec3(.33))));
+  col+=pow(1.-nv,2.2)*mix(alb,vec3(1.),.35)*.30;
+  col*=mix(alb*.55+.12,vec3(1.),ao*(1.-.5*dent))*seam;
+  // stitches
+  float axis=step(abs(dxx),abs(dyy));
+  float su=mix(p.y,p.x,axis);
+  float ortho=smoothstep(.15,.6,abs(abs(dxx)-abs(dyy)));
+  float dash=smoothstep(.5,.72,abs(fract(su/6.)-.5)*2.);
+  float thr=smoothstep(.7,.1,d)*ortho*(1.-dash);
+  col=mix(col,mix(alb,vec3(1.),.3)*.62,thr*.5);
+
+  col*=1.-.16*dot(pv/uView-.5,pv/uView-.5)*2.;
+  col=col/(1.+.18*col)*1.14;
+  col=pow(max(col,0.),vec3(1./2.2));
+  col+=(hash(gl_FragCoord.xy+uTime)-.5)/255.;
+  o=vec4(col,1.);
+}`;
+function sh(t,src){const s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(s));return s;}
+const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));
+gl.linkProgram(pr);
+if(!gl.getProgramParameter(pr,gl.LINK_STATUS)){console.error(gl.getProgramInfoLog(pr));document.documentElement.classList.add('nogl');return;}
+gl.useProgram(pr);
+const U={};for(let i=0,n=gl.getProgramParameter(pr,gl.ACTIVE_UNIFORMS);i<n;i++){const nm=gl.getActiveUniform(pr,i).name.replace('[0]','');U[nm]=gl.getUniformLocation(pr,nm);}
+const vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0);gl.bindAttribLocation(pr,0,'a');gl.vertexAttribPointer(gl.getAttribLocation(pr,'a'),2,gl.FLOAT,false,0,0);
+const tex=[0,1,2,3].map(i=>{const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+i);gl.bindTexture(gl.TEXTURE_2D,t);
+  for(const [k,v] of [[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]])gl.texParameteri(gl.TEXTURE_2D,k,v);
+  return t;});
+gl.uniform1i(U.uD,0);gl.uniform1i(U.uA,1);gl.uniform1i(U.uB,2);gl.uniform1i(U.uH,3);
+const UR=[0,1,2,3].map(i=>gl.getUniformLocation(pr,`uRect[${i}]`)),UV=[0,1,2,3].map(i=>gl.getUniformLocation(pr,`uRectV[${i}]`));
+const MAXT=gl.getParameter(gl.MAX_TEXTURE_SIZE);
+
+/* ---------- distance transform (Felzenszwalb) ---------- */
+function edt(f,w,h){
+  const n=Math.max(w,h),v=new Int32Array(n),z=new Float32Array(n+1),t=new Float32Array(n),INF=1e20;
+  function pass(off,stride,len){
+    let k=0;v[0]=0;z[0]=-INF;z[1]=INF;
+    for(let q=0;q<len;q++)t[q]=f[off+q*stride];
+    for(let q=1;q<len;q++){let s;
+      do{const r=v[k];s=(t[q]+q*q-t[r]-r*r)/(2*q-2*r);}while(s<=z[k]&&--k>-1);
+      k++;v[k]=q;z[k]=s;z[k+1]=INF;}
+    k=0;for(let q=0;q<len;q++){while(z[k+1]<q)k++;const r=v[k];f[off+q*stride]=(q-r)*(q-r)+t[r];}
+  }
+  for(let x=0;x<w;x++)pass(x,w,h);
+  for(let y=0;y<h;y++)pass(y*w,1,w);
+}
+
+/* ---------- build the quilt from the layout ---------- */
+let W=0,VH=0,PH=0,press=[],knobEl=$('#track'),range=$('#range');
+const cS=document.createElement('canvas'),cA=document.createElement('canvas'),cB=document.createElement('canvas');
+function rr(ctx,x,y,w,h,r){ctx.beginPath();if(r>0.5&&ctx.roundRect)ctx.roundRect(x,y,w,h,Math.min(r,w/2,h/2));else ctx.rect(x,y,w,h);}
+function build(){
+  W=document.documentElement.clientWidth;VH=window.innerHeight;
+  // fit the inflated wordmark
+  const puff=$('.puff'),mc=cS.getContext('2d');
+  const lines=W<700?['UN','TU']:['UNTU'];
+  mc.font='900 200px Unbounded';
+  let mw=0,asc=0,desc=0;const ms=lines.map(l=>{const m=mc.measureText(l);mw=Math.max(mw,m.actualBoundingBoxLeft+m.actualBoundingBoxRight);asc=Math.max(asc,m.actualBoundingBoxAscent);desc=Math.max(desc,m.actualBoundingBoxDescent);return m;});
+  const padX=Math.max(20,W*.036),size=(W-2*padX)/mw*200,k=size/200;
+  const lh=(asc+desc)*k,gap=size*.1,padY=Math.max(26,size*.115);
+  puff.style.height=Math.round(lines.length*lh+(lines.length-1)*gap+2*padY)+'px';
+
+  PH=page.offsetHeight;spacer.style.height=PH+'px';
+  const s=Math.min(1,MAXT/PH,MAXT/W,Math.sqrt(9e6/(W*PH)));
+  const w=Math.max(2,Math.round(W*s)),h=Math.max(2,Math.round(PH*s));
+  for(const c of [cS,cA,cB]){c.width=w;c.height=h;}
+  const S=cS.getContext('2d',{willReadFrequently:true}),A=cA.getContext('2d',{willReadFrequently:true}),B=cB.getContext('2d');
+  A.fillStyle='rgb(0,0,82)';A.fillRect(0,0,w,h);B.fillStyle='#000';B.fillRect(0,0,w,h);
+  for(const c of [S,A,B]){c.setTransform(s,0,0,s,0,0);}
+  S.lineWidth=2;S.strokeStyle='#000';S.fillStyle='#000';S.lineJoin='round';
+  const o=page.getBoundingClientRect();
+  press=[];
+  for(const el of $$('.c')){
+    if(el===page)continue;
+    const b=el.getBoundingClientRect();if(b.width<2||b.height<2)continue;
+    const x=b.left-o.left,y=b.top-o.top,bw=b.width,bh=b.height;
+    const cs=getComputedStyle(el),rad=parseFloat(cs.borderTopLeftRadius)||0;
+    const cap=+(el.dataset.r||46);
+    let R=Math.min(cap,Math.min(bw,bh)/2);
+    const nb=el.dataset.baffle?Math.max(1,Math.round(bh/+el.dataset.baffle)):0;
+    const nv=el.dataset.vbaffle?Math.max(1,Math.round(bw/+el.dataset.vbaffle)):0;
+    if(nb)R=Math.min(60,bh/nb/2);if(nv)R=Math.min(60,bw/nv/2);
+    const acc=el.dataset.tone==='acc'?255:0,ov=el.dataset.ov;
+    A.fillStyle=`rgb(${acc},${ov?255:0},${Math.round(R/128*255)})`;rr(A,x,y,bw,bh,rad);A.fill();
+    B.fillStyle=ov||'#000';rr(B,x,y,bw,bh,rad);B.fill();
+    S.globalCompositeOperation='destination-out';rr(S,x,y,bw,bh,rad);S.fill();
+    S.globalCompositeOperation='source-over';rr(S,x,y,bw,bh,rad);S.stroke();
+    S.beginPath();
+    for(let i=1;i<nb;i++){S.moveTo(x,y+bh*i/nb);S.lineTo(x+bw,y+bh*i/nb);}
+    for(let i=1;i<nv;i++){S.moveTo(x+bw*i/nv,y);S.lineTo(x+bw*i/nv,y+bh);}
+    S.stroke();
+    if(el.dataset.press!==undefined)press.push({el,x,y,w:bw,h:bh,v:0,vel:0,t:0});
+    if(el===puff){
+      const f=`900 ${size}px Unbounded`;
+      for(const c of [S,A,B]){c.font=f;c.textBaseline='alphabetic';c.textAlign='left';}
+      const Rg=Math.min(64,size*.13);
+      lines.forEach((l,i)=>{
+        const m=ms[i],lw=(m.actualBoundingBoxLeft+m.actualBoundingBoxRight)*k;
+        const tx=x+(bw-lw)/2+m.actualBoundingBoxLeft*k,ty=y+padY+asc*k+i*(lh+gap);
+        A.fillStyle=`rgb(255,0,${Math.round(Rg/128*255)})`;A.fillText(l,tx,ty);
+        S.globalCompositeOperation='destination-out';S.fillText(l,tx,ty);
+        S.globalCompositeOperation='source-over';S.strokeText(l,tx,ty);
+      });
+    }
+  }
+  // seams -> distance field
+  const img=S.getImageData(0,0,w,h).data,f=new Float32Array(w*h);
+  for(let i=0,n=w*h;i<n;i++){const a=img[i*4+3]/255;f[i]=a>=.99?0:a<=.01?1e20:Math.pow(Math.max(0,.5-a),2);}
+  edt(f,w,h);
+  const inv=1/s;for(let i=0,n=w*h;i<n;i++)f[i]=Math.min(400,Math.sqrt(f[i])*inv);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex[0]);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.R16F,w,h,0,gl.RED,gl.FLOAT,f);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,tex[1]);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,cA);
+  gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,tex[2]);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,cB);
+  // smooth inflated height at half resolution: seam-pinned relaxation rounds every ridge
+  const ad=A.getImageData(0,0,w,h).data,w2=Math.ceil(w/2),h2=Math.ceil(h/2);
+  let H0=new Float32Array(w2*h2),H1=new Float32Array(w2*h2);const pin=new Uint8Array(w2*h2);
+  for(let y=0;y<h2;y++)for(let x=0;x<w2;x++){
+    const j=Math.min(h-1,y*2)*w+Math.min(w-1,x*2),d=f[j],R=Math.max(3,ad[j*4+2]/255*128),i=y*w2+x;
+    if(d<.75){pin[i]=1;continue;}
+    const q=Math.min(1,d/R),pq=1-(1-q)*(1-q);
+    H0[i]=(R*.80*Math.pow(pq,.58)+11*(1-Math.exp(-Math.max(d-R*.6,0)/90)))*(1+.22*ad[j*4]/255);
+  }
+  for(let it=0;it<56;it++){
+    for(let y=0;y<h2;y++){const y0=(y?y-1:y)*w2,y1=(y<h2-1?y+1:y)*w2,yy=y*w2;
+      for(let x=0;x<w2;x++){const i=yy+x;
+        H1[i]=pin[i]?0:(H0[yy+(x?x-1:x)]+H0[yy+(x<w2-1?x+1:x)]+H0[y0+x]+H0[y1+x])*.25+.035;}}
+    const t=H0;H0=H1;H1=t;
+  }
+  gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,tex[3]);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.R16F,w2,h2,0,gl.RED,gl.FLOAT,H0);
+  const tb=knobEl.getBoundingClientRect();
+  knob.x0=tb.left-o.left;knob.y=tb.top-o.top+tb.height/2;knob.w=tb.width;knob.r=tb.height/2+7;
+  sizeCanvas();
+}
+
+/* ---------- state ---------- */
+const knob={x0:0,y:0,w:1,r:30,v:.5,cur:.5};
+let scale=Math.min(window.devicePixelRatio||1,2),autoScale=true;
+function sizeCanvas(){cv.width=Math.max(2,Math.round(W*scale));cv.height=Math.max(2,Math.round(VH*scale));gl.viewport(0,0,cv.width,cv.height);}
+let sc=0,intro=0,t0=performance.now(),started=0,frozen=null;
+const ptr={x:-9e3,y:-9e3,vx:.5,vy:.5,on:0,down:0,s:0,rad:62,x1:-9e3,y1:-9e3,x2:-9e3,y2:-9e3,s2:0};
+let pal=0,c0=PAL[0],c1=PAL[0],wipe={x:0,y:0,r:0,on:0,max:1};
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let scr=0,kx=0,last=0,acc=0;
+function step(){
+  const target=window.scrollY;
+  sc+=(target-sc)*(reduce?1:.22);if(Math.abs(target-sc)<.05)sc=target;
+  if(started)intro=Math.min(1,intro+1/(60*2.2));
+  ptr.s+=((ptr.on?1:0)-ptr.s)*.12;
+  const px=ptr.cx,py=ptr.cy+sc,has=px!==undefined;
+  if(has&&ptr.x1<-8e3){ptr.x1=ptr.x2=px;ptr.y1=ptr.y2=py;}
+  if(has){
+    ptr.x1+=(px-ptr.x1)*.4;ptr.y1+=(py-ptr.y1)*.4;
+    ptr.x2+=(px-ptr.x2)*.075;ptr.y2+=(py-ptr.y2)*.075;
+    ptr.vx+=(ptr.cx/W-ptr.vx)*.06;ptr.vy+=(ptr.cy/VH-ptr.vy)*.06;
+  }
+  ptr.rad+=((ptr.down?46:30)-ptr.rad)*.14;
+  for(const c of press){c.vel+=(c.t-c.v)*.16;c.vel*=.74;c.v+=c.vel;}
+  knob.cur+=(knob.v-knob.cur)*.2;
+  if(wipe.on){wipe.r+=wipe.max/66;if(wipe.r>wipe.max+90){wipe.on=0;c0=c1;}}
+}
+function frame(now){
+  requestAnimationFrame(frame);
+  const t=(now-t0)/1000;
+  acc+=Math.min(120,now-(last||now));last=now;
+  let n=0;while(acc>=16.6&&n<7){step();acc-=16.6;n++;}if(n===7)acc=0;
+  if(frozen&&frozen.scroll!=null)sc=frozen.scroll;
+  if(frozen&&frozen.intro!=null)intro=frozen.intro;
+  const dpr=window.devicePixelRatio||1;scr=Math.round(sc*dpr)/dpr;
+  page.style.transform=`translate3d(0,${-scr}px,0)`;
+  press.sort((a,b)=>Math.abs(b.v)+Math.abs(b.t)-Math.abs(a.v)-Math.abs(a.t));
+  for(let i=0;i<4;i++){const c=press[i];
+    gl.uniform4f(UR[i],c?c.x:0,c?c.y:0,c?c.w:0,c?c.h:0);gl.uniform1f(UV[i],c?c.v:0);}
+  kx=knob.x0+knob.r-7+knob.cur*(knob.w-2*knob.r+14);
+  const m0=lin(c0.main),a0=lin(c0.acc),m1=lin(c1.main),a1=lin(c1.acc);
+
+  gl.uniform2f(U.uRes,cv.width,cv.height);gl.uniform2f(U.uView,W,VH);gl.uniform2f(U.uPage,W,PH);
+  gl.uniform1f(U.uPx,W/cv.width);gl.uniform1f(U.uScroll,scr);gl.uniform1f(U.uMaxScroll,Math.max(1,PH-VH));
+  gl.uniform1f(U.uTime,reduce?0:t);gl.uniform1f(U.uLoft,.52+.78*knob.cur);gl.uniform1f(U.uIntro,intro);
+  gl.uniform4f(U.uPtr,ptr.x1,ptr.y1,ptr.s*(ptr.down?1:.8),ptr.rad);
+  gl.uniform4f(U.uPtr2,ptr.x2,ptr.y2,ptr.s,ptr.rad*.9);
+  gl.uniform2f(U.uTilt,(ptr.vx-.5)*.22,(ptr.vy-.5)*.22);
+  gl.uniform2f(U.uLight,W*(-.12+(ptr.vx-.5)*.5),VH*(-.5+(ptr.vy-.5)*.5));
+  gl.uniform3f(U.uMain0,...m0);gl.uniform3f(U.uAcc0,...a0);gl.uniform3f(U.uMain1,...m1);gl.uniform3f(U.uAcc1,...a1);
+  gl.uniform3f(U.uWipe,wipe.x,wipe.y,wipe.r);gl.uniform1f(U.uWipeOn,wipe.on);
+  gl.uniform3f(U.uKnob,kx,knob.y,knob.r);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  // keep it fluid on slow machines
+  if(autoScale){const dt=now-(frame.l||now);frame.l=now;frame.a=(frame.a||16)*.92+dt*.08;frame.n=(frame.n||0)+1;
+    if(frame.n>50&&frame.a>26&&scale>.75){scale=Math.max(.75,scale*.8);sizeCanvas();frame.n=0;frame.a=16;}}
+}
+
+/* ---------- input ---------- */
+addEventListener('pointermove',e=>{ptr.cx=e.clientX;ptr.cy=e.clientY;ptr.on=1;},{passive:true});
+addEventListener('pointerdown',e=>{ptr.cx=e.clientX;ptr.cy=e.clientY;ptr.on=1;ptr.down=1;},{passive:true});
+addEventListener('pointerup',e=>{ptr.down=0;if(e.pointerType!=='mouse')ptr.on=0;},{passive:true});
+addEventListener('pointercancel',()=>{ptr.down=0;ptr.on=0;},{passive:true});
+document.documentElement.addEventListener('pointerleave',()=>{ptr.on=0;});
+const pc=el=>press.find(c=>c.el===el);
+for(const el of $$('[data-press]')){
+  el.addEventListener('pointerenter',()=>{const c=pc(el);if(c)c.t=.2;});
+  el.addEventListener('pointerleave',()=>{const c=pc(el);if(c)c.t=0;});
+  el.addEventListener('pointerdown',()=>{const c=pc(el);if(c)c.t=-.62;});
+  el.addEventListener('pointerup',e=>{const c=pc(el);if(c)c.t=e.pointerType==='mouse'?.2:0;});
+  el.addEventListener('focus',()=>{const c=pc(el);if(c&&el.matches(':focus-visible'))c.t=.2;});
+  el.addEventListener('blur',()=>{const c=pc(el);if(c)c.t=0;});
+}
+for(const el of $$('[data-go]'))el.addEventListener('click',e=>{e.preventDefault();
+  const id=el.dataset.go,t=id==='top'?0:$('#'+id).getBoundingClientRect().top-page.getBoundingClientRect().top-32;
+  window.scrollTo({top:Math.max(0,t),behavior:reduce?'auto':'smooth'});});
+
+const fmt=n=>n<0?'−'+(-n):''+n;
+function setFill(){
+  const i=+range.value;knob.v=i/12;
+  const g=600+i*50,temp=Math.round(-4-i*1.5),price=289+Math.round(i/3)*25;
+  $('#rFill').innerHTML=g.toLocaleString('en').replace(',',' ')+'<i>g</i>';
+  $('#rTemp').innerHTML=fmt(temp)+'<i>°C</i>';
+  $('#rPrice').textContent=$('#buyPrice').textContent='€'+price;
+}
+range.addEventListener('input',setFill);setFill();knob.cur=knob.v;
+
+for(const b of $$('[data-sw]')){
+  if(+b.dataset.sw===0)b.dataset.dark='';
+  b.addEventListener('click',()=>{
+    const i=+b.dataset.sw;if(i===pal)return;
+    if(wipe.on)c0=c1;
+    pal=i;c1=PAL[i];
+    const c=pc(b),ox=c?c.x+c.w/2:W/2,oy=c?c.y+c.h/2:sc+VH/2;
+    const far=Math.max(Math.hypot(ox,oy-sc),Math.hypot(W-ox,oy-sc),Math.hypot(ox,sc+VH-oy),Math.hypot(W-ox,sc+VH-oy));
+    wipe={x:ox,y:oy,r:0,on:1,max:far};
+    if(reduce){wipe.on=0;c0=c1;}
+    for(const o of $$('[data-sw]'))o.setAttribute('aria-pressed',o===b);
+    $('#shellName').textContent=PAL[i].name+'.';
+    document.documentElement.style.setProperty('--main',PAL[i].main);
+    document.querySelector('meta[name=theme-color]').content=PAL[i].main;
+  });
+}
+const buy=$('#buy');let bt=0;
+buy.addEventListener('click',()=>{
+  $('#buyText').innerHTML='In your<br>basket';clearTimeout(bt);
+  bt=setTimeout(()=>{$('#buyText').innerHTML='Order<br>the quilt';},2600);
+});
+
+/* ---------- start ---------- */
+let rz=0;
+addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(document.documentElement.clientWidth!==W||Math.abs(innerHeight-VH)>120)build();else{VH=innerHeight;sizeCanvas();}},160);});
+function go(){const tb0=performance.now();build();window.__bt=performance.now()-tb0;started=1;sc=window.scrollY;}
+Promise.race([Promise.all([document.fonts.load('900 200px Unbounded','UNTU'),document.fonts.load('500 20px Unbounded'),document.fonts.load('400 17px Geist'),document.fonts.load('500 12px "Geist Mono"')]).then(()=>document.fonts.ready),new Promise(r=>setTimeout(r,3500))]).then(()=>{
+  go();document.fonts.ready.then(()=>setTimeout(()=>{if(page.offsetHeight!==PH)build();},400));
+});
+requestAnimationFrame(frame);
+cv.addEventListener('webglcontextlost',e=>{e.preventDefault();console.warn('context lost');});
+cv.addEventListener('webglcontextrestored',()=>location.reload());
+window.__set=o=>{frozen=Object.assign(frozen||{},o);if(o.ptr){ptr.cx=o.ptr[0];ptr.cy=o.ptr[1];ptr.on=1;ptr.down=!!o.ptr[2];ptr.x1=-9e3;}if(o.scale){autoScale=false;scale=o.scale;sizeCanvas();}};
+})();
+</script>
+</body>
+</html>

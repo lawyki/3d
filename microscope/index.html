@@ -1,0 +1,1163 @@
+<title>Diatom Microscope</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,300&display=swap">
+<style>
+/* Layout: a tall page whose only content is one fixed, full-bleed view of the inside of a microscope.
+   Scrolling moves the camera from stop to stop along the path of the light. A caption sits bottom left,
+   an index of the stops runs down the right edge. Single dark look by choice: the light is additive and
+   only exists against black. */
+:root {
+  --bg: #030407;
+  --fg: #d5dceb;
+  --muted: #7a849b;
+  --line: rgba(213, 220, 235, 0.2);
+  --line-strong: rgba(213, 220, 235, 0.6);
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+  color-scheme: dark;
+}
+html { background: var(--bg); }
+body { background: var(--bg); color: var(--fg); font-family: var(--mono); font-size: 12px; margin: 0; }
+#film { position: relative; }
+#stage {
+  position: sticky; top: 0;
+  height: 100vh; height: 100dvh;
+  overflow: hidden;
+  background: var(--bg);
+}
+#stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.caption {
+  position: absolute;
+  left: max(16px, env(safe-area-inset-left, 0px), 3.2vw);
+  bottom: max(44px, 8vh);
+  width: min(430px, calc(100% - 96px));
+  pointer-events: none;
+  text-shadow: 0 0 12px var(--bg), 0 0 3px var(--bg);
+}
+.caption .num { color: var(--muted); letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
+.caption h2 { font-family: var(--serif); font-weight: 300; font-size: clamp(30px, 4.2vw, 50px); line-height: 1.05; margin: 8px 0 12px; letter-spacing: -0.01em; text-wrap: balance; }
+.caption p { margin: 0; color: var(--fg); opacity: 0.82; line-height: 1.6; font-size: 12.5px; max-width: 46ch; text-wrap: pretty; }
+.index {
+  position: absolute;
+  right: max(10px, env(safe-area-inset-right, 0px), 1.6vw);
+  top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; align-items: flex-end;
+}
+.index button {
+  font: inherit; font-size: 11px; color: var(--muted); background: none; border: 0; cursor: pointer;
+  padding: 5px 4px; display: flex; align-items: center; gap: 9px; letter-spacing: 0.02em;
+}
+.index button span { opacity: 0; transition: opacity .2s; white-space: nowrap; }
+.index:hover button span, .index button:focus-visible span, .index button[aria-current="true"] span { opacity: 1; }
+.index button i { display: block; width: 14px; height: 1px; background: var(--line-strong); opacity: 0.55; transition: width .25s, opacity .25s; }
+.index button[aria-current="true"] { color: var(--fg); }
+.index button[aria-current="true"] i { width: 26px; opacity: 1; }
+.index button:hover { color: var(--fg); }
+.index button:focus-visible { outline: 1px solid var(--line-strong); outline-offset: 1px; }
+.cue {
+  position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%);
+  color: var(--muted); letter-spacing: 0.14em; font-size: 10.5px; text-transform: uppercase;
+  transition: opacity .5s; pointer-events: none;
+}
+.count { position: absolute; right: max(16px, env(safe-area-inset-right, 0px), 1.6vw); bottom: 20px; color: var(--muted); font-size: 10.5px; font-variant-numeric: tabular-nums; pointer-events: none; }
+#fail { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; }
+@media (max-width: 640px) {
+  .index button span { display: none; }
+  .caption { width: calc(100% - 72px); bottom: 44px; }
+  .cue { left: auto; right: 16px; transform: none; bottom: 16px; }
+  .count { display: none; }
+}
+</style>
+
+<div id="film">
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <div id="fail" hidden>This page needs WebGL 2 to draw the light. Open it in a current browser.</div>
+    <div class="caption" id="caption"><span class="num" id="c-num"></span><h2 id="c-title"></h2><p id="c-line"></p></div>
+    <nav class="index" id="index" aria-label="Stops along the light path"></nav>
+    <div class="cue" id="cue">Scroll to go inside</div>
+    <div class="count" id="count"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+/* ───────────── Optics: glass, solids, exact intersection, Snell ─────────────
+   Every optical element is a convex solid: the overlap of spheres, half-spaces and a cylinder. A ray meets
+   such a solid over one interval, found in closed form, so a photon lands exactly on the surface. */
+const GLASS = {
+  crown: [1.5046, 0.0042],      // close to BK7
+  flint: [1.7388, 0.01597]      // close to SF11, the dense flint of the prism
+};
+const nGlass = (g, um) => g[0] + g[1] / (um * um);
+const SPH = 0, PLN = 1, CYL = 2, CON = 3;
+const ELS = [];
+const hitOut = { tin: 0, pin: -1, tout: 0, pout: -1 };
+
+function interval(el, px, py, pz, dx, dy, dz) {
+  let lo = -Infinity, hi = Infinity, pl = -1, ph = -1, s1 = 1, s2 = 0, pn = -1;
+  const pr = el.prims;
+  for (let i = 0; i < pr.length; i++) {
+    const q = pr[i];
+    let t1, t2;
+    if (q.t === SPH) {
+      const ox = px - q.cx, oy = py - q.cy, oz = pz - q.cz;
+      const b = ox * dx + oy * dy + oz * dz, c = ox * ox + oy * oy + oz * oz - q.R * q.R;
+      const disc = b * b - c;
+      if (q.neg) { if (disc > 0) { const s = Math.sqrt(disc); s1 = -b - s; s2 = -b + s; pn = i; } continue; }   // a hollow: the glass is outside this sphere
+      if (disc <= 0) return false;
+      const s = Math.sqrt(disc);
+      t1 = -b - s; t2 = -b + s;
+    } else if (q.t === CON) {
+      // conic of revolution about the axis a, vertex c:  |o|² + k·z² − 2R·z = 0,  z measured into the glass
+      const ox = px - q.cx, oy = py - q.cy, oz = pz - q.cz;
+      const z0 = ox * q.ax + oy * q.ay + oz * q.az, dz0 = dx * q.ax + dy * q.ay + dz * q.az;
+      const A = 1 + q.k * dz0 * dz0, B = ox * dx + oy * dy + oz * dz + q.k * z0 * dz0 - q.R * dz0;
+      const C = ox * ox + oy * oy + oz * oz + q.k * z0 * z0 - 2 * q.R * z0;
+      const disc = B * B - A * C;
+      if (disc <= 0) return false;
+      const s = Math.sqrt(disc);
+      t1 = (-B - s) / A; t2 = (-B + s) / A;
+    } else if (q.t === PLN) {
+      const dn = dx * q.nx + dy * q.ny + dz * q.nz, dist = px * q.nx + py * q.ny + pz * q.nz - q.d;
+      if (Math.abs(dn) < 1e-13) { if (dist > 0) return false; continue; }
+      const t = -dist / dn;
+      if (dn > 0) { t1 = -Infinity; t2 = t; } else { t1 = t; t2 = Infinity; }
+    } else {
+      let ox = px - q.cx, oy = py - q.cy, oz = pz - q.cz;
+      const oa = ox * q.ax + oy * q.ay + oz * q.az, da = dx * q.ax + dy * q.ay + dz * q.az;
+      ox -= oa * q.ax; oy -= oa * q.ay; oz -= oa * q.az;
+      const ex = dx - da * q.ax, ey = dy - da * q.ay, ez = dz - da * q.az;
+      const A = ex * ex + ey * ey + ez * ez, c0 = ox * ox + oy * oy + oz * oz - q.R * q.R;
+      if (A < 1e-14) { if (c0 > 0) return false; continue; }
+      const b = (ox * ex + oy * ey + oz * ez) / A, disc = b * b - c0 / A;
+      if (disc <= 0) return false;
+      const s = Math.sqrt(disc);
+      t1 = -b - s; t2 = -b + s;
+    }
+    if (t1 > lo) { lo = t1; pl = i; }
+    if (t2 < hi) { hi = t2; ph = i; }
+    if (lo >= hi) return false;
+  }
+  if (pn >= 0) {                                  // cut the hollow (s1, s2) out of the interval
+    if (s1 > 1e-9 && s1 < hi) { hitOut.tout = s1; hitOut.pout = pn; } else { hitOut.tout = hi; hitOut.pout = ph; }
+    if (lo <= s1 || lo >= s2) { hitOut.tin = lo; hitOut.pin = pl; }
+    else if (s2 < hi) { hitOut.tin = s2; hitOut.pin = pn; }
+    else return false;
+    return true;
+  }
+  hitOut.tin = lo; hitOut.pin = pl; hitOut.tout = hi; hitOut.pout = ph;
+  return true;
+}
+// outward unit normal of a primitive at a point on it
+const nrm = [0, 0, 0];
+function normalAt(q, x, y, z) {
+  if (q.t === SPH) { const s = q.neg ? -q.R : q.R; nrm[0] = (x - q.cx) / s; nrm[1] = (y - q.cy) / s; nrm[2] = (z - q.cz) / s; }
+  else if (q.t === PLN) { nrm[0] = q.nx; nrm[1] = q.ny; nrm[2] = q.nz; }
+  else if (q.t === CON) {
+    const ox = x - q.cx, oy = y - q.cy, oz = z - q.cz, f = q.k * (ox * q.ax + oy * q.ay + oz * q.az) - q.R;
+    const gx = ox + f * q.ax, gy = oy + f * q.ay, gz = oz + f * q.az, l = Math.hypot(gx, gy, gz);
+    nrm[0] = gx / l; nrm[1] = gy / l; nrm[2] = gz / l;
+  }
+  else {
+    let ox = x - q.cx, oy = y - q.cy, oz = z - q.cz;
+    const oa = ox * q.ax + oy * q.ay + oz * q.az;
+    ox -= oa * q.ax; oy -= oa * q.ay; oz -= oa * q.az;
+    const l = Math.hypot(ox, oy, oz);
+    nrm[0] = ox / l; nrm[1] = oy / l; nrm[2] = oz / l;
+  }
+}
+// distance of a point from the surface of a primitive (for the checks)
+function surfDist(q, x, y, z) {
+  if (q.t === SPH) { const d = Math.hypot(x - q.cx, y - q.cy, z - q.cz) - q.R; return q.neg ? -d : d; }
+  if (q.t === PLN) return x * q.nx + y * q.ny + z * q.nz - q.d;
+  if (q.t === CON) {
+    const ox = x - q.cx, oy = y - q.cy, oz = z - q.cz, zz = ox * q.ax + oy * q.ay + oz * q.az, f = q.k * zz - q.R;
+    return (ox * ox + oy * oy + oz * oz + q.k * zz * zz - 2 * q.R * zz) / (2 * Math.hypot(ox + f * q.ax, oy + f * q.ay, oz + f * q.az));
+  }
+  let ox = x - q.cx, oy = y - q.cy, oz = z - q.cz;
+  const oa = ox * q.ax + oy * q.ay + oz * q.az;
+  return Math.hypot(ox - oa * q.ax, oy - oa * q.ay, oz - oa * q.az) - q.R;
+}
+function insideEl(el, x, y, z) { let m = -Infinity; for (const q of el.prims) { const d = surfDist(q, x, y, z); if (d > m) m = d; } return m; }
+
+/* Snell's law in vector form. d is the unit direction, N the outward normal of the glass, n1 → n2.
+   Returns 0 for refraction, 1 for total internal reflection; the new direction is left in dirOut. */
+const dirOut = [0, 0, 0];
+function bend(dx, dy, dz, Nx, Ny, Nz, n1, n2) {
+  let c = -(dx * Nx + dy * Ny + dz * Nz);
+  if (c < 0) { c = -c; Nx = -Nx; Ny = -Ny; Nz = -Nz; }       // normal turned against the incoming ray
+  const eta = n1 / n2, k = 1 - eta * eta * (1 - c * c);
+  if (k < 0) {
+    dirOut[0] = dx + 2 * c * Nx; dirOut[1] = dy + 2 * c * Ny; dirOut[2] = dz + 2 * c * Nz;
+    return 1;
+  }
+  const f = eta * c - Math.sqrt(k);
+  let tx = eta * dx + f * Nx, ty = eta * dy + f * Ny, tz = eta * dz + f * Nz;
+  const l = Math.hypot(tx, ty, tz);
+  dirOut[0] = tx / l; dirOut[1] = ty / l; dirOut[2] = tz / l;
+  return 0;
+}
+
+/* A lens on an axis: vertex of the first surface at v, axis u (unit). R1, R2 > 0 are convex radii, < 0
+   hollow, 0 flat. a is the half aperture, te the thickness at the rim. */
+function sag(R, a, k) { return R === 0 ? 0 : Math.sign(R) * a * a / (Math.abs(R) * (1 + Math.sqrt(1 - (1 + (k || 0)) * a * a / (R * R)))); }
+function makeLens(name, glass, v, u, R1, R2, a, te, k2) {
+  const tc = te + sag(R1, a) + sag(R2, a, k2);
+  const w = [v[0] + u[0] * tc, v[1] + u[1] * tc, v[2] + u[2] * tc];
+  const prims = [];
+  if (R1 !== 0) prims.push({ t: SPH, cx: v[0] + u[0] * R1, cy: v[1] + u[1] * R1, cz: v[2] + u[2] * R1, R: Math.abs(R1), neg: R1 < 0, opt: 1 });
+  else prims.push({ t: PLN, nx: -u[0], ny: -u[1], nz: -u[2], d: -(u[0] * v[0] + u[1] * v[1] + u[2] * v[2]), opt: 1 });
+  if (R2 > 0 && k2) prims.push({ t: CON, cx: w[0], cy: w[1], cz: w[2], ax: -u[0], ay: -u[1], az: -u[2], R: R2, k: k2, opt: 1 });
+  else if (R2 !== 0) prims.push({ t: SPH, cx: w[0] - u[0] * R2, cy: w[1] - u[1] * R2, cz: w[2] - u[2] * R2, R: Math.abs(R2), neg: R2 < 0, opt: 1 });
+  else prims.push({ t: PLN, nx: u[0], ny: u[1], nz: u[2], d: u[0] * w[0] + u[1] * w[1] + u[2] * w[2], opt: 1 });
+  prims.push({ t: CYL, cx: v[0], cy: v[1], cz: v[2], ax: u[0], ay: u[1], az: u[2], R: a, opt: 0 });
+  // a hollow face ends in a flat ring at the rim, which closes the solid
+  if (R1 < 0) { const s = sag(R1, a); prims.push({ t: PLN, nx: -u[0], ny: -u[1], nz: -u[2], d: -(u[0] * v[0] + u[1] * v[1] + u[2] * v[2] + s), opt: 0 }); }
+  if (R2 < 0) { const s = sag(R2, a); prims.push({ t: PLN, nx: u[0], ny: u[1], nz: u[2], d: u[0] * w[0] + u[1] * w[1] + u[2] * w[2] - s, opt: 0 }); }
+  return { kind: 'lens', name, glass, prims, v, u, w, R1, R2, a, te, tc, k2: k2 || 0 };
+}
+/* A right-angle prism in the x–y plane: light enters the face x = cx − L/2, reflects off the long face
+   (y = x − cx) by total internal reflection and leaves upward through the face y = L/2. */
+function makePrism(name, glass, cx, L) {
+  const h = L / 2, s = Math.SQRT1_2;
+  return {
+    kind: 'prism', name, glass, cx, L, prims: [
+      { t: PLN, nx: -1, ny: 0, nz: 0, d: -(cx - h), opt: 1 },
+      { t: PLN, nx: 0, ny: 1, nz: 0, d: h, opt: 1 },
+      { t: PLN, nx: s, ny: -s, nz: 0, d: s * cx, opt: 1 },
+      { t: PLN, nx: 0, ny: 0, nz: 1, d: h, opt: 0 },
+      { t: PLN, nx: 0, ny: 0, nz: -1, d: h, opt: 0 }
+    ]
+  };
+}
+
+/* Follow one ray through a list of elements (used to place the lenses: nothing in the layout is assumed
+   from a formula, every focus is found by sending rays through the real surfaces). */
+function traceThrough(els, p, d, um, maxEv) {
+  let x = p[0], y = p[1], z = p[2], dx = d[0], dy = d[1], dz = d[2], cur = -1;
+  for (let ev = 0; ev < (maxEv || 40); ev++) {
+    let t = Infinity, e = -1, pi = -1;
+    if (cur >= 0) { if (!interval(els[cur], x, y, z, dx, dy, dz)) break; t = hitOut.tout; pi = hitOut.pout; e = cur; }
+    else for (let i = 0; i < els.length; i++) if (interval(els[i], x, y, z, dx, dy, dz) && hitOut.tin > 1e-9 && hitOut.tin < t) { t = hitOut.tin; pi = hitOut.pin; e = i; }
+    if (e < 0) break;
+    x += dx * t; y += dy * t; z += dz * t;
+    const q = els[e].prims[pi];
+    if (!q.opt) return null;
+    normalAt(q, x, y, z);
+    const ng = nGlass(els[e].glass, um);
+    const tir = bend(dx, dy, dz, nrm[0], nrm[1], nrm[2], cur >= 0 ? ng : 1, cur >= 0 ? 1 : ng);
+    dx = dirOut[0]; dy = dirOut[1]; dz = dirOut[2];
+    if (!tir) cur = cur >= 0 ? -1 : e;
+  }
+  return [x, y, z, dx, dy, dz];
+}
+// where a ray that entered parallel to the axis, a little off it, crosses the axis again behind the lens
+function backFocus(group, um, reverse) {
+  if (!Array.isArray(group)) group = [group];
+  const lens = { u: group[0].u, v: group[0].v, w: group[group.length - 1].w };
+  const u = lens.u, sgn = reverse ? -1 : 1;
+  const side = Math.abs(u[1]) > 0.9 ? [1, 0, 0] : [0, 1, 0], h = 0.004;
+  const from = reverse ? lens.w : lens.v;
+  const p = [from[0] - sgn * u[0] * 0.5 + side[0] * h, from[1] - sgn * u[1] * 0.5 + side[1] * h, from[2] - sgn * u[2] * 0.5 + side[2] * h];
+  const r = traceThrough(group, p, [sgn * u[0], sgn * u[1], sgn * u[2]], um);
+  const out = reverse ? lens.v : lens.w;
+  const hh = (r[0] - out[0]) * side[0] + (r[1] - out[1]) * side[1] + (r[2] - out[2]) * side[2];
+  const slope = (r[3] * side[0] + r[4] * side[1] + r[5] * side[2]) / (sgn * (r[3] * u[0] + r[4] * u[1] + r[5] * u[2]));
+  const along = sgn * ((r[0] - out[0]) * u[0] + (r[1] - out[1]) * u[1] + (r[2] - out[2]) * u[2]);
+  return along - hh / slope;          // distance from the last vertex to the focus
+}
+
+/* ───────────── The instrument ─────────────
+   Lamp at the origin, light travelling along +x. Collector makes it parallel, condenser brings it to a
+   focus on the specimen, objective makes each point of the specimen a parallel bundle, the prism turns
+   everything upward, the tube lens brings each bundle back to a point: the picture. */
+const UM0 = 0.55;
+const SC = {};
+function buildScene(o) {
+  ELS.length = 0;
+  const X = [1, 0, 0], Y = [0, 1, 0];
+  const place = (name, glass, R1, R2, a, te, focusAt, gapBefore) => {
+    // put the lens so that its front focus sits at x = focusAt (lens on the +x axis)
+    const probe = makeLens(name, glass, [0, 0, 0], X, R1, R2, a, te);
+    const ffd = backFocus(probe, UM0, true);
+    const vx = gapBefore !== undefined ? gapBefore : focusAt + ffd;
+    const L = makeLens(name, glass, [vx, 0, 0], X, R1, R2, a, te);
+    L.ffd = ffd; L.bfd = backFocus(L, UM0, false);
+    return L;
+  };
+  const coll = place('collector', GLASS.crown, o.collR, o.collR, o.collA, 0.035, 0);
+  const cond = place('condenser', GLASS.flint, o.condR, o.condR, o.condA, 0.035, 0, coll.w[0] + o.gap1);
+  const xs = cond.w[0] + cond.bfd;                           // the focus: the specimen sits here
+  // objective: an air-spaced achromat. Flat flint face toward the specimen, then its hollow, then a crown lens.
+  const mkObj = x0 => {
+    const f = makeLens('objective flint', GLASS.flint, [x0, 0, 0], X, 0, -o.objRa, o.objA, o.objTf - sag(-o.objRa, o.objA));
+    const c = makeLens('objective crown', GLASS.crown, [f.w[0] + o.objGap, 0, 0], X, o.objRc, o.objRb, o.objA, 0.03, o.objK);
+    return [f, c];
+  };
+  const objFfd = backFocus(mkObj(0), UM0, true);
+  const [objF, obj] = mkObj(xs + objFfd);
+  objF.ffd = objFfd;
+  const px = obj.w[0] + o.gap2 + o.prismL / 2;
+  const prism = makePrism('prism', GLASS.flint, px, o.prismL);
+  const tubeProbe = makeLens('tube', GLASS.crown, [0, 0, 0], Y, o.tubeR, o.tubeR, o.tubeA, 0.03);
+  const tube = makeLens('tube lens', GLASS.crown, [px, o.prismL / 2 + o.gap3, 0], Y, o.tubeR, o.tubeR, o.tubeA, 0.03);
+  tube.bfd = backFocus(tube, UM0, false);
+  const yi = tube.w[1] + tube.bfd;
+  ELS.push(coll, cond, objF, obj, prism, tube);
+  Object.assign(SC, { coll, cond, objF, obj, prism, tube, xs, px, yi, lampR: o.lampR, cone: o.cone, specR: o.specR, slideR: o.slideR, frame: o.frame });
+  // magnification, measured: send the chief ray of an off-axis specimen point through the objective, prism and tube lens
+  const r = traceThrough(ELS, [xs, 0.01, 0], [1, 0, 0], UM0);
+  const t = (yi - r[1]) / r[4];
+  SC.mag = (r[0] + r[3] * t - px) / 0.01;
+  return SC;
+}
+const DESIGN = {
+  lampR: 0.045, cone: 13.5 * Math.PI / 180,
+  collR: 1.02, collA: 0.36,
+  gap1: 0.75, condR: 2.05, condA: 0.36,
+  objRa: 0.95, objRc: 1.0, objRb: 0.35, objK: -0.5, objTf: 0.035, objGap: 0.006, objA: 0.22,
+  gap2: 0.62, prismL: 0.6, gap3: 0.62,
+  tubeR: 2.75, tubeA: 0.36,
+  specR: 0.058, slideR: 0.2, frame: 0.28
+};
+
+/* The specimen: a diatom, simplified to a stencil with three kinds of opening. Returns the share of
+   light of this wavelength that gets through at (y, z) on the slide. */
+function specimen(y, z, nm) {
+  const R = SC.specR, r = Math.hypot(y, z) / R;
+  if (r > 1) return 0;
+  const phi = Math.atan2(z, y);
+  if (r > 0.9) return r < 0.985 ? 1 : 0;                                   // the rim of the shell
+  const NR = 12, sect = 6.283185307179586 / NR;
+  let a = phi / sect; a -= Math.round(a);                                   // −0.5 … 0.5 across one sector, 0 on a rib
+  if (r > 0.3 && r < 0.9 && Math.abs(a) * sect * r < 0.034) return 1;      // ribs
+  if (r > 0.36 && r < 0.86) {                                               // pores between the ribs, in rings
+    const k = Math.round((r - 0.42) / 0.11), rk = 0.42 + 0.11 * k;
+    if (k >= 0 && k <= 3) {
+      const per = k >= 2 ? 2 : 1;                                           // two pores per sector on the outer rings
+      let b = (a + 0.5) * per; b -= Math.floor(b); b -= 0.5;
+      const dy = r - rk, dx = b / per * sect * rk;
+      if (dx * dx + dy * dy < 0.032 * 0.032) return nm < 575 ? 1 : 0.18;   // they pass the blue and green
+    }
+  }
+  if (r < 0.24) {                                                           // the central rosette passes the warm end
+    const petal = 0.2 * (0.5 + 0.5 * Math.cos(6 * phi));
+    if (r < 0.055 || (r > 0.075 && r < 0.06 + petal)) return nm > 530 ? 1 : 0.15;
+  }
+  return 0;
+}
+
+/* Focus the picture, the way one turns the focus knob: send light from the lamp through everything and
+   put the screen where points of the specimen come back together most sharply. */
+function focusPicture() {
+  let sd = 9871;
+  const rnd = () => { sd ^= sd << 13; sd ^= sd >>> 17; sd ^= sd << 5; return ((sd >>> 0) + 0.5) / 4294967296; };
+  const rays = [], head = ELS.slice(0, 2), tail = ELS.slice(2);
+  for (let i = 0; i < 2600; i++) {
+    const um = 0.42 + 0.26 * rnd();
+    const rr = Math.sqrt(rnd()) * SC.lampR, pa = rnd() * 6.2832;
+    const ct = 1 - rnd() * (1 - Math.cos(SC.cone)), st = Math.sqrt(1 - ct * ct), da = rnd() * 6.2832;
+    const r = traceThrough(head, [0, rr * Math.cos(pa), rr * Math.sin(pa)], [ct, st * Math.cos(da), st * Math.sin(da)], um);
+    if (!r) continue;
+    const t = (SC.xs - r[0]) / r[3], sy = r[1] + r[4] * t, sz = r[2] + r[5] * t;
+    if (Math.hypot(sy, sz) > SC.specR) continue;
+    const q = traceThrough(tail, [SC.xs, sy, sz], [r[3], r[4], r[5]], um);
+    if (q && q[4] > 0.5) rays.push([sy, sz, q]);
+  }
+  let best = Infinity, bestY = SC.yi, bestM = SC.mag;
+  for (let off = -0.2; off <= 0.2001; off += 0.01) {
+    const yi = SC.yi + off;
+    let a = 0, b = 0, e = 0;
+    for (const [sy, sz, q] of rays) { const t = (yi - q[1]) / q[4]; a += sy * (q[0] + q[3] * t - SC.px) + sz * (q[2] + q[5] * t); b += sy * sy + sz * sz; }
+    const m = a / b;
+    for (const [sy, sz, q] of rays) { const t = (yi - q[1]) / q[4]; e += (q[0] + q[3] * t - SC.px - m * sy) ** 2 + (q[2] + q[5] * t - m * sz) ** 2; }
+    if (e < best) { best = e; bestY = yi; bestM = m; }
+  }
+  SC.yi = bestY; SC.mag = bestM; SC.blur = Math.sqrt(best / rays.length);
+}
+
+/* ═════════════ Page ═════════════ */
+const stageEl = document.getElementById('stage'), cv = document.getElementById('gl');
+const gl = cv.getContext('webgl2', { alpha: false, antialias: false, powerPreference: 'high-performance' });
+if (!gl) { document.getElementById('fail').hidden = false; return; }
+buildScene(DESIGN);
+focusPicture();
+
+/* ───────────── Spectrum ─────────────
+   No screen can show a pure spectral colour, so the colour of each wavelength is a rendering choice: the
+   hues of a real spectrum in their real order, joined without steps, scaled so the whole band adds up to
+   white. Kept in linear light, so colours add the way light adds. */
+const NM_LO = 400, NM_HI = 700;
+const STOPS_NM = [
+  [380, 0.20, 0.00, 0.36], [405, 0.36, 0.00, 0.72], [428, 0.36, 0.04, 1.00], [450, 0.10, 0.16, 1.00], [470, 0.00, 0.45, 1.00],
+  [490, 0.00, 0.83, 0.92], [510, 0.00, 1.00, 0.50], [538, 0.36, 1.00, 0.04], [568, 0.93, 0.95, 0.00], [588, 1.00, 0.70, 0.00],
+  [608, 1.00, 0.40, 0.00], [635, 1.00, 0.10, 0.00], [670, 0.80, 0.00, 0.00], [700, 0.55, 0.00, 0.02], [740, 0.25, 0.00, 0.02]
+];
+const LUT0 = 360, LUTN = 381, LUT = new Float64Array(LUTN * 3);
+{
+  const lin = v => v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  const tmp = new Float64Array(LUTN * 3);
+  for (let i = 0; i < LUTN; i++) {
+    const nm = Math.min(STOPS_NM[STOPS_NM.length - 1][0], Math.max(STOPS_NM[0][0], LUT0 + i));
+    let k = 0;
+    while (k < STOPS_NM.length - 2 && nm > STOPS_NM[k + 1][0]) k++;
+    let t = (nm - STOPS_NM[k][0]) / (STOPS_NM[k + 1][0] - STOPS_NM[k][0]);
+    t = t * t * (3 - 2 * t);
+    for (let c = 0; c < 3; c++) tmp[i * 3 + c] = lin(STOPS_NM[k][c + 1]) + (lin(STOPS_NM[k + 1][c + 1]) - lin(STOPS_NM[k][c + 1])) * t;
+  }
+  const SIG = 9;
+  for (let i = 0; i < LUTN; i++) {
+    let w = 0, r = 0, g = 0, b = 0;
+    for (let j = Math.max(0, i - 27); j <= Math.min(LUTN - 1, i + 27); j++) {
+      const k = Math.exp(-0.5 * (j - i) * (j - i) / (SIG * SIG));
+      w += k; r += k * tmp[j * 3]; g += k * tmp[j * 3 + 1]; b += k * tmp[j * 3 + 2];
+    }
+    LUT[i * 3] = r / w; LUT[i * 3 + 1] = g / w; LUT[i * 3 + 2] = b / w;
+  }
+  const sum = [0, 0, 0];
+  let n = 0;
+  for (let nm = NM_LO; nm <= NM_HI; nm++, n++) for (let k = 0; k < 3; k++) sum[k] += LUT[(nm - LUT0) * 3 + k];
+  const warm = [1, 0.985, 0.95];
+  for (let i = 0; i < LUTN; i++) for (let k = 0; k < 3; k++) LUT[i * 3 + k] *= warm[k] * n / sum[k];
+}
+
+/* ───────────── Photons ─────────────
+   Each photon is a ray with one wavelength. The scene does not move, so when a photon leaves a surface the
+   exact point where it will meet the next one is worked out once; it then flies straight until it gets
+   there, lands on that point, bends by Snell's law, and the next meeting is worked out. */
+const C_AIR = 2.2;              // speed in air, units per second. In glass it is C_AIR / n.
+const TAU = 0.05;               // exposure: a photon shows the path it covered in the last TAU·tm seconds
+const K_LAMBDA = 14;            // wavelengths per white packet
+const RATE = 2500;              // packets per second at full quality
+const FADE = 0.5;               // stray light that will meet nothing more fades out over this long
+const ST = 41, CAP = 170000;
+// 0-2 pos · 3-5 dir · 6 n · 7 energy · 8 element it is inside (−1 air) · 9-11 colour · 12 age · 13 time to next meeting
+// 14 what it meets · 15 which surface · 16 bends · 17-32 bends [x y z t]×4 · 33 tail · 34 phase · 35 packet dice · 36 λ (µm) · 37-39 meeting point · 40 size
+const P = new Float64Array(ST * CAP);
+let count = 0, simTime = 0, emitCarry = 0, srcSwell = 1;
+let quality = matchMedia('(pointer: coarse)').matches ? 0.45 : 1;
+let dbg = null;
+const EV_NONE = -1, EV_SPEC = -2, EV_IMG = -3;
+
+let seed = 0x2545f491;
+function rnd() { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return ((seed >>> 0) + 0.5) / 4294967296; }
+
+/* Glints: brief points of light left where a photon lands (on the slide, and on the picture). */
+const NG = 140000, GS = 9, G = new Float32Array(NG * GS);
+let gHead = 0;
+function addGlint(x, y, z, r, g, b, life, size) {
+  const k = gHead * GS; gHead = (gHead + 1) % NG;
+  G[k] = x; G[k + 1] = y; G[k + 2] = z; G[k + 3] = r; G[k + 4] = g; G[k + 5] = b; G[k + 6] = simTime; G[k + 7] = life; G[k + 8] = size;
+}
+const PICTURE_LIFE = 7;
+
+function addBend(o, x, y, z, t) {
+  let bc = P[o + 16];
+  if (bc === 4) { for (let k = 0; k < 12; k++) P[o + 17 + k] = P[o + 21 + k]; bc = 3; }
+  const q = o + 17 + bc * 4;
+  P[q] = x; P[q + 1] = y; P[q + 2] = z; P[q + 3] = t; P[o + 16] = bc + 1;
+}
+// work out the next surface this photon will meet, and exactly where
+function plan(o) {
+  const x = P[o], y = P[o + 1], z = P[o + 2], dx = P[o + 3], dy = P[o + 4], dz = P[o + 5], el = P[o + 8];
+  let t = Infinity, e = EV_NONE, pi = -1;
+  if (el >= 0) {
+    if (interval(ELS[el], x, y, z, dx, dy, dz)) { t = hitOut.tout; pi = hitOut.pout; e = el; }
+    else { P[o + 13] = 0; P[o + 14] = EV_NONE; P[o + 37] = x; P[o + 38] = y; P[o + 39] = z; return; }
+  } else {
+    for (let i = 0; i < ELS.length; i++) {
+      if (interval(ELS[i], x, y, z, dx, dy, dz) && hitOut.tin > 1e-9 && hitOut.tin < t) { t = hitOut.tin; pi = hitOut.pin; e = i; }
+    }
+    if (dx > 0 && x < SC.xs) {                                    // the slide
+      const ts = (SC.xs - x) / dx;
+      if (ts < t) { const yy = y + dy * ts, zz = z + dz * ts; if (yy * yy + zz * zz < SC.slideR * SC.slideR) { t = ts; e = EV_SPEC; } }
+    }
+    if (dy > 0 && y < SC.yi) {                                    // the screen the picture forms on
+      const ti = (SC.yi - y) / dy;
+      if (ti < t) { const xx = x + dx * ti - SC.px, zz = z + dz * ti; if (Math.abs(xx) < SC.frame && Math.abs(zz) < SC.frame) { t = ti; e = EV_IMG; } }
+    }
+    if (e === EV_NONE) t = FADE * C_AIR;
+  }
+  P[o + 13] = t * P[o + 6] / C_AIR; P[o + 14] = e; P[o + 15] = pi;
+  if (e === EV_SPEC) { P[o + 37] = SC.xs; P[o + 38] = y + dy * t; P[o + 39] = z + dz * t; }
+  else if (e === EV_IMG) { P[o + 37] = x + dx * t; P[o + 38] = SC.yi; P[o + 39] = z + dz * t; }
+  else { P[o + 37] = x + dx * t; P[o + 38] = y + dy * t; P[o + 39] = z + dz * t; }
+}
+function advance(o, dt) {
+  let rem = dt;
+  for (let guard = 0; guard < 24; guard++) {
+    const te = P[o + 13];
+    if (te > rem) {
+      const d = rem * C_AIR / P[o + 6];
+      P[o] += P[o + 3] * d; P[o + 1] += P[o + 4] * d; P[o + 2] += P[o + 5] * d;
+      P[o + 13] = te - rem; P[o + 12] += rem;
+      return;
+    }
+    rem -= te; P[o + 12] += te;
+    const x = P[o] = P[o + 37], y = P[o + 1] = P[o + 38], z = P[o + 2] = P[o + 39];   // exactly on the surface
+    const ev = P[o + 14];
+    if (ev === EV_NONE) { P[o + 7] = 0; return; }
+    if (ev === EV_IMG) {
+      const a = P[o + 7] * 0.5;
+      addGlint(x, y, z, P[o + 9] * a, P[o + 10] * a, P[o + 11] * a, PICTURE_LIFE, 0.0072);
+      P[o + 7] = 0; return;
+    }
+    if (ev === EV_SPEC) {
+      // one dice roll is shared by the whole white packet, so a packet is stopped or let through together
+      // wherever the specimen treats all its colours alike
+      const tau = specimen(y, z, P[o + 36] * 1000);
+      if (P[o + 35] < tau) {
+        const a = P[o + 7] * 1.5;
+        addGlint(x, y, z, P[o + 9] * a, P[o + 10] * a, P[o + 11] * a, 1.1, 0.0015);
+        addBend(o, x, y, z, P[o + 12]); plan(o); continue;
+      }
+      const a = P[o + 7] * 0.07;
+      addGlint(x, y, z, P[o + 9] * a, P[o + 10] * a, P[o + 11] * a, 0.5, 0.0011);
+      P[o + 7] = 0; return;
+    }
+    const E = ELS[ev], q = E.prims[P[o + 15]];
+    if (!q.opt) { P[o + 7] = 0; return; }                         // the ground rim of a lens: the light stops
+    const inside = P[o + 8] >= 0, ng = nGlass(E.glass, P[o + 36]);
+    const n1 = inside ? ng : 1, n2 = inside ? 1 : ng;
+    normalAt(q, x, y, z);
+    const idx = P[o + 3], idy = P[o + 4], idz = P[o + 5];
+    const tir = bend(idx, idy, idz, nrm[0], nrm[1], nrm[2], n1, n2);
+    P[o + 3] = dirOut[0]; P[o + 4] = dirOut[1]; P[o + 5] = dirOut[2];
+    if (!tir) { P[o + 8] = inside ? -1 : ev; P[o + 6] = n2; }
+    if (dbg) dbg.push([x, y, z, ev, P[o + 15], idx, idy, idz, dirOut[0], dirOut[1], dirOut[2], n1, n2, tir]);
+    addBend(o, x, y, z, P[o + 12]);
+    plan(o);
+  }
+}
+
+/* The lamp: a small disc at the origin sending white light into a cone. White is a packet of fourteen
+   wavelengths born at the same point in the same direction; only glass can pull them apart. */
+function emit(dt) {
+  const swell = 1 + 0.22 * Math.sin(simTime * 5.1) + 0.16 * Math.sin(simTime * 12.7 + 1.3) + 0.1 * Math.sin(simTime * 29.3 + 4.0);
+  srcSwell = swell;
+  emitCarry += RATE * quality * dt * swell;
+  const nNew = Math.floor(emitCarry);
+  emitCarry -= nNew;
+  const cosMax = Math.cos(SC.cone);
+  for (let p = 0; p < nNew; p++) {
+    if (count + K_LAMBDA > CAP) break;
+    const s = rnd();
+    const rr = Math.sqrt(rnd()) * SC.lampR, pa = rnd() * 6.283185307179586;
+    const y = rr * Math.cos(pa), z = rr * Math.sin(pa);
+    const ct = 1 - rnd() * (1 - cosMax), st = Math.sqrt(1 - ct * ct), da = rnd() * 6.283185307179586;
+    const dx = ct, dy = st * Math.cos(da), dz = st * Math.sin(da);
+    const u = rnd(), spark = Math.pow(u, 13);
+    const white = 0.1 * (1 + 11 * spark) / quality;               // most are faint grains, a few are brilliant
+    const tm = 0.42 + 0.84 * Math.pow(u, 5);
+    const ph = rnd() * 6.2832, dice = rnd(), slide = rnd(), wk = white / K_LAMBDA;
+    for (let kk = 0; kk < K_LAMBDA; kk++) {
+      const nm = NM_LO + (NM_HI - NM_LO) * (kk + slide) / K_LAMBDA;
+      const f = nm - LUT0, i0 = f | 0, t = f - i0, q = i0 * 3;
+      const o = count * ST; count++;
+      P[o] = 0; P[o + 1] = y; P[o + 2] = z; P[o + 3] = dx; P[o + 4] = dy; P[o + 5] = dz; P[o + 6] = 1; P[o + 7] = 1; P[o + 8] = -1;
+      P[o + 9] = (LUT[q] + (LUT[q + 3] - LUT[q]) * t) * wk; P[o + 10] = (LUT[q + 1] + (LUT[q + 4] - LUT[q + 1]) * t) * wk; P[o + 11] = (LUT[q + 2] + (LUT[q + 5] - LUT[q + 2]) * t) * wk;
+      P[o + 12] = 0; P[o + 16] = 0; P[o + 33] = tm; P[o + 34] = ph; P[o + 35] = dice; P[o + 36] = nm / 1000; P[o + 40] = 0.8 + 0.7 * (tm - 0.42);
+      addBend(o, 0, y, z, 0);
+      plan(o);
+      advance(o, s * dt);
+    }
+  }
+}
+function step(dt) {
+  simTime += dt;
+  for (let i = 0; i < count; i++) advance(i * ST, dt);
+  emit(dt);
+  for (let i = count - 1; i >= 0; i--) {
+    const o = i * ST;
+    if (P[o + 7] <= 0) { count--; if (i !== count) P.copyWithin(o, count * ST, count * ST + ST); }
+  }
+}
+
+/* ───────────── Drawing (WebGL) ───────────── */
+const VS = `#version 300 es
+layout(location=0) in vec2 corner;
+layout(location=1) in vec3 p0;
+layout(location=2) in vec3 p1;
+layout(location=3) in vec2 fade;     // age at p0, age at p1 (0 tail, 1 head)
+layout(location=4) in vec4 col;      // rgb, size (world radius)
+uniform mat4 view;
+uniform vec4 proj;                   // fx, fy, near, largest blur circle (px)
+uniform vec2 vp;                     // half viewport, px
+uniform vec3 lens;                   // smallest radius (px), focus distance, aperture
+uniform vec3 lim;                    // largest sharp radius (px), fog start, fog end
+out vec2 loc; out float len; out vec2 vf; out vec3 vc; out float vr;
+void main(){
+  vec3 a = (view * vec4(p0, 1.0)).xyz, b = (view * vec4(p1, 1.0)).xyz;
+  float fa = fade.x, fb = fade.y, zn = -proj.z;
+  if (a.z > zn && b.z > zn) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+  if (a.z > zn) { float t = (zn - b.z) / (a.z - b.z); a = mix(b, a, t); fa = mix(fb, fa, t); }
+  else if (b.z > zn) { float t = (zn - a.z) / (b.z - a.z); b = mix(a, b, t); fb = mix(fa, fb, t); }
+  vec2 sa = a.xy / -a.z * proj.xy * vp, sb = b.xy / -b.z * proj.xy * vp;      // pixels from the centre
+  float zc = -0.5 * (a.z + b.z), fpx = proj.y * vp.y;
+  float r0 = min(col.w * fpx / zc, lim.x * (0.6 + 0.4 * col.w / 0.0021));
+  float coc = min(lens.z * fpx * abs(1.0 / zc - 1.0 / lens.y), proj.w);       // out of focus: a wider, fainter disc
+  float r = max(sqrt(r0 * r0 + coc * coc), lens.x);
+  vec2 d = sb - sa;
+  len = length(d);
+  vec2 t = len > 1e-4 ? d / len : vec2(1.0, 0.0);
+  vec2 nrm = vec2(-t.y, t.x);
+  float e = corner.x * 0.5 + 0.5;
+  vec2 p = mix(sa, sb, e) + t * corner.x * r + nrm * corner.y * r;
+  loc = vec2(e * len + corner.x * r, corner.y * r);
+  vf = vec2(fa, fb); vr = r;
+  vc = col.rgb * (r0 / r) * ((len + r0) / (len + r)) * (1.0 - smoothstep(lim.y, lim.z, zc));   // the same light spread over more pixels
+  gl_Position = vec4(p / vp, 0.0, 1.0);
+}`;
+const FS = `#version 300 es
+precision highp float;
+in vec2 loc; in float len; in vec2 vf; in vec3 vc; in float vr;
+out vec4 o;
+void main(){
+  float u = clamp(loc.x, 0.0, len);
+  float d = length(vec2(loc.x - u, loc.y)) / vr;
+  if (d >= 1.0) discard;
+  float f = mix(vf.x, vf.y, len > 1e-4 ? u / len : 1.0);
+  float e = 1.0 - d;
+  float prof = exp(-d * d * 5.0) * e * e;
+  float f2 = f * f, f8 = f2 * f2 * f2 * f2;
+  o = vec4(vc * prof * (0.5 * f2 + 1.7 * f8 * f2), 0.0);
+}`;
+const VS_MESH = `#version 300 es
+layout(location=0) in vec3 pos;
+layout(location=1) in vec3 nor;
+layout(location=2) in float kind;
+uniform mat4 view; uniform vec4 proj;
+out vec3 wp; out vec3 wn; out float vk; out float vz;
+void main(){
+  vec3 v = (view * vec4(pos, 1.0)).xyz;
+  wp = pos; wn = nor; vk = kind; vz = -v.z;
+  gl_Position = vec4(v.x * proj.x, v.y * proj.y, -v.z - 2.0 * proj.z, -v.z);
+}`;
+const FS_MESH = `#version 300 es
+precision highp float;
+in vec3 wp; in vec3 wn; in float vk; in float vz;
+uniform vec3 cam; uniform vec2 gain; uniform vec2 fog;      // glass, lamp
+out vec4 o;
+void main(){
+  vec3 v = normalize(cam - wp), n = normalize(wn);
+  float c = abs(dot(n, v)), f = 1.0 - c;
+  // glass shows by what it does at grazing angles: faint face-on, brighter toward its silhouette
+  vec3 col = vec3(0.60, 0.74, 1.0) * (0.0035 + 0.13 * f * f * f) * gain.x;
+  if (vk > 0.5) col = vec3(1.0, 0.94, 0.84) * (1.6 + 2.6 * c) * gain.y;
+  o = vec4(col * (1.0 - smoothstep(fog.x, fog.y, vz)), 0.0);
+}`;
+const VS_FULL = `#version 300 es
+out vec2 uv;
+void main(){ vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); uv = p; gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+const FS_DOWN = `#version 300 es
+precision highp float;
+in vec2 uv; uniform sampler2D src; uniform vec2 px; out vec4 o;
+void main(){
+  vec3 c = texture(src, uv).rgb * 4.0;
+  c += texture(src, uv + px * vec2(-1.0, -1.0)).rgb + texture(src, uv + px * vec2(1.0, -1.0)).rgb;
+  c += texture(src, uv + px * vec2(-1.0, 1.0)).rgb + texture(src, uv + px * vec2(1.0, 1.0)).rgb;
+  o = vec4(c / 8.0, 1.0);
+}`;
+const FS_UP = `#version 300 es
+precision highp float;
+in vec2 uv; uniform sampler2D src; uniform vec2 px; uniform float gain; out vec4 o;
+void main(){
+  vec3 c = texture(src, uv + px * vec2(-1.0, 0.0)).rgb + texture(src, uv + px * vec2(1.0, 0.0)).rgb;
+  c += texture(src, uv + px * vec2(0.0, -1.0)).rgb + texture(src, uv + px * vec2(0.0, 1.0)).rgb;
+  c = c * 2.0 + texture(src, uv + px * vec2(-1.0, -1.0)).rgb + texture(src, uv + px * vec2(1.0, -1.0)).rgb;
+  c += texture(src, uv + px * vec2(-1.0, 1.0)).rgb + texture(src, uv + px * vec2(1.0, 1.0)).rgb;
+  o = vec4(c / 12.0 * gain, 1.0);
+}`;
+const FS_OUT = `#version 300 es
+precision highp float;
+in vec2 uv; uniform sampler2D hdr; uniform sampler2D glow; uniform vec3 k; out vec4 o;   // k: exposure, glow, haze
+float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+void main(){
+  vec3 g = texture(glow, uv).rgb;
+  vec3 c = (texture(hdr, uv).rgb + g * k.y) * k.x;
+  // Film-like response on brightness alone, so the hue of the light is kept as it gets brighter.
+  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  float t = 1.0 - exp(-l);
+  c *= t / max(l, 1e-6);
+  c = mix(c, vec3(t), k.z * t * t * t);
+  float m = max(c.r, max(c.g, c.b));
+  if (m > 1.0) c = t + (c - t) * ((1.0 - t) / (m - t));
+  c = mix(12.92 * c, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c));
+  c += (hash(gl_FragCoord.xy) - 0.5) / 255.0;
+  o = vec4(max(c, 0.0), 1.0);
+}`;
+function shader(type, src) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function program(vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, shader(gl.VERTEX_SHADER, vs)); gl.attachShader(p, shader(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {}, n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) { const nm = gl.getActiveUniform(p, i).name; u[nm] = gl.getUniformLocation(p, nm); }
+  return { p, u };
+}
+const pgStreak = program(VS, FS), pgMesh = program(VS_MESH, FS_MESH), pgDown = program(VS_FULL, FS_DOWN), pgUp = program(VS_FULL, FS_UP), pgOut = program(VS_FULL, FS_OUT);
+const HDR = !!gl.getExtension('EXT_color_buffer_float') || !!gl.getExtension('EXT_color_buffer_half_float');
+const LEVELS = 5;
+let hdrT = null; const mips = [];
+function target(w, h) {
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  if (HDR) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null);
+  else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  const fb = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  return { tex, fb, w, h };
+}
+function freeTarget(t) { if (t) { gl.deleteTexture(t.tex); gl.deleteFramebuffer(t.fb); } }
+function buildTargets() {
+  freeTarget(hdrT); mips.forEach(freeTarget); mips.length = 0;
+  let w = cv.width, h = cv.height;
+  hdrT = target(w, h);
+  for (let i = 0; i < LEVELS; i++) { w = Math.max(2, w >> 1); h = Math.max(2, h >> 1); mips.push(target(w, h)); }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+const MAXSEG = Math.floor(CAP * 1.5) + NG + 4000, IS = 12;
+const inst = new Float32Array(MAXSEG * IS);
+const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+const qb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, qb);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+const ib = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, ib);
+gl.bufferData(gl.ARRAY_BUFFER, inst.byteLength, gl.DYNAMIC_DRAW);
+gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, IS * 4, 0); gl.vertexAttribDivisor(1, 1);
+gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 3, gl.FLOAT, false, IS * 4, 12); gl.vertexAttribDivisor(2, 1);
+gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 2, gl.FLOAT, false, IS * 4, 24); gl.vertexAttribDivisor(3, 1);
+gl.enableVertexAttribArray(4); gl.vertexAttribPointer(4, 4, gl.FLOAT, false, IS * 4, 32); gl.vertexAttribDivisor(4, 1);
+const vaoFull = gl.createVertexArray();
+
+/* Glass, as geometry: the true surfaces of every lens and the prism, plus one crisp line along each real
+   edge. Nothing is drawn inside the glass that light does not bend at. */
+const LINES = [];                // x0 y0 z0 x1 y1 z1 brightness size
+function addLine(a, b, v, size) { LINES.push(a[0], a[1], a[2], b[0], b[1], b[2], v, size); }
+function addCircle(c, u, r, v, size, n) {
+  const e1 = Math.abs(u[1]) > 0.9 ? [1, 0, 0] : [0, 1, 0];
+  const e2 = [u[1] * e1[2] - u[2] * e1[1], u[2] * e1[0] - u[0] * e1[2], u[0] * e1[1] - u[1] * e1[0]];
+  const e3 = [e2[1] * u[2] - e2[2] * u[1], e2[2] * u[0] - e2[0] * u[2], e2[0] * u[1] - e2[1] * u[0]];
+  let prev = null;
+  for (let i = 0; i <= n; i++) {
+    const a = i / n * 6.283185307179586, cs = Math.cos(a) * r, sn = Math.sin(a) * r;
+    const p = [c[0] + e2[0] * cs + e3[0] * sn, c[1] + e2[1] * cs + e3[1] * sn, c[2] + e2[2] * cs + e3[2] * sn];
+    if (prev) addLine(prev, p, v, size);
+    prev = p;
+  }
+}
+const meshV = [], meshI = [];
+function pushV(p, n, k) { meshV.push(p[0], p[1], p[2], n[0], n[1], n[2], k); return meshV.length / 7 - 1; }
+const EDGE = 0.05, EDGE_W = 0.0016;
+function lensMesh(L) {
+  const u = L.u, NS = 80, NR = 14;
+  const e1 = Math.abs(u[1]) > 0.9 ? [1, 0, 0] : [0, 1, 0];
+  const e2 = [u[1] * e1[2] - u[2] * e1[1], u[2] * e1[0] - u[0] * e1[2], u[0] * e1[1] - u[1] * e1[0]];
+  const e3 = [e2[1] * u[2] - e2[2] * u[1], e2[2] * u[0] - e2[0] * u[2], e2[0] * u[1] - e2[1] * u[0]];
+  const pt = (side, rho, a) => {
+    const s = side === 0 ? sag(L.R1, rho) : -sag(L.R2, rho, L.k2), base = side === 0 ? L.v : L.w;
+    const cs = Math.cos(a) * rho, sn = Math.sin(a) * rho;
+    return [base[0] + u[0] * s + e2[0] * cs + e3[0] * sn, base[1] + u[1] * s + e2[1] * cs + e3[1] * sn, base[2] + u[2] * s + e2[2] * cs + e3[2] * sn];
+  };
+  for (let side = 0; side < 2; side++) {
+    const first = meshV.length / 7;
+    for (let i = 0; i <= NR; i++) for (let j = 0; j < NS; j++) {
+      const p = pt(side, L.a * Math.sqrt(i / NR), j / NS * 6.283185307179586);
+      normalAt(L.prims[side], p[0], p[1], p[2]);
+      pushV(p, nrm, 0);
+    }
+    for (let i = 0; i < NR; i++) for (let j = 0; j < NS; j++) {
+      const a = first + i * NS + j, b = first + i * NS + (j + 1) % NS, c = a + NS, d = b + NS;
+      meshI.push(a, b, c, b, d, c);
+    }
+  }
+  const first = meshV.length / 7;                                  // the ground rim
+  for (let j = 0; j < NS; j++) {
+    const a = j / NS * 6.283185307179586, p0 = pt(0, L.a, a), p1 = pt(1, L.a, a);
+    const n = [e2[0] * Math.cos(a) + e3[0] * Math.sin(a), e2[1] * Math.cos(a) + e3[1] * Math.sin(a), e2[2] * Math.cos(a) + e3[2] * Math.sin(a)];
+    pushV(p0, n, 0); pushV(p1, n, 0);
+  }
+  for (let j = 0; j < NS; j++) { const a = first + j * 2, b = first + ((j + 1) % NS) * 2; meshI.push(a, b, a + 1, b, b + 1, a + 1); }
+  const s0 = sag(L.R1, L.a), s1 = -sag(L.R2, L.a, L.k2);
+  addCircle([L.v[0] + u[0] * s0, L.v[1] + u[1] * s0, L.v[2] + u[2] * s0], u, L.a, EDGE, EDGE_W, 96);
+  addCircle([L.w[0] + u[0] * s1, L.w[1] + u[1] * s1, L.w[2] + u[2] * s1], u, L.a, EDGE, EDGE_W, 96);
+}
+function prismMesh(Pm) {
+  const h = Pm.L / 2, cx = Pm.cx;
+  const A = z => [cx - h, -h, z], B = z => [cx - h, h, z], C = z => [cx + h, h, z];
+  const quad = (a, b, c, d, n) => { const i = pushV(a, n, 0); pushV(b, n, 0); pushV(c, n, 0); pushV(d, n, 0); meshI.push(i, i + 1, i + 2, i, i + 2, i + 3); };
+  const s = Math.SQRT1_2;
+  quad(A(-h), B(-h), B(h), A(h), [-1, 0, 0]);
+  quad(B(-h), C(-h), C(h), B(h), [0, 1, 0]);
+  quad(A(-h), C(-h), C(h), A(h), [s, -s, 0]);
+  for (const z of [-h, h]) { const n = [0, 0, Math.sign(z)], i = pushV(A(z), n, 0); pushV(B(z), n, 0); pushV(C(z), n, 0); meshI.push(i, i + 1, i + 2); }
+  for (const z of [-h, h]) { addLine(A(z), B(z), EDGE, EDGE_W); addLine(B(z), C(z), EDGE, EDGE_W); addLine(C(z), A(z), EDGE, EDGE_W); }
+  addLine(A(-h), A(h), EDGE, EDGE_W); addLine(B(-h), B(h), EDGE, EDGE_W); addLine(C(-h), C(h), EDGE, EDGE_W);
+}
+function sphereMesh(c, r, kind) {
+  const NA = 20, NB = 28, first = meshV.length / 7;
+  for (let i = 0; i <= NA; i++) for (let j = 0; j < NB; j++) {
+    const th = i / NA * Math.PI, ph = j / NB * 6.283185307179586;
+    const n = [Math.cos(th), Math.sin(th) * Math.cos(ph), Math.sin(th) * Math.sin(ph)];
+    pushV([c[0] + n[0] * r, c[1] + n[1] * r, c[2] + n[2] * r], n, kind);
+  }
+  for (let i = 0; i < NA; i++) for (let j = 0; j < NB; j++) { const a = first + i * NB + j, b = first + i * NB + (j + 1) % NB; meshI.push(a, b, a + NB, b, b + NB, a + NB); }
+}
+for (const E of ELS) if (E.kind === 'lens') lensMesh(E); else prismMesh(E);
+sphereMesh([-SC.lampR * 0.35, 0, 0], SC.lampR * 1.06, 1);          // the lamp: a small glowing bead
+addCircle([0, 0, 0], [1, 0, 0], SC.lampR * 1.9, EDGE * 0.9, EDGE_W, 64);
+{ // the slide and the screen, as plain outlines
+  const s = SC.slideR, x = SC.xs;
+  addLine([x, -s, -s], [x, s, -s], EDGE * 0.8, EDGE_W * 0.7); addLine([x, s, -s], [x, s, s], EDGE * 0.8, EDGE_W * 0.7);
+  addLine([x, s, s], [x, -s, s], EDGE * 0.8, EDGE_W * 0.7); addLine([x, -s, s], [x, -s, -s], EDGE * 0.8, EDGE_W * 0.7);
+  const f = SC.frame, y = SC.yi, c = SC.px;
+  addLine([c - f, y, -f], [c + f, y, -f], EDGE * 0.8, EDGE_W); addLine([c + f, y, -f], [c + f, y, f], EDGE * 0.8, EDGE_W);
+  addLine([c + f, y, f], [c - f, y, f], EDGE * 0.8, EDGE_W); addLine([c - f, y, f], [c - f, y, -f], EDGE * 0.8, EDGE_W);
+}
+const vaoMesh = gl.createVertexArray(); gl.bindVertexArray(vaoMesh);
+const mb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, mb);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(meshV), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 28, 0);
+gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 28, 12);
+gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 28, 24);
+const eb = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, eb);
+gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(meshI), gl.STATIC_DRAW);
+gl.bindVertexArray(null);
+gl.clearColor(0, 0, 0, 1);
+
+/* Every streak is rebuilt from the photon's real path: head, then back through its recent bends. A drawn
+   segment is always a piece of the path the photon actually took, so it cannot cut through a surface. */
+let segAudit = null;
+const GLINT = 0.05, R_PHOTON = 0.0021;
+function buildSegments(expo) {
+  let m = 0;
+  if (!segAudit) {
+    const nL = LINES.length / 8, g = 1 / expo;
+    for (let i = 0; i < nL; i++, m++) {
+      const q = i * 8, k = m * IS, v = LINES[q + 6] * g;
+      inst[k] = LINES[q]; inst[k + 1] = LINES[q + 1]; inst[k + 2] = LINES[q + 2]; inst[k + 3] = LINES[q + 3]; inst[k + 4] = LINES[q + 4]; inst[k + 5] = LINES[q + 5];
+      inst[k + 6] = 1; inst[k + 7] = 1; inst[k + 8] = v * 0.86; inst[k + 9] = v * 0.93; inst[k + 10] = v; inst[k + 11] = LINES[q + 7];
+    }
+  }
+  for (let i = 0; i < count && m < MAXSEG - 6; i++) {
+    const o = i * ST, T = P[o + 12], tm = P[o + 33], tau = TAU * tm, t0 = T - tau;
+    let a = P[o + 7] * (0.8 + 0.3 * Math.sin(simTime * 23 + P[o + 34]));
+    if (P[o + 14] === EV_NONE) a *= P[o + 13] / FADE;
+    const r = P[o + 9] * a, g = P[o + 10] * a, b = P[o + 11] * a;
+    const size = P[o + 40] * R_PHOTON;
+    let cx = P[o], cy = P[o + 1], cz = P[o + 2], ct = T;
+    for (let j = P[o + 16] - 1; j >= 0; j--) {
+      const q = o + 17 + j * 4;
+      let bx = P[q], by = P[q + 1], bz = P[q + 2], bt = P[q + 3], last = false;
+      if (j > 0 && T - bt < GLINT && !segAudit) {                 // a glint exactly where it met the surface
+        const w = 1 - (T - bt) / GLINT, k = m * IS, s = 2.2 * w * w;
+        inst[k] = bx; inst[k + 1] = by; inst[k + 2] = bz; inst[k + 3] = bx; inst[k + 4] = by; inst[k + 5] = bz; inst[k + 6] = 1; inst[k + 7] = 1;
+        inst[k + 8] = r * s; inst[k + 9] = g * s; inst[k + 10] = b * s; inst[k + 11] = size * 1.5;
+        m++;
+      }
+      if (bt <= t0) {
+        if (ct > bt) { const f = (t0 - bt) / (ct - bt); bx += (cx - bx) * f; by += (cy - by) * f; bz += (cz - bz) * f; }
+        bt = t0; last = true;
+      }
+      if (ct > bt) {
+        const k = m * IS;
+        inst[k] = bx; inst[k + 1] = by; inst[k + 2] = bz; inst[k + 3] = cx; inst[k + 4] = cy; inst[k + 5] = cz;
+        inst[k + 6] = (bt - t0) / tau; inst[k + 7] = (ct - t0) / tau;
+        inst[k + 8] = r; inst[k + 9] = g; inst[k + 10] = b; inst[k + 11] = size;
+        if (segAudit) segAudit(bx, by, bz, cx, cy, cz);
+        m++;
+      }
+      if (last) break;
+      cx = bx; cy = by; cz = bz; ct = bt;
+    }
+  }
+  if (segAudit) return m;
+  for (let i = 0; i < NG && m < MAXSEG; i++) {
+    const q = i * GS, life = G[q + 7];
+    if (life <= 0) continue;
+    const age = simTime - G[q + 6];
+    if (age >= life) { G[q + 7] = 0; continue; }
+    let w = 1 - age / life; w = w * w * (3 - 2 * w);
+    const k = m * IS;
+    inst[k] = G[q]; inst[k + 1] = G[q + 1]; inst[k + 2] = G[q + 2]; inst[k + 3] = G[q]; inst[k + 4] = G[q + 1]; inst[k + 5] = G[q + 2]; inst[k + 6] = 1; inst[k + 7] = 1;
+    inst[k + 8] = G[q + 3] * w; inst[k + 9] = G[q + 4] * w; inst[k + 10] = G[q + 5] * w; inst[k + 11] = G[q + 8];
+    m++;
+  }
+  return m;
+}
+
+/* ───────────── Camera and stops ───────────── */
+const xs = SC.xs, px = SC.px, yi = SC.yi;
+const magTxt = Math.abs(SC.mag).toFixed(1).replace(/\.0$/, '');
+const nSurf = ELS.reduce((n, E) => n + (E.kind === 'lens' ? 2 : 3), 0);
+const VIEWS = [
+  { name: 'Picture', title: 'The picture', line: 'A diatom, ' + magTxt + ' times its real size. Every grain of it is one photon arriving. Scroll to follow the light back to where it starts.',
+    t: [px, yi, 0], d: [0, 1, 0], D: 0.95, up: [0, 0, -1], exp: 2.3, ap: 0, far: 1.4 },
+  { name: 'Lamp', title: 'The light comes from here', line: 'A small glowing bead sends white light out in a cone. White is every colour travelling together.',
+    t: [0.42, 0, 0], d: [-0.2, 0.24, 1], D: 1.5, exp: 1.25, ap: 0.012 },
+  { name: 'Collector', title: 'Collector', line: 'The first lens catches the cone. Each ray turns only twice, once at each surface of the glass, and leaves running parallel.',
+    t: [SC.coll.v[0] + 0.12, 0, 0], d: [0.55, 0.2, 1], D: 1.35, exp: 1.25, ap: 0.012 },
+  { name: 'Condenser', title: 'Condenser', line: 'A lens of dense flint glass takes the parallel light and aims all of it at one small spot.',
+    t: [(SC.cond.v[0] + xs) / 2 + 0.1, 0, 0], d: [-0.1, 0.13, 1], D: 2.2, exp: 1.3, ap: 0.008 },
+  { name: 'Focus', title: 'The focus', line: 'Here the light draws a sharp image of the lamp. Flint bends blue more than red, so blue arrives at its focus a little early.',
+    t: [xs - 0.1, 0, 0], d: [-0.45, 0.16, 1], D: 0.85, exp: 0.9, ap: 0.004, far: 6 },
+  { name: 'Specimen', title: 'The specimen', line: 'The focus lands on a diatom on a slide. Light passes only where the shell is open. Everywhere else it stops here.',
+    t: [xs, 0, 0], d: [0.8, 0.3, 0.95], D: 0.42, exp: 1.3, ap: 0.0012, far: 3.2 },
+  { name: 'Objective', title: 'Objective', line: 'Two lenses, flint and crown, close together. Light fanning out from each point of the diatom leaves as a parallel bundle.',
+    t: [SC.objF.v[0] + 0.05, 0, 0], d: [-0.35, 0.22, 1], D: 1.15, exp: 2.0, ap: 0.01 },
+  { name: 'Prism', title: 'Prism', line: 'No mirror. The light meets the long face too steeply to get out, so all of it reflects and goes up. The picture is flipped here.',
+    t: [px, 0.12, 0], d: [0.5, 0.18, 1], D: 1.7, exp: 2.0, ap: 0.01 },
+  { name: 'Tube lens', title: 'Tube lens', line: 'Each parallel bundle is bent back toward a single point, ' + magTxt + ' times further from the centre than where it began.',
+    t: [px, SC.tube.v[1] + 0.45, 0], d: [0.3, -0.12, 1], D: 2.4, exp: 2.0, ap: 0.006 },
+  { name: 'Whole path', title: 'The whole path', line: 'Lamp, two lenses, focus, specimen, objective, prism, tube lens, picture. ' + nSurf + ' surfaces, each one crossed by Snell’s law and nothing else.',
+    t: [2.75, 1.32, 0], d: [0.1, 0.06, 1], D: 8.9, exp: 2.6, ap: 0 },
+  { name: 'Picture', title: 'The picture, again', line: 'The same grains, now with nothing hidden: each one left the lamp, crossed every surface, and landed here.',
+    t: [px, yi, 0], d: [0, 1, 0.5], D: 1.15, up: [0, 0, -1], exp: 2.3, ap: 0.001, far: 2.2 }
+];
+for (const v of VIEWS) { const l = Math.hypot(v.d[0], v.d[1], v.d[2]); v.d = v.d.map(c => c / l); if (!v.up) v.up = [0, 1, 0]; }
+const NV = VIEWS.length;
+const FOV = 36 * Math.PI / 180, NEAR = 0.04;
+let W = 1, H = 1, DPR = 1;
+const camS = { pos: [0, 0, 1], view: new Float32Array(16), fx: 1, fy: 1, exp: 1, focus: 1, ap: 0, fog: 99 };
+let sRaw = 0, sSmooth = 0, sOverride = null, ptrX = 0, ptrY = 0, ptrSX = 0, ptrSY = 0;
+function ease(u) { u = (u - 0.16) / 0.68; u = u < 0 ? 0 : u > 1 ? 1 : u; return u * u * u * (u * (6 * u - 15) + 10); }
+function setCamera(s) {
+  const i = Math.min(NV - 2, Math.max(0, Math.floor(s))), e = ease(Math.min(1, Math.max(0, s - i)));
+  const A = VIEWS[i], B = VIEWS[i + 1], mix = (a, b) => a + (b - a) * e;
+  const T = [mix(A.t[0], B.t[0]), mix(A.t[1], B.t[1]), mix(A.t[2], B.t[2])];
+  let d = [mix(A.d[0], B.d[0]), mix(A.d[1], B.d[1]), mix(A.d[2], B.d[2])];
+  let l = Math.hypot(d[0], d[1], d[2]); d = d.map(c => c / l);
+  let up = [mix(A.up[0], B.up[0]), mix(A.up[1], B.up[1]), mix(A.up[2], B.up[2])];
+  const aspect = W / H, wide = Math.pow(Math.max(1, 1.5 / aspect), 0.85);
+  const travel = Math.hypot(B.t[0] - A.t[0], B.t[1] - A.t[1], B.t[2] - A.t[2]);
+  let D = Math.exp(mix(Math.log(A.D), Math.log(B.D))) * wide + 0.3 * travel * Math.sin(Math.PI * e);
+  // basis
+  let f = [-d[0], -d[1], -d[2]];
+  let r = [f[1] * up[2] - f[2] * up[1], f[2] * up[0] - f[0] * up[2], f[0] * up[1] - f[1] * up[0]];
+  l = Math.hypot(r[0], r[1], r[2]); r = r.map(c => c / l);
+  let u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
+  // the pointer leans the camera a little around what it is looking at
+  d = [d[0] + r[0] * ptrSX * 0.16 + u[0] * ptrSY * 0.1, d[1] + r[1] * ptrSX * 0.16 + u[1] * ptrSY * 0.1, d[2] + r[2] * ptrSX * 0.16 + u[2] * ptrSY * 0.1];
+  l = Math.hypot(d[0], d[1], d[2]); d = d.map(c => c / l);
+  f = [-d[0], -d[1], -d[2]];
+  r = [f[1] * u[2] - f[2] * u[1], f[2] * u[0] - f[0] * u[2], f[0] * u[1] - f[1] * u[0]];
+  l = Math.hypot(r[0], r[1], r[2]); r = r.map(c => c / l);
+  u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
+  const C = [T[0] + d[0] * D, T[1] + d[1] * D, T[2] + d[2] * D];
+  const V = camS.view;
+  V[0] = r[0]; V[4] = r[1]; V[8] = r[2]; V[12] = -(r[0] * C[0] + r[1] * C[1] + r[2] * C[2]);
+  V[1] = u[0]; V[5] = u[1]; V[9] = u[2]; V[13] = -(u[0] * C[0] + u[1] * C[1] + u[2] * C[2]);
+  V[2] = -f[0]; V[6] = -f[1]; V[10] = -f[2]; V[14] = f[0] * C[0] + f[1] * C[1] + f[2] * C[2];
+  V[3] = 0; V[7] = 0; V[11] = 0; V[15] = 1;
+  camS.pos = C; camS.fy = 1 / Math.tan(FOV / 2); camS.fx = camS.fy / aspect;
+  camS.exp = Math.exp(mix(Math.log(A.exp), Math.log(B.exp))); camS.focus = D; camS.ap = mix(A.ap, B.ap); camS.fog = D * Math.exp(mix(Math.log(A.far || 40), Math.log(B.far || 40)));
+}
+
+const LOOK = { glow: 0.5, spread: 0.72, sat: 0.5, level: 1 };
+function pass(pg, dst, src, pxx, pyy) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, dst ? dst.fb : null);
+  gl.viewport(0, 0, dst ? dst.w : cv.width, dst ? dst.h : cv.height);
+  gl.useProgram(pg.p);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, src.tex);
+  gl.uniform1i(pg.u.src, 0);
+  if (pg.u.px) gl.uniform2f(pg.u.px, pxx, pyy);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+function render() {
+  setCamera(sSmooth);
+  const expo = camS.exp * LOOK.level;
+  const m = buildSegments(expo);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, hdrT.fb);
+  gl.viewport(0, 0, hdrT.w, hdrT.h);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+  // glass
+  gl.useProgram(pgMesh.p);
+  gl.bindVertexArray(vaoMesh);
+  gl.uniformMatrix4fv(pgMesh.u.view, false, camS.view);
+  gl.uniform4f(pgMesh.u.proj, camS.fx, camS.fy, NEAR, 0);
+  gl.uniform3f(pgMesh.u.cam, camS.pos[0], camS.pos[1], camS.pos[2]);
+  gl.uniform2f(pgMesh.u.gain, 1 / expo, (0.8 + 0.2 * srcSwell) / expo);
+  gl.uniform2f(pgMesh.u.fog, camS.fog * 0.75, camS.fog);
+  gl.drawElements(gl.TRIANGLES, meshI.length, gl.UNSIGNED_INT, 0);
+  // light
+  gl.useProgram(pgStreak.p);
+  gl.bindVertexArray(vao);
+  gl.uniformMatrix4fv(pgStreak.u.view, false, camS.view);
+  gl.uniform4f(pgStreak.u.proj, camS.fx, camS.fy, NEAR, 9 * DPR);
+  gl.uniform2f(pgStreak.u.vp, cv.width / 2, cv.height / 2);
+  gl.uniform3f(pgStreak.u.lens, 0.7 * DPR, camS.focus, camS.ap);
+  gl.uniform3f(pgStreak.u.lim, 2.6 * DPR, camS.fog * 0.75, camS.fog);
+  gl.bindBuffer(gl.ARRAY_BUFFER, ib);
+  gl.bufferSubData(gl.ARRAY_BUFFER, 0, inst, 0, m * IS);
+  gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, m);
+  // bloom
+  gl.bindVertexArray(vaoFull);
+  gl.disable(gl.BLEND);
+  let src = hdrT;
+  for (let i = 0; i < LEVELS; i++) { pass(pgDown, mips[i], src, 1 / src.w, 1 / src.h); src = mips[i]; }
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+  gl.useProgram(pgUp.p);
+  for (let i = LEVELS - 1; i > 0; i--) { gl.uniform1f(pgUp.u.gain, LOOK.spread); pass(pgUp, mips[i - 1], mips[i], 1 / mips[i].w, 1 / mips[i].h); }
+  gl.disable(gl.BLEND);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, cv.width, cv.height);
+  gl.useProgram(pgOut.p);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, hdrT.tex);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, mips[0].tex);
+  gl.uniform1i(pgOut.u.hdr, 0); gl.uniform1i(pgOut.u.glow, 1);
+  gl.uniform3f(pgOut.u.k, HDR ? expo : expo * 0.8, LOOK.glow, LOOK.sat);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+/* ───────────── Page: scroll, captions, index ───────────── */
+const film = document.getElementById('film');
+film.style.height = (NV * 100) + 'vh';
+const cNum = document.getElementById('c-num'), cTitle = document.getElementById('c-title'), cLine = document.getElementById('c-line');
+const captionEl = document.getElementById('caption'), cue = document.getElementById('cue'), countEl = document.getElementById('count');
+const indexEl = document.getElementById('index'), indexBtns = [];
+const scroller = () => document.scrollingElement || document.documentElement;
+function goTo(i) {
+  const sc = scroller(), max = sc.scrollHeight - sc.clientHeight;
+  sc.scrollTo({ top: max * i / (NV - 1), behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+}
+VIEWS.forEach((v, i) => {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.innerHTML = '<span></span><i></i>';
+  b.firstChild.textContent = v.name;
+  b.setAttribute('aria-label', (i + 1) + '. ' + v.title);
+  b.addEventListener('click', () => goTo(i));
+  indexEl.appendChild(b); indexBtns.push(b);
+});
+let shown = -1;
+function updateCaption() {
+  const i = Math.min(NV - 1, Math.max(0, Math.round(sSmooth)));
+  if (i !== shown) {
+    shown = i;
+    cNum.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(NV).padStart(2, '0');
+    cTitle.textContent = VIEWS[i].title; cLine.textContent = VIEWS[i].line;
+    indexBtns.forEach((b, k) => b.setAttribute('aria-current', k === i ? 'true' : 'false'));
+  }
+  const a = Math.max(0, 1 - Math.abs(sSmooth - i) * 3.4);
+  captionEl.style.opacity = a.toFixed(3);
+  cue.style.opacity = sSmooth < 0.12 ? '1' : '0';
+}
+function readScroll() {
+  const sc = scroller(), max = sc.scrollHeight - sc.clientHeight;
+  sRaw = max > 0 ? Math.min(1, Math.max(0, sc.scrollTop / max)) * (NV - 1) : 0;
+}
+addEventListener('scroll', readScroll, { passive: true });
+addEventListener('keydown', e => {
+  const cur = Math.round(sRaw);
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) { if (e.target.tagName !== 'BUTTON' || e.key !== ' ') { e.preventDefault(); goTo(Math.min(NV - 1, cur + 1)); } }
+  else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) { e.preventDefault(); goTo(Math.max(0, cur - 1)); }
+});
+stageEl.addEventListener('pointermove', e => {
+  if (e.pointerType === 'touch') return;
+  const r = stageEl.getBoundingClientRect();
+  ptrX = ((e.clientX - r.left) / r.width - 0.5) * 2; ptrY = ((e.clientY - r.top) / r.height - 0.5) * 2;
+});
+stageEl.addEventListener('pointerleave', () => { ptrX = 0; ptrY = 0; });
+function resize() {
+  W = stageEl.clientWidth || 1; H = stageEl.clientHeight || 1;
+  DPR = Math.min(window.devicePixelRatio || 1, 1.75);
+  const w = Math.max(2, Math.round(W * DPR)), h = Math.max(2, Math.round(H * DPR));
+  if (w !== cv.width || h !== cv.height) { cv.width = w; cv.height = h; buildTargets(); }
+  readScroll();
+}
+addEventListener('resize', resize);
+new ResizeObserver(resize).observe(stageEl);
+
+/* ───────────── Loop ───────────── */
+let lastT = 0, fps = 60, manual = false, slowT = 0, hudT = 0;
+function tick(dt) {
+  const target = sOverride !== null ? sOverride : sRaw;
+  sSmooth += (target - sSmooth) * (1 - Math.exp(-dt / 0.28));
+  ptrSX += (ptrX - ptrSX) * (1 - Math.exp(-dt / 0.35)); ptrSY += (ptrY - ptrSY) * (1 - Math.exp(-dt / 0.35));
+  updateCaption();
+  hudT += dt;
+  if (hudT > 0.25) { hudT = 0; countEl.textContent = count.toLocaleString('en-US') + ' photons in flight'; }
+}
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, Math.max(0.001, (now - lastT) / 1000));
+  lastT = now;
+  if (manual) return;
+  fps += (1 / dt - fps) * 0.05;
+  slowT = fps < 47 ? slowT + dt : 0;
+  if (slowT > 1.2 && quality > 0.2) { quality *= 0.78; slowT = 0; }   // keep it smooth on slower machines: fewer, brighter photons
+  step(dt);
+  tick(dt);
+  render();
+}
+resize();
+// start with the light already all the way through, so the first frame shows the finished picture
+for (let i = 0; i < 300; i++) step(1 / 30);
+updateCaption();
+requestAnimationFrame(t => { lastT = t; requestAnimationFrame(frame); });
+
+/* Hooks for checking the physics from outside the page. */
+window.__scope = {
+  SC, ELS, VIEWS, LOOK,
+  setManual(v) { manual = v; }, step,
+  show(s) { sOverride = s; sSmooth = s; ptrSX = ptrSY = 0; updateCaption(); render(); },
+  release() { sOverride = null; },
+  get fps() { return fps; }, get count() { return count; }, get quality() { return quality; }, set quality(v) { quality = v; }, get hdr() { return HDR; },
+  record(on) { dbg = on ? [] : null; },
+  takeEvents() { const d = dbg; if (dbg) dbg = []; return d; },
+  checkEvents(evs) {                       // Snell residual, distance of each bend from the true surface, bend kept in the plane of incidence
+    let snell = 0, off = 0, plane = 0, norm = 0, tirBad = 0, tir = 0;
+    for (const e of evs) {
+      const E = ELS[e[3]], q = E.prims[e[4]];
+      off = Math.max(off, Math.abs(surfDist(q, e[0], e[1], e[2])));
+      normalAt(q, e[0], e[1], e[2]);
+      const N = [nrm[0], nrm[1], nrm[2]], di = [e[5], e[6], e[7]], dout = [e[8], e[9], e[10]];
+      const cr = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+      const ci = cr(di, N), co = cr(dout, N);            // |cross| = sine of the angle to the normal; direction = normal of the plane of incidence
+      const si = Math.hypot(ci[0], ci[1], ci[2]), so = Math.hypot(co[0], co[1], co[2]);
+      norm = Math.max(norm, Math.abs(Math.hypot(dout[0], dout[1], dout[2]) - 1));
+      if (e[13]) { tir++; snell = Math.max(snell, Math.abs(si - so)); if (e[11] * si <= e[12]) tirBad++; plane = Math.max(plane, Math.hypot(ci[0] - co[0], ci[1] - co[1], ci[2] - co[2])); }
+      else { snell = Math.max(snell, Math.abs(e[11] * si - e[12] * so)); plane = Math.max(plane, Math.hypot(e[11] * ci[0] - e[12] * co[0], e[11] * ci[1] - e[12] * co[1], e[11] * ci[2] - e[12] * co[2])); }
+    }
+    return { n: evs.length, tir, tirBad, snell, off, plane, norm };
+  },
+  auditStates() {                          // every photon's "inside this glass / in air" flag against plain geometry
+    let bad = 0;
+    for (let i = 0; i < count; i++) {
+      const o = i * ST, el = P[o + 8];
+      if (el >= 0) { if (insideEl(ELS[el], P[o], P[o + 1], P[o + 2]) > 1e-7) bad++; }
+      else for (const E of ELS) if (insideEl(E, P[o], P[o + 1], P[o + 2]) < -1e-7) { bad++; break; }
+    }
+    return bad;
+  },
+  auditSegments() {                        // every drawn segment: does it pass through a surface anywhere but at its ends?
+    let bad = 0, n = 0;
+    segAudit = (x0, y0, z0, x1, y1, z1) => {
+      n++;
+      let dx = x1 - x0, dy = y1 - y0, dz = z1 - z0; const len = Math.hypot(dx, dy, dz);
+      if (len < 1e-9) return;
+      dx /= len; dy /= len; dz /= len;
+      const mx = (x0 + x1) / 2, my = (y0 + y1) / 2, mz = (z0 + z1) / 2;
+      for (const E of ELS) {
+        if (insideEl(E, mx, my, mz) < -1e-9) { if (insideEl(E, x0, y0, z0) > 1e-7 || insideEl(E, x1, y1, z1) > 1e-7) { bad++; break; } }
+        else if (insideEl(E, x0, y0, z0) < -1e-7 || insideEl(E, x1, y1, z1) < -1e-7 || (interval(E, x0, y0, z0, dx, dy, dz) && hitOut.tin > 1e-7 && hitOut.tin < len - 1e-7)) { bad++; break; }
+      }
+    };
+    buildSegments(1);
+    segAudit = null;
+    return [bad, n];
+  }
+};
+})();
+</script>

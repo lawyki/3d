@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Loose Matter</title>
+<meta name="description" content="Loose Matter, an exhibition about sand. A page made of the material it is about.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#d9c9ab; --paper-hi:#e8dcc4; --paper-lo:#c6b28e;
+  --ink:#1c150e; --ink2:rgba(28,21,14,.62);
+  --blue:#1d3bea;
+  --m:40px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-snap-type:y proximity;background:var(--paper)}
+body{
+  color:var(--ink);
+  font-family:Archivo,"Helvetica Neue",Arial,sans-serif;
+  background:radial-gradient(130% 95% at 14% 4%,var(--paper-hi) 0%,var(--paper) 52%,var(--paper-lo) 100%) fixed;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0;pointer-events:none}
+#track div{scroll-snap-align:start}
+
+/* the sheet: one plane that carries both the sand and the type */
+#sheet{position:fixed;left:0;top:0;width:100vw;height:100vh;transform-origin:0 0;z-index:1;
+  opacity:0;transition:opacity .5s}
+#sheet.ready{opacity:1}
+.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:500}
+
+/* chrome */
+.top{position:absolute;left:var(--m);right:var(--m);top:calc(var(--m)*.5);height:22px;display:flex;align-items:center;justify-content:space-between}
+.top .wm{font-weight:800;font-stretch:112%;font-size:14px;letter-spacing:.01em;text-transform:uppercase}
+.top nav{display:flex;gap:30px}
+.top nav a{color:var(--ink2);text-decoration:none;padding:6px 0 6px 0;transition:color .3s;cursor:pointer}
+.top nav a i{font-style:normal;margin-right:.7em}
+.top nav a.on,.top nav a:hover{color:var(--ink)}
+.top .when{color:var(--ink)}
+.ridge{position:absolute;left:var(--m);right:var(--m);top:calc(var(--m)*.5 + 34px);height:1px}
+
+.leaf{position:absolute;inset:0;visibility:hidden;pointer-events:none}
+.leaf.on{visibility:visible}
+.leaf.live{pointer-events:auto}
+
+.sand{font-weight:900;font-stretch:125%;line-height:.78;letter-spacing:0;color:transparent;text-transform:uppercase;white-space:nowrap;
+  -webkit-user-select:none;user-select:none}
+.sand span{display:block;width:max-content}
+html.nogl .sand{color:var(--ink)}
+
+.lead{font-size:clamp(17px,1.5vw,22px);line-height:1.28;font-weight:500;letter-spacing:-.005em}
+.body{font-size:clamp(15px,1.18vw,17.5px);line-height:1.42;font-weight:400}
+
+/* 01 title */
+.l0 h1{position:absolute;left:var(--m);top:calc(var(--m)*.5 + 34px + var(--m)*.75)}
+.l0 .lead{position:absolute;right:var(--m);bottom:var(--m);width:min(21em,40vw)}
+.l0 .hint{position:absolute;left:var(--m);bottom:var(--m);line-height:1.7;color:var(--ink2)}
+.l0 .hint b{color:var(--ink);font-weight:500}
+
+/* 02 fifty */
+.l1 h2{position:absolute;left:var(--m);top:calc(var(--m)*.5 + 34px + var(--m)*.9)}
+.l1 .col{position:absolute;left:61%;right:var(--m);top:19%}
+.l1 .col .mono{margin-bottom:1.3em}
+.l1 .col .lead{margin-bottom:.8em}
+.l1 .piles{position:absolute;left:61%;right:var(--m);top:57%;height:21%}
+.l1 .cap{position:absolute;left:61%;top:calc(78% + 18px);color:var(--ink2)}
+
+/* 03 rooms */
+.l2 .title{position:absolute;left:var(--m);top:calc(var(--m)*.5 + 34px + var(--m)*.9);font-weight:800;font-stretch:118%;
+  font-size:clamp(26px,3.3vw,50px);line-height:.98;letter-spacing:-.015em}
+.l2 .rooms{position:absolute;left:var(--m);right:var(--m);bottom:var(--m);display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--m)*1.1)}
+.room{cursor:default}
+.room .tile{width:min(100%,34vh);aspect-ratio:1;margin-bottom:22px}
+.room h3{font-weight:800;font-stretch:118%;font-size:clamp(20px,1.9vw,28px);letter-spacing:-.01em;margin:.35em 0 .3em}
+.room p.body{max-width:23em}
+.room .mono{color:var(--ink2)}
+
+/* 04 visit */
+.l3 h2{position:absolute;left:var(--m);top:calc(var(--m)*.5 + 34px + var(--m)*.75)}
+.l3 .facts{position:absolute;left:var(--m);bottom:var(--m);display:flex;gap:calc(var(--m)*1.3)}
+.l3 dt{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;letter-spacing:.07em;text-transform:uppercase;font-weight:500;color:var(--ink2);margin-bottom:.9em}
+.l3 dd{font-size:clamp(15px,1.25vw,18px);line-height:1.35;font-weight:500}
+.l3 .lead{position:absolute;right:var(--m);bottom:calc(var(--m) + 96px);width:min(19em,36vw)}
+.btn{position:absolute;right:var(--m);bottom:var(--m);height:58px;width:min(19em,36vw);padding:0 26px;display:flex;align-items:center;justify-content:space-between;
+  color:#fff7e6;text-decoration:none;font-weight:700;font-stretch:112%;font-size:16px;letter-spacing:.005em;border-radius:29px}
+html.nogl .btn{background:var(--blue)}
+.btn span{transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+.btn:hover span{transform:translateX(6px)}
+
+/* phone */
+@media (max-width:760px){
+  .sand{font-stretch:62%;line-height:.8}
+  .top nav{gap:14px}
+  .top nav a b{display:none}
+  .top nav a i{margin:0}
+  .top .when{display:none}
+  .l0 .lead{left:var(--m);right:var(--m);width:auto;bottom:calc(var(--m) + 74px)}
+  .l1 .col{left:var(--m);right:var(--m);top:43%}
+  .l1 .piles{left:var(--m);right:var(--m);top:auto;bottom:calc(var(--m) + 30px);height:15%}
+  .l1 .cap{left:var(--m);top:auto;bottom:var(--m)}
+  .l2 .rooms{grid-template-columns:1fr;gap:20px}
+  .room{display:grid;grid-template-columns:92px 1fr;gap:18px;align-items:center}
+  .room .tile{width:92px;margin:0}
+  .room h3{margin:.2em 0 .15em}
+  .room p.body{font-size:14px;line-height:1.35}
+  .l3 .facts{flex-direction:column;gap:16px;bottom:calc(var(--m) + 84px)}
+  .l3 dt{margin-bottom:.35em}
+  .l3 .lead{left:var(--m);right:var(--m);width:auto;bottom:auto;top:34%}
+  .btn{left:var(--m);right:var(--m);width:auto}
+}
+@media (max-height:520px){ .l0 .hint{display:none} }
+</style>
+</head>
+<body>
+<canvas id="gl" aria-hidden="true"></canvas>
+
+<main id="sheet">
+  <header class="top" data-clear>
+    <span class="wm">Loose Matter</span>
+    <nav class="mono" aria-label="Sections">
+      <a data-go="0"><i>01</i><b>Title</b></a>
+      <a data-go="1"><i>02</i><b>Fifty</b></a>
+      <a data-go="2"><i>03</i><b>Rooms</b></a>
+      <a data-go="3"><i>04</i><b>Visit</b></a>
+    </nav>
+    <span class="mono when">14.3 – 30.8.2027</span>
+  </header>
+  <div class="ridge" data-sand="ridge"></div>
+
+  <section class="leaf l0">
+    <h1 class="sand" data-sand="text" data-fw="1" data-fh=".4"><span>Loose</span><span>Matter</span></h1>
+    <p class="hint mono" data-clear><b>Scroll</b> to let the wind in<br><b>Drag</b> through the sand to dig</p>
+    <p class="lead" data-clear>An exhibition about sand, the most used solid on Earth, and everything we make of it.</p>
+  </section>
+
+  <section class="leaf l1">
+    <h2 class="sand" data-sand="text" data-fw=".54" data-fwm=".72" data-fh=".66"><span>50</span></h2>
+    <div class="col" data-clear>
+      <p class="mono">Billion tonnes, every year</p>
+      <p class="lead">That is how much sand and gravel we dig, dredge and pour. Nothing solid is used more.</p>
+      <p class="body">Piled up, one year of it would make a wall 27 metres high and 27 metres thick, all the way around the equator.</p>
+    </div>
+    <div class="piles" data-sand="piles" data-cols="10" data-rows="5"></div>
+    <p class="cap mono" data-clear>One pile, one billion tonnes</p>
+  </section>
+
+  <section class="leaf l2">
+    <h2 class="title" data-clear>Three rooms.<br>One material.</h2>
+    <div class="rooms">
+      <article class="room" data-lift="1">
+        <div class="tile" data-sand="pane" data-id="1"></div>
+        <div data-clear><p class="mono">Room 1 · Melt</p><h3>Glass</h3><p class="body">Seven parts in ten of every window are sand, held near 1,500 °C until it runs clear.</p></div>
+      </article>
+      <article class="room" data-lift="2">
+        <div class="tile" data-sand="block" data-id="2"></div>
+        <div data-clear><p class="mono">Room 2 · Bind</p><h3>Concrete</h3><p class="body">Sand, gravel, cement, water. Nothing people make is made in greater quantity.</p></div>
+      </article>
+      <article class="room" data-lift="3">
+        <div class="tile" data-sand="wafer" data-id="3"></div>
+        <div data-clear><p class="mono">Room 3 · Purify</p><h3>Silicon</h3><p class="body">The purest quartz is grown into crystal and sliced. Every chip began as a grain.</p></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="leaf l3">
+    <h2 class="sand" data-sand="text" data-fw="1" data-fh=".4"><span>Dig in</span></h2>
+    <dl class="facts" data-clear>
+      <div><dt>Dates</dt><dd>14 March to<br>30 August 2027</dd></div>
+      <div><dt>Hours</dt><dd>Tue to Sun, 10 to 18<br>Fridays until 21</dd></div>
+      <div><dt>Place</dt><dd>Hall 3, Suvilahti<br>Helsinki</dd></div>
+    </dl>
+    <p class="lead" data-clear>The floor of Room 1 is forty tonnes of loose sand. Shoes come off at the door.</p>
+    <a class="btn" href="#" data-sand="pill" data-id="4" data-lift="4">Book a time slot <span>→</span></a>
+  </section>
+</main>
+
+<div id="track" aria-hidden="true"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const sheet = $('#sheet'), canvas = $('#gl'), track = $('#track');
+const leaves = $$('.leaf'), navs = $$('.top nav a');
+const NS = leaves.length;
+const RAD = Math.PI / 180;
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const sm = (a, b, v) => { const t = clamp((v - a) / (b - a)); return t * t * (3 - 2 * t); };
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const gl = canvas.getContext('webgl2', { alpha: true, antialias: false, premultipliedAlpha: true, powerPreference: 'high-performance' });
+if (!gl) { document.documentElement.classList.add('nogl'); }
+
+/* ---------- geometry of the sheet ---------- */
+let W, H, M, ex, ey, EW, EH, X0, Y0, cw, ch, D, N, NDUST, small;
+const Q = 0.5;                       // height-field cells per css px
+function measure() {
+  W = window.innerWidth; H = window.innerHeight;
+  small = Math.min(W, H) < 700;
+  M = clamp(W * 0.034, 18, 52);
+  sheet.style.setProperty('--m', M + 'px');
+  sheet.style.width = W + 'px'; sheet.style.height = H + 'px';
+  ex = Math.round(W * 0.32); ey = Math.round(H * 0.46);
+  EW = W + 2 * ex; EH = H + 2 * ey; X0 = -ex; Y0 = -ey;
+  cw = Math.ceil(EW * Q); ch = Math.ceil(EH * Q);
+  D = 1.75 * Math.max(H, W * 0.72);
+  N = Math.round(clamp(EW * EH * 0.085, 70000, 340000));
+  NDUST = Math.round(N * 0.025);
+  const unit = Math.round(H * 1.15);
+  track.innerHTML = '';
+  for (let i = 0; i < NS; i++) { const d = document.createElement('div'); d.style.height = (i === NS - 1 ? H : unit) + 'px'; track.appendChild(d); }
+  track._unit = unit;
+  // fit the sand type to the sheet
+  for (const el of $$('[data-fw]')) {
+    el.style.fontSize = '100px';
+    let nat = 1; for (const sp of el.children) nat = Math.max(nat, sp.offsetWidth);
+    const fs = Math.min((W - 2 * M) * parseFloat(W <= 760 && el.dataset.fwm || el.dataset.fw) / nat * 100, H * parseFloat(el.dataset.fh));
+    el.style.fontSize = fs.toFixed(1) + 'px';
+  }
+}
+function box(el) {
+  let x = 0, y = 0, e = el;
+  while (e && e !== sheet) { x += e.offsetLeft; y += e.offsetTop; e = e.offsetParent; }
+  return { x, y, w: el.offsetWidth, h: el.offsetHeight };
+}
+
+/* ---------- small numeric helpers ---------- */
+function hash(i, j, s) {
+  let n = (Math.imul(i, 374761393) + Math.imul(j, 668265263) + Math.imul(s, 1442695041)) | 0;
+  n = Math.imul(n ^ (n >>> 13), 1274126177);
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
+}
+function vnoise(x, y, s) {
+  const i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j;
+  const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
+  const a = hash(i, j, s), b = hash(i + 1, j, s), c = hash(i, j + 1, s), d = hash(i + 1, j + 1, s);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+function blur(a, w, h, r, passes) {
+  if (r < 1) return a;
+  const b = new Float32Array(w * h), k = 1 / (2 * r + 1);
+  for (let p = 0; p < passes; p++) {
+    for (let y = 0; y < h; y++) {
+      const o = y * w; let s = 0;
+      for (let x = -r; x <= r; x++) s += a[o + Math.min(w - 1, Math.max(0, x))];
+      for (let x = 0; x < w; x++) { b[o + x] = s * k; s += a[o + Math.min(w - 1, x + r + 1)] - a[o + Math.max(0, x - r)]; }
+    }
+    for (let x = 0; x < w; x++) {
+      let s = 0;
+      for (let y = -r; y <= r; y++) s += b[Math.min(h - 1, Math.max(0, y)) * w + x];
+      for (let y = 0; y < h; y++) { a[y * w + x] = s * k; s += b[Math.min(h - 1, y + r + 1) * w + x] - b[Math.max(0, y - r) * w + x]; }
+    }
+  }
+  return a;
+}
+let seedR = 1234567;
+function rnd() { seedR = (seedR + 0x6D2B79F5) | 0; let t = Math.imul(seedR ^ (seedR >>> 15), 1 | seedR); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+
+/* ---------- reading the layout: every sand feature comes from a DOM box ---------- */
+const fc = document.createElement('canvas'), fx = fc.getContext('2d', { willReadFrequently: true });
+function rr(c, x, y, w, h, r) { c.beginPath(); c.roundRect(x, y, w, h, r); c.fill(); }
+function collect(idx) {
+  const out = [];
+  const els = [...leaves[idx].querySelectorAll('[data-sand]'), ...$$('#sheet > [data-sand]')];
+  for (const el of els) {
+    const t = el.dataset.sand, b = box(el), id = +(el.dataset.id || 0);
+    if (t === 'text') {
+      const cs = getComputedStyle(el), fs = parseFloat(cs.fontSize);
+      const spans = [...el.children].map(sp => ({ sp, b: box(sp) }));
+      out.push({ H: Math.min(46, fs * 0.125), r: Math.max(1, Math.round(fs * 0.026 * Q)), tail: 1, draw(c) {
+        c.font = `${cs.fontWeight} ${fs}px ${cs.fontFamily}`;
+        if ('fontStretch' in c) c.fontStretch = parseFloat(cs.fontStretch) < 90 ? 'extra-condensed' : 'expanded';
+        c.textBaseline = 'alphabetic';
+        for (const { sp, b } of spans) {
+          const txt = sp.textContent.toUpperCase(), mt = c.measureText(txt);
+          const asc = mt.fontBoundingBoxAscent || fs * .88, desc = mt.fontBoundingBoxDescent || fs * .21;
+          const base = b.y + (b.h - (asc + desc)) / 2 + asc;
+          c.save(); c.translate(b.x, base); c.scale(b.w / mt.width, 1); c.fillText(txt, 0, 0); c.restore();
+        }
+      } });
+    } else if (t === 'piles') {
+      const cols = +el.dataset.cols, rows = +el.dataset.rows, cell = Math.min(b.w / cols, b.h / rows), r = cell * 0.34;
+      out.push({ H: Math.min(13, cell * 0.3), r: Math.max(1, Math.round(r * 0.3 * Q)), tail: 0.45, draw(c) {
+        for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) { c.beginPath(); c.arc(b.x + (i + .5) * cell, b.y + (j + .5) * cell, r, 0, 7); c.fill(); }
+      } });
+    } else if (t === 'pane') {
+      const p = b.w * 0.06;
+      out.push({ H: 5, r: 1, slab: 1, id, tail: 0.2, draw(c) { rr(c, b.x + p, b.y + p, b.w - 2 * p, b.h - 2 * p, 3); } });
+      // the pane's bevel: a thin raised rim
+      out.push({ H: 9, r: 1, slab: 1, id, draw(c) { c.lineWidth = 4; c.strokeStyle = '#fff'; c.beginPath(); c.roundRect(b.x + p, b.y + p, b.w - 2 * p, b.h - 2 * p, 3); c.stroke(); } });
+    } else if (t === 'block') {
+      const p = b.w * 0.1;
+      out.push({ H: Math.min(34, b.w * 0.16), r: 1, slab: 1, rough: 1, id, tail: 0.8, draw(c) { rr(c, b.x + p, b.y + p, b.w - 2 * p, b.h - 2 * p, 2); } });
+    } else if (t === 'wafer') {
+      const R = b.w * 0.46, cx = b.x + b.w / 2, cy = b.y + b.h / 2, g = b.w / 8.5;
+      out.push({ H: 7, r: 1, slab: 1, id, tail: 0.2, draw(c) {
+        c.beginPath(); c.arc(cx, cy, R, 0, 7); c.fill();
+        c.globalCompositeOperation = 'destination-out'; c.lineWidth = Math.max(2.5, b.w * 0.014); c.strokeStyle = '#000';
+        c.beginPath();
+        for (let k = -4; k <= 4; k++) { c.moveTo(cx + (k + .5) * g, cy - R); c.lineTo(cx + (k + .5) * g, cy + R); c.moveTo(cx - R, cy + (k + .5) * g); c.lineTo(cx + R, cy + (k + .5) * g); }
+        c.stroke();
+        c.fillRect(cx - R, cy + R * 0.9, 2 * R, R);       // the wafer's flat
+        c.globalCompositeOperation = 'source-over';
+      } });
+    } else if (t === 'pill') {
+      out.push({ H: 10, r: 2, id, accent: 1, tail: 0, draw(c) { rr(c, b.x, b.y, b.w, b.h, b.h / 2); } });
+    } else if (t === 'ridge') {
+      out.push({ H: 4.5, r: 1, slab: 1, tail: 0.25, draw(c) { c.fillRect(b.x, b.y - 2.5, b.w, 5); } });
+    }
+  }
+  // the index marker: a small blue pile that the wind carries from one entry to the next
+  const nb = box(navs[idx]);
+  out.push({ H: 6, r: 1, accent: 1, slab: 1, tail: 0, draw(c) { c.beginPath(); c.arc(nb.x + nb.w / 2, nb.y + nb.h + 9, 5.5, 0, 7); c.fill(); } });
+  return out;
+}
+function clears(idx) {
+  const els = idx < 0 ? [] : [...leaves[idx].querySelectorAll('[data-clear]'), ...$$('#sheet > [data-clear]')];
+  return els.map(box);
+}
+function alphaOf(draw) {
+  fx.setTransform(1, 0, 0, 1, 0, 0); fx.globalCompositeOperation = 'source-over'; fx.clearRect(0, 0, cw, ch);
+  fx.setTransform(Q, 0, 0, Q, -X0 * Q, -Y0 * Q); fx.fillStyle = '#fff';
+  draw(fx);
+  const d = fx.getImageData(0, 0, cw, ch).data, m = new Float32Array(cw * ch);
+  for (let i = 0, n = cw * ch; i < n; i++) m[i] = d[i * 4 + 3] / 255;
+  return m;
+}
+
+/* ---------- one section = one sculpted bed of sand ---------- */
+const LX = -0.74, LY = -0.67, LTAN = 0.72;       // light, towards upper left of the sheet (canvas coords)
+function buildSection(idx) {
+  const n = cw * ch, seed = idx + 3;
+  seedR = 99991 * (idx + 5);
+  const Hm = new Float32Array(n), fm = new Float32Array(n), idm = new Uint8Array(n), acc = new Uint8Array(n), ts = new Float32Array(n);
+  if (idx >= 0) for (const f of collect(idx)) {
+    const m = blur(alphaOf(f.draw), cw, ch, f.r, 2);
+    const lo = f.slab ? .28 : .36, hi = f.slab ? .72 : .9;
+    for (let i = 0; i < n; i++) {
+      const v = m[i]; if (v < lo * .6) continue;
+      const s = sm(lo, hi, v); let h = f.H * s;
+      if (f.rough && s > .5) { const x = i % cw, y = (i / cw) | 0; h += (vnoise(x / 2.2, y / 2.2, 77) - .5) * 5 * s + (vnoise(x / 9, y / 9, 78) - .5) * 5 * s; }
+      if (h > Hm[i]) { Hm[i] = h; if (s > fm[i]) fm[i] = s; if (s > .12) { idm[i] = f.id | 0; acc[i] = f.accent ? 1 : 0; } }
+      if (f.tail) { const tv = s * f.tail; if (tv > ts[i]) ts[i] = tv; }
+    }
+  }
+  // drifts: sand banks up downwind of everything that stands
+  const tail = new Float32Array(n), decay = Math.exp(-1 / (70 * Q));
+  for (let y = 0; y < ch; y++) { let t = 0; const o = y * cw; for (let x = 0; x < cw; x++) { t = Math.max(ts[o + x], t * decay); tail[o + x] = t * (1 - Math.min(1, fm[o + x] * 2)); } }
+  // clearings: where the page sets type, the sand is swept aside
+  const cl = clears(idx);
+  const C = cl.length ? blur(alphaOf(c => { for (const b of cl) rr(c, b.x - 15, b.y - 12, b.w + 30, b.h + 24, 12); }), cw, ch, 3, 2) : new Float32Array(n);
+
+  const Hf = new Float32Array(n), dens = new Float32Array(n);
+  const lam = small ? 21 : 30, k2 = Math.PI * 2 / lam;
+  let sumF = 0, sumG = 0, areaF = 0;
+  for (let y = 0; y < ch; y++) {
+    const wy = Y0 + y / Q;
+    for (let x = 0; x < cw; x++) {
+      const i = y * cw + x, wx = X0 + x / Q;
+      const warp = (vnoise(wx / 270, wy / 270, seed) * 2 - 1) * 3.0 + (vnoise(wx / 85, wy / 85, seed + 11) * 2 - 1) * 0.55;
+      const ph = (wx * 0.955 + wy * 0.296) * k2 + warp;
+      const A = 0.2 + 0.8 * sm(.25, .75, vnoise(wx / 430, wy / 300, seed + 23));
+      const r = 0.5 + 0.5 * Math.sin(ph + 0.7 * Math.sin(ph));
+      const c = C[i], open = (1 - c) * (1 - c), lip = 4 * c * (1 - c);
+      const f = fm[i], gk = open * (1 - Math.min(1, f * 1.6));
+      const streak = 0.25 + 0.75 * vnoise(wx / 160, wy / 6.5, seed + 31);
+      const tl = tail[i] * streak * open;
+      Hf[i] = Hm[i] + 4.6 * A * r * gk + 4.5 * lip * (1 - f) + 9 * tl;
+      // fade the bed out towards its far edges
+      const fxE = Math.min(x, cw - 1 - x) / (ex * Q * 0.9), fyE = Math.min(y, ch - 1 - y) / (ey * Q * 0.9);
+      const fade = sm(0, 1, Math.min(1, fxE)) * sm(0, 1, Math.min(1, fyE));
+      const dF = sm(.03, .3, f);
+      const dG = ((0.5 + 0.5 * r * A) * gk + 1.1 * lip * (1 - f) + 2.6 * tl) * fade;
+      if (dF > 0) { dens[i] = -dF; sumF += dF; areaF += dF; } else { dens[i] = dG; sumG += dG; }
+    }
+  }
+  // steep faces carry more grains, so walls do not go bald
+  for (let y = 1; y < ch - 1; y++) for (let x = 1; x < cw - 1; x++) {
+    const i = y * cw + x; if (dens[i] >= 0) continue;
+    const gx = (Hf[i + 1] - Hf[i - 1]) * Q * .5, gy = (Hf[i + cw] - Hf[i - cw]) * Q * .5;
+    const k = Math.min(3.2, Math.sqrt(1 + gx * gx + gy * gy)); sumF += -dens[i] * (k - 1); dens[i] *= k;
+  }
+  // cast shadows are drawn with sand too, so the ground is packed denser where they fall
+  if (sumF > 0) for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
+    const i = y * cw + x; if (dens[i] < 0 || C[i] > .6) continue;
+    const h = Hf[i]; let sh = 0;
+    for (let d = 2; d <= 26; d += 2) { const xx = Math.round(x + LX * d), yy = Math.round(y + LY * d); if (xx < 0 || yy < 0) break; const hh = Hf[yy * cw + xx] - h - d / Q * LTAN; if (hh > 0) { sh = Math.max(sh, Math.min(1, hh / 4)); if (sh >= 1) break; } }
+    if (sh > 0) { const add = 2.6 * sh * (1 - C[i]); dens[i] += add; sumG += add; }
+  }
+  const NM = N - NDUST;
+  const frac = sumF > 0 ? clamp(0.95 * (areaF / (Q * Q)) / NM, 0.06, 0.52) : 0;
+  const gS = sumF > 0 ? (1 - frac) / frac * sumF / Math.max(1e-6, sumG) : 1;
+  const cdf = new Float64Array(n); let tot = 0;
+  for (let i = 0; i < n; i++) { const d = dens[i]; tot += d < 0 ? -d : d * gS; cdf[i] = tot; }
+
+  const Hs = (x, y) => { x = x < 0 ? 0 : x > cw - 1 ? cw - 1 : x; y = y < 0 ? 0 : y > ch - 1 ? ch - 1 : y; const x0 = x | 0, y0 = y | 0, x1 = Math.min(cw - 1, x0 + 1), y1 = Math.min(ch - 1, y0 + 1), u = x - x0, v = y - y0; const a = Hf[y0 * cw + x0], b = Hf[y0 * cw + x1], c = Hf[y1 * cw + x0], d = Hf[y1 * cw + x1]; return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; };
+  const out = new Float32Array(N * 8);
+  for (let g = 0; g < NM; g++) {
+    const u = rnd() * tot; let lo = 0, hi = n - 1;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (cdf[mid] < u) lo = mid + 1; else hi = mid; }
+    const cx = lo % cw, cy = (lo / cw) | 0, px = cx + rnd(), py = cy + rnd();
+    const h = Hs(px - .5, py - .5);
+    const hx = (Hs(px + .5, py - .5) - Hs(px - 1.5, py - .5)) * Q * .5, hy = (Hs(px - .5, py + .5) - Hs(px - .5, py - 1.5)) * Q * .5;
+    let sh = 0;
+    for (let d = 4; d <= 52; d += 4) { const hh = Hs(px - .5 + LX * d * Q, py - .5 + LY * d * Q) - h - d * LTAN; if (hh > 0) { sh = Math.max(sh, Math.min(1, hh / 4)); if (sh >= 1) break; } }
+    const o = g * 8;
+    out[o] = X0 + px / Q - W / 2; out[o + 1] = -(Y0 + py / Q - H / 2); out[o + 2] = h + rnd() * 1.2; out[o + 3] = sh;
+    out[o + 4] = -hx * 1.3; out[o + 5] = hy * 1.3; out[o + 6] = acc[lo]; out[o + 7] = idm[lo];
+  }
+  for (let g = NM; g < N; g++) out[g * 8 + 6] = 3;
+  return out;
+}
+
+/* ---------- WebGL ---------- */
+const VS = `#version 300 es
+precision highp float;
+layout(location=0) in vec4 aA0; layout(location=1) in vec4 aB0;
+layout(location=2) in vec4 aA1; layout(location=3) in vec4 aB1;
+layout(location=4) in vec4 aR;
+uniform mat4 uM; uniform float uT, uTime, uPx, uMotion, uPush;
+uniform vec4 uExt; uniform sampler2D uTrail; uniform float uLift[5];
+out vec4 vCol;
+const vec3 L = vec3(-.6,.55,.58);
+const vec2 WIND = vec2(.955,-.296);
+void main(){
+  float d = clamp((aA0.x-uExt.x)/uExt.z,0.,1.);
+  float t = clamp((uT-(d*.55+aR.x*.2))/.25,0.,1.);
+  float e = t*t*t*(t*(6.*t-15.)+10.);
+  float sw = step(.5,e);
+  vec3 p = mix(aA0.xyz,aA1.xyz,e);
+  float kind = mix(aB0.z,aB1.z,sw);
+  float id = mix(aB0.w,aB1.w,sw);
+  float arc = sin(3.14159*t)*smoothstep(2.,60.,length(aA1.xy-aA0.xy));
+  vec2 nxy = mix(aB0.xy,aB1.xy,e);
+  float sh = mix(aA0.w,aA1.w,e);
+  float alpha = .92, size = uPx*(.72+1.05*aR.x*aR.x);
+  float air = arc;
+
+  if(kind>2.5){
+    // dust that never lands
+    p = vec3(uExt.x+mod(aR.x*uExt.z+uTime*(10.+34.*aR.y)*uMotion,uExt.z), uExt.y+aR.y*uExt.w+sin(uTime*.31+aR.z*40.)*14., 26.+250.*aR.z*aR.z);
+    nxy = vec2(0.); sh = 0.; air = .75; alpha = .5; size *= .8; arc = 0.;
+  } else {
+    vec3 tb = vec3(sin(p.y*.021+uTime*1.3+aR.z*6.3), sin(p.x*.017+uTime*1.1+aR.w*6.3), sin((p.x+p.y)*.013+uTime*.9+aR.y*6.3));
+    p.xy += WIND*arc*(50.+170.*aR.y) + tb.xy*arc*36.;
+    p.z += arc*(34.+210.*aR.z*aR.z) + tb.z*arc*18.;
+    // streamers: a few grains always creep downwind
+    if(aR.w>.915){
+      float q = fract(uTime*(.07+.09*aR.y)*uMotion+aR.z*13.);
+      float hop = sin(3.14159*q);
+      p.xy += WIND*(q-.5)*(60.+90.*aR.x); p.z += hop*(3.+9.*aR.y);
+      alpha *= hop*uMotion + (1.-uMotion); air = max(air,.25*hop);
+    }
+    // the cursor's furrow
+    vec2 uv = (p.xy-uExt.xy)/uExt.zw; uv.y = 1.-uv.y;
+    vec2 px = 1.6/vec2(textureSize(uTrail,0));
+    float tv = texture(uTrail,uv).r;
+    vec2 g = vec2(texture(uTrail,uv+vec2(px.x,0.)).r-texture(uTrail,uv-vec2(px.x,0.)).r, texture(uTrail,uv-vec2(0.,px.y)).r-texture(uTrail,uv+vec2(0.,px.y)).r);
+    float gr = 1.-arc;
+    p.xy -= g*uPush*gr;
+    p.z = p.z*(1.-.75*tv*gr) + length(g)*16.*gr;
+    nxy += g*2.6*gr;
+    alpha *= 1.-.5*tv*gr;
+    int k = int(id+.5);
+    float lf = k==1?uLift[1]:k==2?uLift[2]:k==3?uLift[3]:k==4?uLift[4]:0.;
+    p.z += lf*(k==4?10.:22.)*(1.-arc);
+  }
+
+  vec3 n = normalize(vec3(nxy,1.));
+  float lum = max(dot(n,L),0.);
+  lum *= 1.-.64*sh*(1.-arc);
+  lum += .2*smoothstep(2.,20.,p.z)*(1.-air)*(1.-sh);
+  if(id>.5&&id<1.5) lum = min(1.,lum+.2);
+  lum = mix(lum,.86,air*.7);
+  lum *= .89+.2*aR.w;
+  if(aR.z>.975) lum *= .55;
+  vec3 dark = vec3(.205,.14,.085), mid = vec3(.80,.725,.585), lite = vec3(1.,.975,.915);
+  if(kind>.5&&kind<1.5){ dark = vec3(.03,.06,.36); mid = vec3(.115,.23,.92); lite = vec3(.62,.70,1.); }
+  vec3 col = lum<.58 ? mix(dark,mid,pow(lum/.58,1.25)) : mix(mid,lite,smoothstep(.58,.98,lum));
+  alpha *= 1.-.35*air;
+  vCol = vec4(col*alpha,alpha);
+  gl_Position = uM*vec4(p,1.);
+  gl_PointSize = max(1.,size/gl_Position.w);
+}`;
+const FS = `#version 300 es
+precision mediump float;
+in vec4 vCol; out vec4 o;
+void main(){ vec2 c = gl_PointCoord-.5; float a = smoothstep(.5,.28,length(c)); o = vCol*a; }`;
+
+let prog, U = {}, vao, bufs = [], rndBuf, trailTex, built = false;
+function initGL() {
+  const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+  prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+  gl.useProgram(prog);
+  for (const k of ['uM', 'uT', 'uTime', 'uPx', 'uMotion', 'uPush', 'uExt', 'uTrail', 'uLift']) U[k] = gl.getUniformLocation(prog, k);
+  vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+  rndBuf = gl.createBuffer();
+  trailTex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, trailTex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.disable(gl.DEPTH_TEST); gl.clearColor(0, 0, 0, 0);
+}
+let pair = [-9, -9];
+function bindPair(a, b) {
+  if (pair[0] === a && pair[1] === b) return; pair = [a, b];
+  gl.bindVertexArray(vao);
+  [[a, 0], [b, 2]].forEach(([s, loc]) => {
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufs[s + 1]);
+    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 4, gl.FLOAT, false, 32, 0);
+    gl.enableVertexAttribArray(loc + 1); gl.vertexAttribPointer(loc + 1, 4, gl.FLOAT, false, 32, 16);
+  });
+  gl.bindBuffer(gl.ARRAY_BUFFER, rndBuf); gl.enableVertexAttribArray(4); gl.vertexAttribPointer(4, 4, gl.FLOAT, false, 0, 0);
+}
+function buildAll() {
+  measure();
+  fc.width = cw; fc.height = ch;
+  const r = new Float32Array(N * 4); seedR = 4242; for (let i = 0; i < r.length; i++) r[i] = rnd();
+  gl.bindBuffer(gl.ARRAY_BUFFER, rndBuf); gl.bufferData(gl.ARRAY_BUFFER, r, gl.STATIC_DRAW);
+  for (let s = -1; s < NS; s++) {
+    const data = buildSection(s);
+    if (!bufs[s + 1]) bufs[s + 1] = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufs[s + 1]); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+  }
+  pair = [-9, -9];
+  initTrail();
+  built = true;
+}
+
+/* ---------- the cursor digs: a fading height map of where it has been ---------- */
+const tc = document.createElement('canvas'), tx = tc.getContext('2d');
+let trailDirty = 0, lastPt = null, trailTick = 0;
+function initTrail() { tc.width = 320; tc.height = Math.max(8, Math.round(320 * EH / EW)); tx.fillStyle = '#000'; tx.fillRect(0, 0, tc.width, tc.height); trailDirty = 2; lastPt = null; }
+function dig(sx, sy, press) {
+  const k = tc.width / EW, x = (sx - X0) * k, y = (sy - Y0) * k, r = (press ? 40 : 22) * (small ? .8 : 1) * k;
+  const p0 = lastPt || { x, y }, dist = Math.hypot(x - p0.x, y - p0.y), steps = Math.min(40, Math.max(1, Math.ceil(dist / (r * .35))));
+  tx.globalCompositeOperation = 'lighter';
+  for (let i = 1; i <= steps; i++) {
+    const px = p0.x + (x - p0.x) * i / steps, py = p0.y + (y - p0.y) * i / steps;
+    const g = tx.createRadialGradient(px, py, 0, px, py, r);
+    g.addColorStop(0, 'rgba(255,255,255,.34)'); g.addColorStop(.55, 'rgba(255,255,255,.16)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    tx.fillStyle = g; tx.beginPath(); tx.arc(px, py, r, 0, 7); tx.fill();
+  }
+  lastPt = { x, y }; trailDirty = 420;
+}
+function stepTrail() {
+  if (trailDirty <= 0) return;
+  if ((++trailTick % 6) === 0) { tx.globalCompositeOperation = 'source-over'; tx.fillStyle = 'rgba(0,0,0,.045)'; tx.fillRect(0, 0, tc.width, tc.height); }
+  gl.bindTexture(gl.TEXTURE_2D, trailTex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tc);
+  trailDirty--;
+}
+
+/* ---------- camera: the same matrix moves the sand and the type ---------- */
+const POSES = [
+  { p: 25, y: -10, r: 2.4, s: .87, tx: -.012, ty: -.012 },
+  { p: 19, y: 12, r: -2, s: .9, tx: .01, ty: -.005 },
+  { p: 27, y: -3, r: 0, s: .9, tx: 0, ty: -.015 },
+  { p: 21, y: -9, r: 1.8, s: .89, tx: -.01, ty: -.008 },
+];
+const INTRO = { p: 50, y: -24, r: 7, s: .7, tx: 0, ty: .02 };
+function mixPose(a, b, t) { const o = {}; for (const k in a) o[k] = a[k] + (b[k] - a[k]) * t; return o; }
+const mul4 = (a, b) => { const o = new Array(16).fill(0); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { let s = 0; for (let k = 0; k < 4; k++) s += a[i * 4 + k] * b[k * 4 + j]; o[i * 4 + j] = s; } return o; };
+let Hinv = null;
+function setCamera(pose) {
+  const cx = W / 2, cy = H / 2, k = small ? .55 : 1;
+  const a = -pose.p * k * RAD, b = pose.y * k * RAD, c = pose.r * k * RAD, s = small ? 1 - (1 - pose.s) * .75 : pose.s;
+  const ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b), cc = Math.cos(c), sc = Math.sin(c);
+  const Rx = [1, 0, 0, 0, 0, ca, -sa, 0, 0, sa, ca, 0, 0, 0, 0, 1], Ry = [cb, 0, sb, 0, 0, 1, 0, 0, -sb, 0, cb, 0, 0, 0, 0, 1], Rz = [cc, -sc, 0, 0, sc, cc, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+  const S = [s, 0, 0, pose.tx * W, 0, s, 0, pose.ty * H, 0, 0, s, 0, 0, 0, 0, 1];
+  const V = mul4(S, mul4(Rz, mul4(Ry, Rx)));
+  const P = [1, 0, -cx / D, cx, 0, -1, -cy / D, cy, 0, 0, 1, 0, 0, 0, -1 / D, 1];
+  const PV = mul4(P, V);
+  const G = new Float32Array(16);     // column-major for GL
+  for (let j = 0; j < 4; j++) { G[j * 4] = PV[j] / cx - PV[12 + j]; G[j * 4 + 1] = PV[12 + j] - PV[4 + j] / cy; G[j * 4 + 2] = 0; G[j * 4 + 3] = PV[12 + j]; }
+  const C = mul4(PV, [1, 0, 0, -cx, 0, -1, 0, cy, 0, 0, 1, 0, 0, 0, 0, 1]);
+  const m = []; for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) m.push(+C[i * 4 + j].toFixed(7));
+  sheet.style.transform = `matrix3d(${m.join(',')})`;
+  // inverse homography of the sheet plane, to find where the pointer touches the sand
+  const h = [C[0], C[1], C[3], C[4], C[5], C[7], C[12], C[13], C[15]];
+  const A = h[4] * h[8] - h[5] * h[7], B = h[5] * h[6] - h[3] * h[8], Cc = h[3] * h[7] - h[4] * h[6], det = h[0] * A + h[1] * B + h[2] * Cc;
+  Hinv = [A / det, (h[2] * h[7] - h[1] * h[8]) / det, (h[1] * h[5] - h[2] * h[4]) / det, B / det, (h[0] * h[8] - h[2] * h[6]) / det, (h[2] * h[3] - h[0] * h[5]) / det, Cc / det, (h[1] * h[6] - h[0] * h[7]) / det, (h[0] * h[4] - h[1] * h[3]) / det];
+  return { G, s };
+}
+function toSheet(X, Y) { const h = Hinv, w = h[6] * X + h[7] * Y + h[8]; return { x: (h[0] * X + h[1] * Y + h[2]) / w, y: (h[3] * X + h[4] * Y + h[5]) / w }; }
+
+/* ---------- state ---------- */
+let pos = 0, vel = 0, target = 0, intro = reduced ? 1 : 0, introStart = 0, time = 0, last = 0, hold = false, drawN = 0, slowAcc = 0, slowN = 0;
+let ptx = 0, pty = 0, psx = 0, psy = 0, pressed = false;
+const lift = [0, 0, 0, 0, 0], liftT = [0, 0, 0, 0, 0];
+function readScroll() { target = clamp(window.scrollY / track._unit, 0, NS - 1); }
+addEventListener('scroll', readScroll, { passive: true });
+addEventListener('pointermove', e => {
+  ptx = e.clientX / W * 2 - 1; pty = e.clientY / H * 2 - 1;
+  if (Hinv && built) { const s = toSheet(e.clientX, e.clientY); dig(s.x, s.y, pressed); }
+}, { passive: true });
+addEventListener('pointerdown', e => { pressed = true; lastPt = null; if (Hinv && built) { const s = toSheet(e.clientX, e.clientY); dig(s.x, s.y, true); } }, { passive: true });
+addEventListener('pointerup', () => { pressed = false; if (matchMedia('(hover:none)').matches) lastPt = null; }, { passive: true });
+addEventListener('pointercancel', () => { pressed = false; lastPt = null; }, { passive: true });
+document.addEventListener('pointerleave', () => { lastPt = null; });
+navs.forEach(a => a.addEventListener('click', () => window.scrollTo({ top: (+a.dataset.go) * track._unit, behavior: reduced ? 'auto' : 'smooth' })));
+$$('[data-lift]').forEach(el => { const k = +el.dataset.lift; el.addEventListener('pointerenter', () => liftT[k] = 1); el.addEventListener('pointerleave', () => liftT[k] = 0); });
+$('.btn').addEventListener('click', e => e.preventDefault());
+
+function setMask(el, mode, v) {
+  const g = mode === 0 ? '' : mode < 0 ? `linear-gradient(96deg,transparent ${(v - 13).toFixed(2)}%,#000 ${v.toFixed(2)}%)` : `linear-gradient(96deg,#000 ${(v - 13).toFixed(2)}%,transparent ${v.toFixed(2)}%)`;
+  if (el._mk === g) return; el._mk = g;
+  el.style.webkitMaskImage = g || 'none'; el.style.maskImage = g || 'none';
+}
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (!built) return;
+  const dt = Math.min(.05, (now - last) / 1000 || .016); last = now; time += dt;
+  // critically damped follow of the scroll
+  const k = 46; vel += (k * (target - pos) - 2 * Math.sqrt(k) * vel) * dt; pos += vel * dt;
+  psx += (ptx - psx) * Math.min(1, dt * 3.2); psy += (pty - psy) * Math.min(1, dt * 3.2);
+  for (let i = 1; i < 5; i++) lift[i] += (liftT[i] - lift[i]) * Math.min(1, dt * 7);
+
+  let from, to, T, pose;
+  if (intro < 1) {
+    if (!introStart) introStart = now;
+    if (!hold) { intro = clamp((now - introStart) / 3000); if (target > .04) intro = 1; }
+    from = -1; to = 0; T = intro;
+    pose = mixPose(INTRO, POSES[0], sm(0, 1, sm(0, 1, intro)));
+  }
+  if (intro >= 1 && from === undefined) {
+    const i = Math.min(NS - 2, Math.max(0, Math.floor(pos))), f = clamp(pos - i);
+    from = i; to = i + 1; T = clamp((f - .14) / .72);
+    pose = mixPose(POSES[from], POSES[to], sm(0, 1, T));
+    const bump = Math.sin(Math.PI * T); pose.p += 9 * bump; pose.s *= 1 - .085 * bump;
+  }
+  pose.y += psx * 4.2 + Math.sin(time * .21) * .7; pose.p += psy * -3.2 + Math.sin(time * .17 + 1) * .5;
+  const cam = setCamera(pose);
+
+  // the type leaves and arrives with the same front as the grains
+  const a = ((T / .55) * EW - ex) / W * 100 + 4, b = (((T - .43) / .55) * EW - ex) / W * 100;
+  leaves.forEach((el, i) => {
+    const isF = i === from && T < 1, isT = i === to && T > 0;
+    el.classList.toggle('on', isF || isT);
+    el.classList.toggle('live', (isF && T < .3) || (isT && T > .7));
+    if (isT) setMask(el, T >= 1 ? 0 : 1, b); else if (isF) setMask(el, T <= 0 ? 0 : -1, a);
+  });
+  const act = intro < 1 ? 0 : Math.round(pos);
+  navs.forEach((n, i) => n.classList.toggle('on', i === act));
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2), cwp = Math.round(W * dpr), chp = Math.round(H * dpr);
+  if (canvas.width !== cwp || canvas.height !== chp) { canvas.width = cwp; canvas.height = chp; }
+  gl.viewport(0, 0, cwp, chp); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.useProgram(prog); bindPair(from, to);
+  stepTrail();
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, trailTex); gl.uniform1i(U.uTrail, 0);
+  gl.uniformMatrix4fv(U.uM, false, cam.G);
+  gl.uniform1f(U.uT, T); gl.uniform1f(U.uTime, time); gl.uniform1f(U.uMotion, reduced ? 0 : 1);
+  gl.uniform1f(U.uPx, (small ? 2.0 : 2.35) * dpr * cam.s); gl.uniform1f(U.uPush, 70);
+  gl.uniform4f(U.uExt, X0 - W / 2, -(Y0 + EH - H / 2), EW, EH);
+  gl.uniform1fv(U.uLift, lift);
+  if (!drawN || drawN > N) drawN = N;
+  gl.drawArrays(gl.POINTS, 0, drawN);
+  // on a slow machine, thin the sand evenly rather than stutter
+  if (intro >= 1 && !window.__noAdapt) { slowAcc += dt; if (++slowN >= 50) { if (slowAcc / slowN > .03 && drawN > N * .4) drawN = Math.round(drawN * .72); slowAcc = slowN = 0; } }
+}
+
+/* ---------- start ---------- */
+async function start() {
+  measure();
+  try { await Promise.race([Promise.all([document.fonts.load('900 expanded 80px Archivo', 'LOOSEMATR50DIGN'), document.fonts.load('900 extra-condensed 80px Archivo', 'LOOSEMATR50DIGN'), document.fonts.load('500 16px Archivo'), document.fonts.load('500 11px "JetBrains Mono"')]), new Promise(r => setTimeout(r, 3500))]); } catch (e) {}
+  if (!gl) { sheet.classList.add('ready'); leaves.forEach((l, i) => l.classList.toggle('on', i === 0)); nogl(); return; }
+  initGL(); buildAll(); readScroll(); pos = target; if (target > .04) intro = 1;
+  sheet.classList.add('ready');
+  requestAnimationFrame(frame);
+  let rw = W, rh = H, to;
+  addEventListener('resize', () => { clearTimeout(to); to = setTimeout(() => { if (window.innerWidth === rw && Math.abs(window.innerHeight - rh) < 130) return; rw = window.innerWidth; rh = window.innerHeight; buildAll(); readScroll(); }, 220); });
+}
+function nogl() {   // plain page: sections simply follow the scroll
+  const upd = () => { const i = Math.round(clamp(window.scrollY / track._unit, 0, NS - 1)); leaves.forEach((l, k) => { l.classList.toggle('on', k === i); l.classList.toggle('live', k === i); }); navs.forEach((n, k) => n.classList.toggle('on', k === i)); };
+  addEventListener('scroll', upd, { passive: true }); upd();
+}
+window.__intro = v => { hold = true; intro = v; };
+window.__set = p => { intro = 1; pos = target = p; vel = 0; window.scrollTo(0, p * track._unit); };
+window.__dig = (pts) => { lastPt = null; for (const [x, y] of pts) { const s = toSheet(x, y); dig(s.x, s.y, false); } };
+start();
+})();
+</script>
+</body>
+</html>

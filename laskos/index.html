@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Laskos Pleated Paper</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400;500;600;800;900&family=Sofia+Sans+Condensed:wght@600;900&family=Sofia+Sans+Extra+Condensed:wght@900&display=swap">
+<style>
+/* Layout: one sheet of pleated paper fills the screen. Each page is printed on one face of the pleats,
+   the next page on the other face. Scrolling turns the pleats; the bottom band stays open and leans with the pointer. */
+:root{
+  --paper:#ECE5D5; --ink:#1A1916; --vermilion:#E0442A; --ultramarine:#2337A6; --rose:#F1BCC4; --yellow:#F3C52F;
+  --display:"Sofia Sans Extra Condensed","Sofia Sans Condensed","Arial Narrow",sans-serif;
+  --text:"Sofia Sans","Helvetica Neue",Arial,sans-serif;
+  --label:"Sofia Sans Condensed","Arial Narrow",sans-serif;
+  color-scheme:light;
+}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--text)}
+#sheet{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:pan-y}
+#track{width:1px}
+.copy{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.nogl #sheet,.nogl #track{display:none}
+.nogl .copy{position:static;width:auto;height:auto;clip-path:none;white-space:normal;display:block;max-width:40rem;margin:0 auto;
+  padding-block:3rem;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));line-height:1.5}
+.nogl .copy h1{font-family:var(--display);font-size:5rem;line-height:1;margin:0 0 1rem}
+.copy a:focus-visible{outline:2px solid var(--ink)}
+</style>
+</head>
+<body>
+
+<canvas id="sheet" aria-hidden="true"></canvas>
+<div id="track"></div>
+
+<main class="copy" id="copy">
+  <h1>Laskos</h1>
+  <nav aria-label="Pages"><a href="#" data-go="0">Laskos</a> <a href="#" data-go="1">Pleat</a> <a href="#" data-go="2">Light</a> <a href="#" data-go="3">Quiet</a> <a href="#" data-go="4">Order</a></nav>
+  <section><h2>Paper, pleated for light, sound and walls.</h2><p>Laskos is a paper mill and pleating workshop in Tervakoski, Finland. We make one thing: sheets that hold a fold. Shades, blinds and acoustic walls are cut from them. Founded 1968. 48 colours. Pitches of 20, 30 and 60 mm.</p></section>
+  <section><h2>One sheet, two faces.</h2><p>Every pleat has a left face and a right face, and we print both. Lean one way and you read the first sheet. Lean the other way and the second is already there.</p></section>
+  <section><h2>Shades that glow at the fold.</h2><p>Cotton fibre lets light through where the sheet turns away from you. A Laskos shade is brightest in its valleys. Shade 30, pendant Ø 300, 140 €. Shade 45, pendant Ø 450, 190 €. Blind, made to width, from 96 € per metre.</p></section>
+  <section><h2>Walls that keep a room quiet.</h2><p>A pleated wall is mostly air. Sound goes into the valleys and little of it finds the way back out. Absorption αw 0.85, class B. Panel 600 × 1200 mm. Depth 60 mm. Fire class B-s1, d0.</p></section>
+  <section><h2>Hold it before you specify it.</h2><p>The swatch book holds all 48 papers, each pleated at three pitches. It costs 18 € and we take that off your first order. Write to myynti@laskos.paper or visit Tehtaantie 4, Tervakoski.</p></section>
+</main>
+
+<script>
+(()=>{
+const cv=document.getElementById('sheet');
+const gl=cv.getContext('webgl2',{antialias:false,alpha:false,powerPreference:'high-performance'});
+if(!gl){document.documentElement.classList.add('nogl');return;}
+
+const PAGES=[
+ {nav:'Laskos',word:'LASKOS',bg:'#ECE5D5',ink:'#1A1916',label:'Paper mill and pleating workshop',
+  head:['Paper, pleated','for light, sound','and walls.'],
+  body:'Laskos is a paper mill and pleating workshop in Tervakoski, Finland. We make one thing: sheets that hold a fold. Shades, blinds and acoustic walls are cut from them.',
+  rows:[['Founded','1968'],['Papers','48 colours'],['Pitches','20, 30 and 60 mm']],hint:true},
+ {nav:'Pleat',word:'PLEAT',bg:'#E0442A',ink:'#F6EFE2',label:'The sheet',
+  head:['One sheet,','two faces.'],
+  body:'Every pleat has a left face and a right face, and we print both. Lean one way and you read the first sheet. Lean the other way and the second is already there.',
+  pitch:true},
+ {nav:'Light',word:'LIGHT',bg:'#2337A6',ink:'#EFEADD',label:'Shades and blinds',
+  head:['Shades that','glow at','the fold.'],
+  body:'Cotton fibre lets light through where the sheet turns away from you. A Laskos shade is brightest in its valleys.',
+  rows:[['Shade 30, pendant Ø 300','140 €'],['Shade 45, pendant Ø 450','190 €'],['Blind, made to width','from 96 € / m']]},
+ {nav:'Quiet',word:'QUIET',bg:'#F1BCC4',ink:'#1B2463',label:'Acoustic walls',
+  head:['Walls that','keep a room','quiet.'],
+  body:'A pleated wall is mostly air. Sound goes into the valleys and little of it finds the way back out.',
+  rows:[['Absorption','αw 0.85, class B'],['Panel','600 × 1200 mm'],['Depth','60 mm'],['Fire class','B-s1, d0']]},
+ {nav:'Order',word:'ORDER',bg:'#F3C52F',ink:'#1A1916',label:'Swatch book',
+  head:['Hold it before','you specify it.'],
+  body:'The swatch book holds all 48 papers, each pleated at three pitches. It costs 18 € and we take that off your first order.',
+  cta:true,rows:[['Write to','myynti@laskos.paper'],['Visit','Tehtaantie 4, Tervakoski']]}
+];
+const N=PAGES.length;
+const TXT='"Sofia Sans","Helvetica Neue",Arial,sans-serif', LBL='"Sofia Sans Condensed","Arial Narrow",sans-serif';
+const FAMS=['Sofia Sans Extra Condensed','Sofia Sans Condensed','Sofia Sans'];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const smooth=(a,b,v)=>{v=clamp((v-a)/(b-a),0,1);return v*v*(3-2*v)};
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+let W=0,H=0,dpr=1,rs=1,ts=1,phone=false,U=0,M=0,cols=24;
+let pitchK=2,pitchCur=30,pitchTarget=30,basket=false;
+const pageInfo=PAGES.map(()=>({links:[],zoneTop:0,tex:null}));
+
+/* ---------- drawing the printed pages ---------- */
+function ls(x,v){if('letterSpacing' in x)x.letterSpacing=v+'px'}
+function wrap(x,text,w){const out=[];let line='';for(const word of text.split(' ')){const t=line?line+' '+word:word;if(x.measureText(t).width>w&&line){out.push(line);line=word}else line=t}if(line)out.push(line);return out}
+function fitWord(x,word,availW,capT){
+  let best=null;
+  for(const fam of FAMS){
+    x.font=`900 200px "${fam}","Arial Narrow",sans-serif`;ls(x,0);
+    const cap=x.measureText('H').actualBoundingBoxAscent||140;
+    const nat=[...word].reduce((s,ch)=>s+x.measureText(ch).width,0);
+    const em=200*capT/cap, ratio=availW/(nat*em/200), err=Math.abs(Math.log(ratio));
+    if(!best||err<best.err)best={fam,em,ratio,err,cap:cap/200};
+  }
+  let sx=clamp(best.ratio,.86,1.22),extra=0,em=best.em;
+  if(best.ratio<.86)em*=best.ratio/.86;
+  x.font=`900 ${em}px "${best.fam}","Arial Narrow",sans-serif`;
+  const adv=[...word].map(ch=>x.measureText(ch).width*sx),nat=adv.reduce((a,b)=>a+b,0);
+  if(nat<availW)extra=(availW-nat)/(word.length-1);
+  return {font:x.font,sx,extra,adv,cap:best.cap*em};
+}
+function drawPage(i){
+  const p=PAGES[i],info=pageInfo[i],c=document.createElement('canvas');
+  c.width=Math.round(W*ts);c.height=Math.round(H*ts);
+  const x=c.getContext('2d');x.scale(c.width/W,c.height/H);
+  x.fillStyle=p.bg;x.fillRect(0,0,W,H);x.fillStyle=p.ink;x.textBaseline='alphabetic';
+  const links=[];
+  // top bar
+  const topY=phone?36:Math.max(40,Math.round(H*.06));
+  x.font=`800 ${phone?22:25}px ${TXT}`;ls(x,-.3);x.fillText('Laskos',M,topY);
+  links.push({x:M-8,y:topY-28,w:x.measureText('Laskos').width+16,h:40,go:0});
+  x.font=`600 ${phone?13:14}px ${LBL}`;ls(x,1.3);
+  let nx=W-M;const gap=phone?17:32;
+  for(let k=N-1;k>=1;k--){const t=PAGES[k].nav.toUpperCase(),w=x.measureText(t).width-1.3;nx-=w;x.fillText(t,nx,topY-2);
+    if(k===i)x.fillRect(nx,topY+4,w,2);links.push({x:nx-gap/2,y:topY-28,w:w+gap,h:40,go:k});nx-=gap}
+  const ruleY=topY+(phone?15:19);x.fillRect(M,ruleY,W-2*M,1);
+  // giant word in the pleated band
+  const bottom=H-(phone?M*.9:M*.5),availW=W-2*M;
+  const f=fitWord(x,p.word,availW,phone?Math.min(H*.24,W*.62):H*.40);
+  x.font=f.font;ls(x,0);let wx=M;
+  [...p.word].forEach((ch,j)=>{x.save();x.translate(wx,bottom);x.scale(f.sx,1);x.fillText(ch,0,0);x.restore();wx+=f.adv[j]+f.extra});
+  const zoneTop=bottom-f.cap*1.12;info.zoneTop=zoneTop;
+  // label
+  const cTop=ruleY+(phone?30:Math.max(34,H*.058));
+  x.font=`600 ${phone?13:14}px ${LBL}`;ls(x,1.3);
+  x.fillText(`${String(i+1).padStart(2,'0')} / 0${N}`,M,cTop);
+  x.fillText(p.label.toUpperCase(),M+(phone?64:U*2),cTop);
+  // headline
+  const hs=phone?Math.min(W*.118,H*.064):clamp(Math.min(H*.094,W*.056),32,100);
+  x.font=`600 ${hs}px ${TXT}`;ls(x,-hs*.022);
+  let hy=cTop+(phone?16:24)+hs*.78;
+  for(const l of p.head){x.fillText(l,M-hs*.04,hy);hy+=hs*.98}
+  const headEnd=hy-hs*.98+hs*.2;
+  // text column
+  const bs=phone?15.5:clamp(W*.0125,15,19);
+  let rx,rw,y;
+  if(phone){rx=M;rw=W-2*M;y=headEnd+22+bs}
+  else{rx=W>=1000?U*15:W*.56;rw=Math.min(W-M-rx,bs*31);y=cTop+24+bs}
+  x.font=`400 ${bs}px ${TXT}`;ls(x,0);
+  for(const l of wrap(x,p.body,rw)){x.fillText(l,rx,y);y+=bs*1.45}
+  y+=phone?6:14;
+  const room=()=>zoneTop-8-y;
+  if(p.pitch&&room()>70){
+    x.font=`600 ${phone?13:14}px ${LBL}`;ls(x,1.3);x.fillText('PITCH OF THIS PAGE',rx,y+4);y+=18;
+    const names=['Wide','Regular','Fine'],bw=rw/3,bh=phone?40:44;
+    names.forEach((n,k)=>{const bx=rx+k*bw,on=pitchK===k+1;
+      if(on){x.fillStyle=p.ink;x.fillRect(bx,y,bw,bh);x.fillStyle=p.bg}else{x.fillStyle=p.ink;x.fillRect(bx,y,bw,1);x.fillRect(bx,y+bh-1,bw,1);x.fillRect(bx,y,1,bh);x.fillRect(bx+bw-1,y,1,bh)}
+      x.font=`${on?600:500} ${bs}px ${TXT}`;ls(x,0);x.textAlign='center';x.fillText(n,bx+bw/2,y+bh/2+bs*.34);x.textAlign='left';x.fillStyle=p.ink;
+      links.push({x:bx,y,w:bw,h:bh,pitch:k+1})});
+    y+=bh+16;
+  }
+  if(p.cta&&room()>60){
+    const bh=phone?48:54;x.fillStyle=p.ink;x.fillRect(rx,y,rw,bh);x.fillStyle=p.bg;
+    x.font=`600 ${bs+1}px ${TXT}`;ls(x,0);
+    x.fillText(basket?'In your basket':'Order the swatch book',rx+18,y+bh/2+bs*.36);
+    x.textAlign='right';x.fillText(basket?'1 × 18 €':'18 €',rx+rw-18,y+bh/2+bs*.36);x.textAlign='left';x.fillStyle=p.ink;
+    links.push({x:rx,y,w:rw,h:bh,cta:true});y+=bh+10;
+  }
+  if(p.rows){const rh=phone?28:32;
+    for(const [a,b] of p.rows){if(room()<rh)break;
+      x.font=`600 ${phone?13:14}px ${LBL}`;ls(x,1.1);x.fillText(a.toUpperCase(),rx,y+rh*.66);
+      x.font=`500 ${bs-.5}px ${TXT}`;ls(x,0);x.textAlign='right';x.fillText(b,rx+rw,y+rh*.66);x.textAlign='left';
+      x.globalAlpha=.45;x.fillRect(rx,y+rh-1,rw,1);x.globalAlpha=1;y+=rh}
+  }
+  if(p.hint&&room()>30){x.font=`600 ${phone?13:14}px ${LBL}`;ls(x,1.3);x.fillText('SCROLL TO TURN THE SHEET  ↓',rx,y+24)}
+  info.links=links;
+  if(!info.tex)info.tex=gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D,info.tex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,c);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  if(aniso)gl.texParameterf(gl.TEXTURE_2D,aniso.TEXTURE_MAX_ANISOTROPY_EXT,8);
+}
+
+/* ---------- the sheet ---------- */
+const VS=`#version 300 es
+in vec2 a;void main(){gl_Position=vec4(a,0.,1.);}`;
+const FS=`#version 300 es
+precision highp float;
+uniform sampler2D uCur,uNext;
+uniform vec2 uRes;uniform float uPitch,uT,uZone,uZoneY,uLean,uTime,uIntro,uPx;
+uniform vec3 uEye;uniform vec4 uWake;uniform vec3 uColCur,uColNext;uniform int uNS;
+out vec4 o;
+const float HM=.9,PI=3.14159265;
+float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
+float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+  return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}
+// how far pleat c has turned from the current page (0) to the next (1) at height ypx
+float qAt(float c,float ypx){
+  float cx=(c+.5)*uPitch/uRes.x,vy=clamp(ypx/uRes.y,0.,1.);
+  float n=sin(c*1.7)*.5+sin(c*.37+1.3)*.5;
+  float d=(1.-vy)+.25*cx+.05*n+.06;
+  float q=smoothstep(0.,1.,(uT*1.92-d)/.55);
+  float zy=smoothstep(uZoneY-.03,uZoneY+.05,vy);
+  float ql=.45+.29*uLean+.06*sin(c*.45-uTime*.9)+.03*sin(c*1.31+uTime*.6);
+  q=mix(q,ql,zy*uZone);
+  vec2 dv=vec2((c+.5)*uPitch,ypx)-uWake.xy;
+  q=mix(q,.5+.12*sin(c*.9+uTime*2.),uWake.w*exp(-dot(dv,dv)/(uWake.z*uWake.z))*.92);
+  float iw=smoothstep(0.,1.,uIntro*2.3-(1.-cx)*1.3);
+  q=mix(q,.5+.25*sin(c*.5+1.),iw);
+  return clamp(q,0.,1.);
+}
+void main(){
+  vec2 fc=gl_FragCoord.xy;float px=fc.x,py=uRes.y-fc.y;
+  vec2 k=(uRes*.5+uEye.xy*uRes.y-vec2(px,py))/(uEye.z*uRes.y);
+  float cb=floor(px/uPitch);
+  float qs[4];for(int j=0;j<4;j++)qs[j]=qAt(cb-2.+float(j),py);
+  float qmin=min(qs[1],min(qs[2],qs[3])),qmax=max(qs[1],max(qs[2],qs[3]));
+  int ns=(qmax<1e-4||qmin>.9999)?1:uNS;
+  float sg=1.3/uPitch;
+  vec3 L=normalize(vec3(-.6,0.,.74));float tanL=L.z/-L.x;
+  vec3 acc=vec3(0.);
+  for(int si=0;si<4;si++){
+    if(si>=ns)break;
+    float off=ns==1?0.:(float(si)+.5)/float(ns)-.5;
+    float X=(px+off)/uPitch;
+    float bz=-1.,bs=0.,bc=cb,bf=0.,bq=0.;
+    for(int j=1;j<4;j++){
+      float c=cb-2.+float(j),q=qs[j],h=HM*sin(PI*q),wl=1.-q;
+      if(wl>1e-4){float den=wl-h*k.x;if(den>1e-5){float z=h*(X-c)/den,xh=X+z*k.x;
+        if(z>-1e-4&&xh>=c-1e-4&&xh<=c+wl+1e-4&&z>bz){bz=z;bs=(xh-c)/wl;bc=c;bf=0.;bq=q;}}}
+      if(q>1e-4){float den=q+h*k.x;if(den>1e-5){float z=h*(c+1.-X)/den,xh=X+z*k.x;
+        if(z>-1e-4&&xh>=c+wl-1e-4&&xh<=c+1.+1e-4&&z>bz){bz=z;bs=(xh-c-wl)/q;bc=c;bf=1.;bq=q;}}}
+    }
+    if(bz<0.){bc=clamp(floor(X),cb-1.,cb+1.);bq=qs[int(bc-cb)+2];float fx=X-bc;bz=0.;
+      if(fx<1.-bq){bf=0.;bs=fx/max(1.-bq,1e-4);}else{bf=1.;bs=(fx-1.+bq)/max(bq,1e-4);}}
+    bz=max(bz,0.);bs=clamp(bs,0.,1.);
+    float q=bq,open=sin(PI*q),h=HM*open,wl=1.-q;
+    float w=bf<.5?wl:q;
+    vec3 Nn=normalize(vec3(bf<.5?-h/max(wl,1e-4):h/max(q,1e-4),0.,1.));
+    float xh=bc+(bf<.5?bs*wl:wl+bs*q);
+    float yh=py+bz*uPitch*k.y;
+    vec2 uv=vec2((bc+bs)*uPitch/uRes.x,yh/uRes.y);
+    vec2 gx=vec2(1./(uRes.x*max(w,.05)*float(ns)),0.),gy=vec2(0.,1./uRes.y);
+    vec3 alb=bf<.5?textureGrad(uCur,uv,gx,gy).rgb:textureGrad(uNext,uv,gx,gy).rgb;
+    alb*=alb;
+    vec2 pp=uv*uRes/uPx+bf*311.;
+    alb*=1.+.07*(vn(pp*vec2(1.3,.9))-.5)+.05*(vn(pp*.045)-.5)+.03*(vn(pp*vec2(.22,2.1))-.5);
+    float ndl=dot(Nn,L);
+    float qp=qs[int(bc-cb)+1],hp=HM*sin(PI*qp);
+    float dist=xh-(bc-qp),dd=bz+dist*tanL-hp,pen=.03+.14*dist;
+    float sh=mix(1.,smoothstep(-pen,pen,dd),smoothstep(0.,.06,hp));
+    float dif=clamp(ndl/L.z,0.,1.22);
+    float zrel=h>1e-3?clamp(bz/h,0.,1.):1.;
+    float ao=mix(1.-.55*open,1.,zrel);
+    float lit=.42*ao+.58*dif*sh;
+    vec3 col=alb*lit;
+    col+=alb*sqrt(alb)*max(-ndl,0.)*.42*open;                        // light through the sheet
+    col+=alb*(bf<.5?uColNext*.05:uColCur*.30)*open*(1.-.4*zrel);     // colour thrown by the facing pleat
+    float dr=bf<.5?(1.-bs)*wl:bs*q,dvl=bf<.5?bs*wl:(1.-bs)*q;
+    col*=1.+.22*open*exp(-dr*dr/(sg*sg));
+    col*=1.-.28*open*exp(-dvl*dvl/(sg*sg*4.));
+    float fx=fract(xh),dB=min(fx,1.-fx);
+    col*=1.-.09*(1.-open)*exp(-dB*dB/(sg*sg*.5));
+    acc+=col;
+  }
+  vec3 col=acc/float(ns);
+  vec2 g=vec2(fc.x/uRes.x,1.-fc.y/uRes.y);
+  col*=1.045-.10*length((g-vec2(.15,.1))*vec2(.9,.7));
+  col=sqrt(max(col,0.));
+  col+=(hash(fc+uTime)-.5)/255.;
+  o=vec4(col,1.);
+}`;
+function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o}
+const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);
+if(!gl.getProgramParameter(pr,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(pr));
+gl.useProgram(pr);
+const aniso=gl.getExtension('EXT_texture_filter_anisotropic');
+const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0);gl.bindAttribLocation(pr,0,'a');gl.vertexAttribPointer(gl.getAttribLocation(pr,'a'),2,gl.FLOAT,false,0,0);
+const u={};for(const n of ['uCur','uNext','uRes','uPitch','uT','uZone','uZoneY','uLean','uTime','uIntro','uPx','uEye','uWake','uColCur','uColNext','uNS'])u[n]=gl.getUniformLocation(pr,n);
+gl.uniform1i(u.uCur,0);gl.uniform1i(u.uNext,1);
+const rgb=h=>[1,3,5].map(i=>{const v=parseInt(h.slice(i,i+2),16)/255;return v*v});
+
+/* ---------- size ---------- */
+const track=document.getElementById('track');
+let seg=1,ready=false;
+function pitchFor(k){return W/(cols*k)}
+function layout(force){
+  const w=innerWidth,h=innerHeight;
+  if(!force&&w===W&&Math.abs(h-H)<H*.14){H2=h;return}
+  W=w;H=h;H2=h;dpr=Math.min(devicePixelRatio||1,2);phone=W<700;cols=phone?12:24;U=W/cols;M=phone?U*.7:U;
+  ts=Math.min(dpr,3072/Math.max(W,H));
+  pitchTarget=pitchCur=pitchFor(pitchK);
+  seg=H*1.3;track.style.height=((N-1)*seg+H)+'px';
+  sizeCanvas();
+  if(ready)for(let i=0;i<N;i++)drawPage(i);
+}
+let H2=0;
+function sizeCanvas(){cv.width=Math.round(W*dpr*rs);cv.height=Math.round(H*dpr*rs);gl.viewport(0,0,cv.width,cv.height)}
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>layout(false),140)});
+
+/* ---------- state ---------- */
+let mx=0,my=0,hasMouse=false,lean=-.3,eyeY=0,leanT=-.3;
+let bx=0,by=0,wake=0,lastX=0,lastY=0,lastMove=0;
+let curIdx=0,zoneOpen=0,intro=1,introStart=0,t0=performance.now(),prev=t0,slow=0;
+let forceP=null;
+function scrollP(){return forceP!==null?forceP:clamp(scrollY/seg,0,N-1)}
+function activePage(){const P=scrollP(),i=Math.min(Math.floor(P),N-1),s=P-i;return clamp((s-.2)/.8,0,1)>.5?(i+1)%N:i}
+function hit(x,y){for(const l of pageInfo[activePage()].links)if(x>=l.x&&x<=l.x+l.w&&y>=l.y&&y<=l.y+l.h)return l;return null}
+function go(k){forceP=null;scrollTo({top:k*seg,behavior:reduce?'auto':'smooth'})}
+addEventListener('pointermove',e=>{
+  if(e.pointerType==='mouse')hasMouse=true;
+  mx=e.clientX;my=e.clientY;
+  const now=performance.now(),sp=Math.hypot(mx-lastX,my-lastY)/Math.max(now-lastMove,8)*16;
+  if(lastMove)wake=Math.min(1,wake+sp*.012);
+  lastX=mx;lastY=my;lastMove=now;
+  document.body.style.cursor=hit(mx,my)?'pointer':'';
+},{passive:true});
+addEventListener('click',e=>{
+  if(e.target.closest&&e.target.closest('#copy'))return;
+  const l=hit(e.clientX,e.clientY);if(!l)return;
+  if(l.go!==undefined)go(l.go);
+  else{
+    if(l.pitch){pitchK=l.pitch;pitchTarget=pitchFor(pitchK);drawPage(1)}
+    if(l.cta){basket=!basket;drawPage(4)}
+    bx=e.clientX;by=e.clientY;wake=1;
+  }
+});
+document.querySelectorAll('#copy a[data-go]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();go(+a.dataset.go)}));
+
+/* ---------- frame ---------- */
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt=Math.min((now-prev)/1000,window.__noAdapt?2:.05);prev=now;const time=(now-t0)/1000;
+  if(!window.__noAdapt&&ready&&time>3){if(dt>.034)slow++;else slow=Math.max(0,slow-1);if(slow>40&&rs>.55){rs*=.8;slow=0;sizeCanvas()}}
+  const P=scrollP(),i=Math.min(Math.floor(P),N-1),s=P-i,T=clamp((s-.2)/.8,0,1);
+  if(i!==curIdx){curIdx=i;zoneOpen=0}
+  zoneOpen=Math.min(1,zoneOpen+dt/1.1);
+  intro=reduce?0:1-smooth(0,1,(now-introStart)/1900);
+  leanT=hasMouse?(mx/W-.5)*2:Math.sin(time*.45)*.55-.05;
+  if(reduce&&!hasMouse)leanT=-.3;
+  lean+=(leanT-lean)*(1-Math.exp(-dt*5));
+  eyeY+=((hasMouse?(my/H-.5)*.7:0)-eyeY)*(1-Math.exp(-dt*5));
+  const f=1-Math.exp(-dt*7);bx+=(mx-bx)*f;by+=(my-by)*f;wake*=Math.exp(-dt*1.5);
+  pitchCur+=(pitchTarget-pitchCur)*(1-Math.exp(-dt*6));
+  const sc=cv.width/W,scy=cv.height/H2;
+  const zo=smooth(0,1,zoneOpen)*(1-smooth(.2,.45,s));
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,pageInfo[i].tex);
+  gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,pageInfo[(i+1)%N].tex);
+  gl.uniform2f(u.uRes,cv.width,cv.height);gl.uniform1f(u.uPitch,pitchCur*sc);gl.uniform1f(u.uPx,sc);
+  gl.uniform1f(u.uT,T);gl.uniform1f(u.uZone,zo);gl.uniform1f(u.uZoneY,pageInfo[i].zoneTop/H);
+  gl.uniform1f(u.uLean,lean);gl.uniform1f(u.uTime,reduce?0:time);gl.uniform1f(u.uIntro,intro);
+  gl.uniform3f(u.uEye,lean*1.1,eyeY,4.4);
+  gl.uniform4f(u.uWake,bx*sc,by*scy,H*.17*sc,reduce?0:wake*(1-smooth(.9,1,s))*smooth(0,.03,s+T+(i===N-1?1:0)+(i===0?1:0)));
+  gl.uniform3fv(u.uColCur,rgb(PAGES[i].bg));gl.uniform3fv(u.uColNext,rgb(PAGES[(i+1)%N].bg));
+  gl.uniform1i(u.uNS,dpr*rs>=1.8?3:4);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+}
+window.__set=p=>{forceP=p};window.__lean=v=>{hasMouse=true;mx=(v*.5+.5)*W;my=H*.5};
+
+layout(true);
+const fontList=['800 25px "Sofia Sans"','600 60px "Sofia Sans"','500 16px "Sofia Sans"','400 16px "Sofia Sans"','900 100px "Sofia Sans"','600 14px "Sofia Sans Condensed"','900 100px "Sofia Sans Condensed"','900 100px "Sofia Sans Extra Condensed"'];
+const fontsReady=document.fonts?Promise.all(fontList.map(f=>document.fonts.load(f,'LASKOSaø€×'))).catch(()=>{}):Promise.resolve();
+Promise.race([fontsReady,new Promise(r=>setTimeout(r,3000))]).then(()=>{
+  ready=true;for(let i=0;i<N;i++)drawPage(i);
+  introStart=performance.now();t0=introStart;prev=introStart;requestAnimationFrame(frame);
+  fontsReady.then(()=>{for(let i=0;i<N;i++)drawPage(i)});
+});
+})();
+</script>
+</body>
+</html>

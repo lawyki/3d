@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
+<title>Hieta Dune Guesthouse</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Newsreader:ital,opsz,wght@0,6..72,300..500;1,6..72,300..500&display=swap">
+<style>
+/* Layout: the whole page is one sheet lying on a raked sand bed. Display type is built from the grains,
+   every block of reading text is a stone the rake lines circle, and the sheet tilts in 3D with the scroll. */
+:root{
+  --paper:#E2DACC;      /* dry sand */
+  --ink:#1D1915;        /* wet sand, used for type */
+  --mute:#6A5E50;       /* driftwood, secondary text */
+  --sea:#2438C8;        /* the one accent: links, focus, the trail your pointer leaves */
+  --line:rgba(29,25,21,.28);
+  --display:"Bricolage Grotesque","Arial Black",system-ui,sans-serif;
+  --text:"Newsreader",Georgia,"Times New Roman",serif;
+  --g:max(16px,5vw);
+  --vh:100vh;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{background:var(--paper)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--text);font-size:18px;line-height:1.5;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+#stage{position:fixed;inset:0;overflow:hidden}
+#bed{position:absolute;left:0;top:0;width:100%;transform-origin:0 0;will-change:transform;opacity:0;transition:opacity 1.4s ease .5s}
+.ready #bed{opacity:1}
+#spacer{width:1px;height:500vh;visibility:hidden}
+
+/* fixed bar */
+.bar{position:fixed;z-index:5;left:0;right:0;top:0;display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding-top:calc(env(safe-area-inset-top,0px) + 18px);padding-bottom:14px;
+  padding-left:max(var(--g),env(safe-area-inset-left,0px));padding-right:max(var(--g),env(safe-area-inset-right,0px));
+  font-family:var(--display);font-size:15px;font-weight:500;letter-spacing:.01em;
+  background:linear-gradient(var(--paper) 10%,rgba(226,218,204,0));pointer-events:none}
+.bar>*{pointer-events:auto}
+.bar .mark{font-weight:800;font-size:19px;letter-spacing:-.02em;text-decoration:none}
+.bar nav{display:flex;gap:clamp(14px,2.4vw,34px)}
+.bar a{text-decoration:none}
+.bar nav a:hover,.bar nav a:focus-visible{color:var(--sea)}
+.bar .book{border:1.5px solid var(--ink);border-radius:999px;padding:7px 16px 8px;transition:background .2s,color .2s}
+.bar .book:hover,.bar .book:focus-visible{background:var(--ink);color:var(--paper)}
+:focus-visible{outline:2px solid var(--sea);outline-offset:3px}
+
+/* sheet */
+section,footer{position:relative;padding-left:max(var(--g),env(safe-area-inset-left,0px));padding-right:max(var(--g),env(safe-area-inset-right,0px))}
+.sand{margin:0;font-family:var(--display);font-weight:800;letter-spacing:-.035em;line-height:.9;color:transparent;
+  font-size:min(15.5vw,200px);user-select:none;-webkit-user-select:none;pointer-events:none}
+.sand .ln{display:block;width:fit-content;white-space:nowrap}
+.nogl .sand{color:var(--ink)}
+.isle{border-radius:38px;padding:20px 28px}
+.eyebrow{font-family:var(--display);font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+
+.hero{height:var(--vh);min-height:560px;display:flex;flex-direction:column}
+.hero .sand{font-size:min(30vw,calc(var(--vh)*.5));margin-top:calc(var(--vh)*.17)}
+.hero .row{margin-top:auto;padding-bottom:calc(var(--vh)*.07);display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.hero .lede{max-width:25em;font-size:clamp(19px,1.7vw,24px);line-height:1.34;margin:0;text-wrap:balance}
+.hero .meta{margin:0;font-family:var(--display);font-size:14px;font-weight:500;line-height:1.55;color:var(--mute);white-space:nowrap}
+.hero .meta b{color:var(--ink);font-weight:600}
+
+#place{padding-top:calc(var(--vh)*.3)}
+#place .cols{display:flex;flex-wrap:wrap;gap:40px 6vw;align-items:flex-start;justify-content:flex-end;margin-top:calc(var(--vh)*.12)}
+.copy{max-width:31em;min-width:0}
+.copy p{margin:0 0 .9em}
+.copy p:last-child{margin:0}
+.stones{display:flex;gap:clamp(30px,5vw,70px);list-style:none;margin:0;padding:0;order:-1;align-self:center;flex-wrap:wrap}
+.stones li{width:128px;height:128px;border-radius:999px;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:var(--display);font-size:13px;font-weight:500;color:var(--mute);line-height:1.2;text-align:center}
+.stones li:nth-child(2){margin-top:70px}
+.stones b{font-size:46px;font-weight:700;letter-spacing:-.03em;color:var(--ink);line-height:1}
+
+#rooms{padding-top:calc(var(--vh)*.38)}
+#rooms .sand{margin-left:auto;width:fit-content}
+.rooms{display:flex;flex-direction:column;gap:64px;margin-top:calc(var(--vh)*.13)}
+.room{display:grid;grid-template-columns:1fr auto;gap:2px 28px;align-items:baseline;width:min(100%,560px);text-decoration:none;padding:22px 34px 24px;border-radius:52px}
+.room:nth-child(1){margin-left:4vw}.room:nth-child(2){margin-left:auto;margin-right:6vw}.room:nth-child(3){margin-left:20vw}
+.room h3{margin:0;font-family:var(--display);font-size:clamp(26px,2.6vw,36px);font-weight:700;letter-spacing:-.025em;line-height:1.1;transition:color .2s}
+.room p{margin:0;grid-column:1;color:var(--mute);font-size:17px;line-height:1.4}
+.room .price{grid-row:1;grid-column:2;font-family:var(--display);font-size:15px;font-weight:500;white-space:nowrap}
+.room:hover h3,.room:focus-visible h3{color:var(--sea)}
+
+#stay{padding-top:calc(var(--vh)*.4);display:flex;flex-direction:column;align-items:center;text-align:center}
+#stay .eyebrow{padding:12px 24px;border-radius:999px}
+.namebox{height:min(30vw,250px);width:100%;display:flex;align-items:center;justify-content:center;margin:calc(var(--vh)*.06) 0}
+.namebox .sand{font-size:120px}
+form.isle{display:flex;flex-wrap:wrap;gap:14px 18px;align-items:center;justify-content:center;padding:22px 30px;border-radius:48px;max-width:100%}
+form label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+form input{font:inherit;font-size:20px;color:var(--ink);background:none;border:0;border-bottom:1.5px solid var(--ink);border-radius:0;padding:6px 2px;width:min(15em,70vw);min-width:0}
+form input::placeholder{color:var(--mute);opacity:.8;font-style:italic}
+form input:focus{outline:0;border-color:var(--sea)}
+form button{font-family:var(--display);font-size:15px;font-weight:600;color:var(--paper);background:var(--ink);border:0;border-radius:999px;padding:12px 22px 13px;cursor:pointer;transition:background .2s}
+form button:hover,form button:focus-visible{background:var(--sea)}
+.after{margin:44px 0 0;padding:14px 26px;border-radius:999px;color:var(--mute);font-style:italic;font-size:17px;max-width:30em;text-wrap:balance}
+
+footer{margin-top:calc(var(--vh)*.3);padding-bottom:calc(var(--vh)*.24)}
+footer .isle{display:flex;flex-wrap:wrap;gap:10px 44px;justify-content:space-between;font-family:var(--display);font-size:14px;font-weight:500;color:var(--mute);border-radius:44px;padding:22px 32px}
+footer b{color:var(--ink);font-weight:600}
+footer p{margin:0}
+
+@media (max-width:720px){
+  body{font-size:17px}
+  .sand{font-size:19vw}
+  .hero .sand{font-size:min(36vw,calc(var(--vh)*.5))}
+  .bar nav a:not(.book){display:none}
+  .isle{padding:16px 20px;border-radius:30px}
+  .hero .row{padding-bottom:calc(var(--vh)*.05)}
+  #place .cols{justify-content:flex-start}
+  .stones{order:1;gap:26px;justify-content:center;width:100%}
+  .stones li{width:96px;height:96px;font-size:12px}
+  .stones b{font-size:34px}
+  .stones li:nth-child(2){margin-top:44px}
+  .rooms{gap:52px}
+  .room,.room:nth-child(n){margin-left:0;margin-right:0;padding:18px 24px 20px;border-radius:40px}
+  .room:nth-child(2){margin-left:auto}
+  .room{width:min(100%,330px)}
+  form.isle{padding:18px 22px;border-radius:36px}
+}
+@media (prefers-reduced-motion:reduce){#bed{transition:none}}
+</style>
+
+<canvas id="gl" aria-hidden="true"></canvas>
+
+<header class="bar">
+  <a class="mark" href="#top" data-to="top">Hieta</a>
+  <nav aria-label="Sections">
+    <a href="#place" data-to="place">The dunes</a>
+    <a href="#rooms" data-to="rooms">Rooms</a>
+    <a class="book" href="#stay" data-to="stay">Book</a>
+  </nav>
+</header>
+
+<div id="stage">
+<main id="bed">
+
+  <section class="hero" id="top">
+    <h1 class="sand"><span class="ln">Hieta</span></h1>
+    <div class="row">
+      <p class="isle lede">A guesthouse in the dunes at Kalajoki. Twelve rooms, three kilometres of beach, and a forecourt we rake every morning.</p>
+      <p class="isle meta"><b>64°13′ N, 23°48′ E</b><br>Open May to October</p>
+    </div>
+  </section>
+
+  <section id="place">
+    <h2 class="sand"><span class="ln">Nothing</span><span class="ln">stays put</span></h2>
+    <div class="cols">
+      <ul class="stones">
+        <li class="isle"><b>12</b>rooms</li>
+        <li class="isle"><b>3</b>km of sand</li>
+        <li class="isle"><b>0</b>screens</li>
+      </ul>
+      <div class="isle copy">
+        <p>The dunes here move a little every night. We built low enough to let them, on posts, with a boardwalk that is laid again each spring.</p>
+        <p>Come for the quiet. Stay because your footprints are gone by breakfast and nobody asks where you walked.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="rooms">
+    <h2 class="sand"><span class="ln">Rooms</span></h2>
+    <div class="rooms">
+      <a class="isle room" href="#stay" data-to="stay"><h3>Dyyni</h3><span class="price">from €180</span><p>Dune side, 24 m². Morning sun and the sound of grass.</p></a>
+      <a class="isle room" href="#stay" data-to="stay"><h3>Ranta</h3><span class="price">from €240</span><p>Sea side, 31 m². A door that opens straight onto sand.</p></a>
+      <a class="isle room" href="#stay" data-to="stay"><h3>Tuuli</h3><span class="price">from €320</span><p>The corner suite, 46 m². Two walls of window and a stove.</p></a>
+    </div>
+  </section>
+
+  <section id="stay">
+    <p class="isle eyebrow">Write your name in the sand</p>
+    <div class="namebox"><h2 class="sand" id="nameSand" aria-live="polite"><span class="ln">Your name</span></h2></div>
+    <form class="isle" id="bookForm" novalidate>
+      <label for="guestName">Your name</label>
+      <input id="guestName" name="name" type="text" maxlength="16" autocomplete="given-name" placeholder="Your name" spellcheck="false">
+      <button type="submit" id="bookBtn">Request dates</button>
+    </form>
+    <p class="isle after" id="afterNote">The tide takes it at six. The room is yours until Sunday.</p>
+  </section>
+
+  <footer>
+    <div class="isle">
+      <p><b>Hieta</b><br>Hiekkasärkät, Kalajoki</p>
+      <p>Raked daily at seven<br>Breakfast until eleven</p>
+      <p>stay@hieta.example<br>A made-up guesthouse</p>
+    </div>
+  </footer>
+
+</main>
+</div>
+<div id="spacer"></div>
+
+<script>
+(function(){
+'use strict';
+var root=document.documentElement,$=function(s){return document.querySelector(s)};
+var cv=$('#gl'),stage=$('#stage'),bed=$('#bed'),spacer=$('#spacer');
+var reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+var gl=cv.getContext('webgl2',{alpha:false,antialias:false,powerPreference:'high-performance'});
+if(!gl)root.classList.add('nogl');
+var SANDFONT='"Bricolage Grotesque","Arial Black",system-ui,sans-serif';
+var RMAX=160,TMAX=42*Math.PI/180,NT=12;
+
+var W=0,H=0,pageH=0,P=0,piv=0,dpr=1,texel=2,tw=0,th=0,lam=13,N=0,tileW=0,tileH=0,orgY=0;
+var data=null,fc=document.createElement('canvas'),fx=fc.getContext('2d',{willReadFrequently:true});
+var lines=[].slice.call(document.querySelectorAll('.sand .ln'));
+var isles=[].slice.call(document.querySelectorAll('.isle'));
+var nameLn=$('#nameSand .ln'),nameBox=$('.namebox');
+
+function offs(el){var x=0,y=0,e=el;while(e&&e!==bed){x+=e.offsetLeft;y+=e.offsetTop;e=e.offsetParent}return{x:x,y:y,w:el.offsetWidth,h:el.offsetHeight}}
+function planeAt(sx,sy,t){var X=sx-W/2,Y=sy-piv,c=Math.cos(t),s=Math.sin(t);var qy=Y*P/(c*P+Y*s);var sc=P/(P-qy*s);return[X/sc,qy,sc]}
+
+function fitName(){
+  var mx=Math.min(nameBox.offsetHeight*.92,230);
+  fx.setTransform(1,0,0,1,0,0);fx.font='800 100px '+SANDFONT;if('letterSpacing' in fx)fx.letterSpacing='-3.5px';
+  var w=fx.measureText(nameLn.textContent).width||100;
+  var fs=Math.min(mx,(W-2*Math.max(16,W*.05))*.94*100/w);
+  $('#nameSand').style.fontSize=fs.toFixed(1)+'px';
+}
+
+/* ---------- distance field of the layout: R = letters, G = stones ---------- */
+var INF=1e20,ef,ev,ez;
+function edt1(g,o,st,n){
+  var q,k=0,s,r;ev[0]=0;ez[0]=-INF;ez[1]=INF;ef[0]=g[o];
+  for(q=1;q<n;q++){ef[q]=g[o+q*st];var q2=q*q;
+    do{r=ev[k];s=(ef[q]-ef[r]+q2-r*r)/(q-r)/2}while(s<=ez[k]&&--k>-1);
+    k++;ev[k]=q;ez[k]=s;ez[k+1]=INF}
+  for(q=0,k=0;q<n;q++){while(ez[k+1]<q)k++;r=ev[k];var d=q-r;g[o+q*st]=ef[r]+d*d}
+}
+function edt(g,w,h){var x,y;for(x=0;x<w;x++)edt1(g,x,w,h);for(y=0;y<h;y++)edt1(g,y*w,1,w)}
+function rasterLetters(){
+  fx.setTransform(1,0,0,1,0,0);fx.fillStyle='#000';fx.fillRect(0,0,tw,th);
+  fx.setTransform(1/texel,0,0,1/texel,0,0);fx.fillStyle='#fff';fx.textBaseline='alphabetic';
+  lines.forEach(function(ln){
+    var r=offs(ln),fs=parseFloat(getComputedStyle(ln).fontSize);
+    fx.font='800 '+fs+'px '+SANDFONT;if('letterSpacing' in fx)fx.letterSpacing=(-.035*fs)+'px';
+    var m=fx.measureText(ln.textContent),fa=m.fontBoundingBoxAscent||fs*.93,fd=m.fontBoundingBoxDescent||fs*.27;
+    fx.fillText(ln.textContent,r.x,r.y+(r.h-(fa+fd))/2+fa);
+  });
+}
+function edtRows(r0,r1){
+  r0=Math.max(0,r0|0);r1=Math.min(th,r1|0);var h=r1-r0;if(h<1)return;
+  var img=fx.getImageData(0,r0,tw,h).data,n=tw*h,go=new Float64Array(n),gi=new Float64Array(n),i,a,d;
+  for(i=0;i<n;i++){a=img[i*4]/255;
+    go[i]=a>=1?0:a<=0?INF:Math.pow(Math.max(0,.5-a),2);
+    gi[i]=a>=1?INF:a<=0?0:Math.pow(Math.max(0,a-.5),2)}
+  edt(go,tw,h);edt(gi,tw,h);
+  for(i=0;i<n;i++){d=(Math.sqrt(go[i])-Math.sqrt(gi[i]))*texel;data[(r0*tw+i)*2]=d>RMAX?RMAX:d<-RMAX?-RMAX:d}
+}
+function buildIsles(){
+  var i,n=tw*th;for(i=0;i<n;i++)data[i*2+1]=RMAX;
+  isles.forEach(function(el){
+    var r=offs(el),rad=Math.min(parseFloat(getComputedStyle(el).borderTopLeftRadius)||0,r.w/2,r.h/2);
+    var cx=r.x+r.w/2,cy=r.y+r.h/2,hx=r.w/2-rad,hy=r.h/2-rad;
+    var i0=Math.max(0,Math.floor((r.x-RMAX)/texel)),i1=Math.min(tw,Math.ceil((r.x+r.w+RMAX)/texel));
+    var j0=Math.max(0,Math.floor((r.y-RMAX)/texel)),j1=Math.min(th,Math.ceil((r.y+r.h+RMAX)/texel));
+    for(var j=j0;j<j1;j++){var qy=Math.abs((j+.5)*texel-cy)-hy,o=j*tw;
+      for(var k=i0;k<i1;k++){var qx=Math.abs((k+.5)*texel-cx)-hx;
+        var ax=qx>0?qx:0,ay=qy>0?qy:0,d=Math.sqrt(ax*ax+ay*ay)+Math.min(Math.max(qx,qy),0)-rad;
+        if(d<data[(o+k)*2+1])data[(o+k)*2+1]=d}}
+  });
+}
+
+/* ---------- GL ---------- */
+var VS=`#version 300 es
+precision highp float;
+layout(location=0) in vec4 aG;
+uniform sampler2D uA,uB;
+uniform float uMix,uIntro,uS,uTh,uP,uPiv,uDpr,uLam,uDrift,uSize,uHL,uWl;
+uniform vec2 uView,uField,uTile,uOrg,uRev;
+uniform vec3 uTr[${NT}];
+out vec4 vCol;
+float smin(float a,float b,float k){float h=clamp(.5+.5*(b-a)/k,0.,1.);return mix(b,a,h)-k*h*(1.-h);}
+void field(vec2 p,out float dL,out float dC,out float ph,out float dM){
+  vec2 uv=p/uField;
+  vec2 d=mix(textureLod(uA,uv,0.).rg,textureLod(uB,uv,0.).rg,uMix);
+  if(uv.x<0.||uv.x>1.||uv.y<0.||uv.y>1.)d=vec2(160.);
+  float amp=uIntro*(1.-smoothstep(uS+uRev.x,uS+uRev.y,p.y));
+  dL=d.x+(1.-amp)*130.;
+  dM=1e4;
+  for(int i=0;i<${NT};i++)dM=min(dM,length(p-uTr[i].xy)-uTr[i].z);
+  dC=smin(d.y,dM,14.);
+  ph=p.y+24.*sin(p.x*.0041+p.y*.0013)+9.*sin(p.x*.011-p.y*.004+1.7)+uDrift;
+}
+void main(){
+  vec2 p=uOrg+mod(aG.xy*uTile-uOrg,uTile);
+  float r1=aG.z,r2=aG.w,e=2.;
+  float L0,C0,P0,M0,L1,C1,P1,M1,L2,C2,P2,M2;
+  field(p,L0,C0,P0,M0);field(p+vec2(e,0.),L1,C1,P1,M1);field(p+vec2(0.,e),L2,C2,P2,M2);
+  float d0=smin(L0,C0,10.),d1=smin(L1,C1,10.),d2=smin(L2,C2,10.);
+  vec2 gd=vec2(d1-d0,d2-d0)/e,gs=vec2(P1-P0,P2-P0)/e,gL=vec2(L1-L0,L2-L0)/e,gC=vec2(C1-C0,C2-C0)/e;
+  vec2 nd=gd/max(length(gd),.35),ns=gs/max(length(gs),.35),nL=gL/max(length(gL),.35),nC=gC/max(length(gC),.35);
+  float TAU=6.2832,R0=uLam*5.5,k=.8;
+  float w=1.-smoothstep(R0-4.,R0+4.,d0);
+  float tr=TAU*d0/uLam,ts=TAU*P0/uLam;
+  vec2 disp=mix(-k*uLam/TAU*sin(ts)*ns,-k*uLam/TAU*sin(tr)*nd,w);
+  disp*=smoothstep(-3.,1.,L0);
+  float tr2=tr-k*sin(tr),ts2=ts-k*sin(ts);
+  float al=1.;
+  /* stones push their sand out onto the first ring */
+  float hide=0.;
+  if(C0<uLam*.5){
+    if(C0>-18.){float da=uLam+(r2-.5)*5.;disp=nC*(da-C0);tr2=TAU*da/uLam;w=1.;}
+    else hide=1.;
+  }
+  float Hr=uLam*.3;
+  float hR=Hr*(.5+.5*cos(tr2)),hS=Hr*(.5+.5*cos(ts2));
+  vec2 sR=-Hr*.5*sin(tr2)*TAU/uLam*nd,sS=-Hr*.5*sin(ts2)*TAU/uLam*ns;
+  float h=mix(hS,hR,w);vec2 sl=mix(sS,sR,w);
+  /* letters: a moat of sand is drawn up into each wall */
+  float Lf=L0;
+  if(L0>0.&&L0<11.){float m=1.-smoothstep(8.,11.,L0);float tg=-(.6+3.2*r2);disp=mix(disp,-nL*(L0-tg),m);Lf=mix(L0,tg,m);}
+  float tt=clamp((Lf+3.5*uWl)/(4.*uWl),0.,1.);
+  float inn=1.-tt*tt*(3.-2.*tt);
+  float top=1.-smoothstep(-4.6*uWl,-2.6*uWl,Lf);
+  h=h*(1.-inn)+uHL*inn;
+  sl=sl*(1.-inn)-uHL*6.*tt*(1.-tt)/(4.*uWl)*nL;
+  /* light from the far left */
+  vec3 n=normalize(vec3(-sl,1.));
+  vec3 Ld=normalize(vec3(-.5,-.62,.6));
+  float dev=dot(n,Ld)-Ld.z;
+  float lit=smoothstep(-.3,.3,dev);
+  vec3 col=mix(vec3(.25,.195,.15),vec3(1.,.985,.95),lit);
+  float a=mix(.62,.8,lit)*(.7+.3*r1)*mix(.55,1.,min(1.,abs(dev)*4.));
+  col=mix(col,vec3(.105,.09,.075),top);a=mix(a,.9,top);
+  float acc=(1.-smoothstep(uLam*1.4,uLam*3.4,M0))*step(-900.,-M0)*(1.-smoothstep(4.,16.,abs(M0-C0)))*(1.-top);
+  col=mix(col,vec3(.14,.22,.80),acc*.9);a=mix(a,max(a,.75),acc);
+  /* onto the sheet */
+  vec2 pp=p+disp;
+  vec3 q=vec3(pp.x-uView.x*.5,pp.y-uS-uPiv,h+r1*1.3);
+  float c=cos(uTh),s=sin(uTh);
+  float y1=q.y*c-q.z*s,z1=q.y*s+q.z*c;
+  float sc=uP/(uP-z1);
+  vec2 scr=vec2(uView.x*.5+q.x*sc,uPiv+y1*sc);
+  float sz=uSize*(.72+.62*r2)*(1.+1.0*top)*sc*uDpr;
+  float szc=max(sz,1.7);
+  a*=(sz*sz)/(szc*szc);
+  a*=smoothstep(.5,.8,sc)*mix(.3,1.,smoothstep(.03,.22,scr.y/uView.y));
+  vCol=vec4(col,a);
+  gl_PointSize=szc;
+  gl_Position=(hide>.5||a<.012)?vec4(2.,2.,2.,1.):vec4(scr.x/uView.x*2.-1.,1.-scr.y/uView.y*2.,0.,1.);
+}`;
+var FS=`#version 300 es
+precision mediump float;
+in vec4 vCol;out vec4 o;
+void main(){vec2 c=gl_PointCoord*2.-1.;float a=1.-smoothstep(.4,1.,dot(c,c));o=vec4(vCol.rgb,vCol.a*a);}`;
+var prog,U={},texs=[],cur=0,mix=0,buf,frac=1,sizeK=1,probe=0,probeT=0;
+function sh(t,src){var s=gl.createShader(t);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s}
+function initGL(){
+  prog=gl.createProgram();gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS));gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(prog);
+  if(!gl.getProgramParameter(prog,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(prog));
+  gl.useProgram(prog);
+  ['uA','uB','uMix','uIntro','uS','uTh','uP','uPiv','uDpr','uLam','uDrift','uSize','uHL','uWl','uView','uField','uTile','uOrg','uRev','uTr'].forEach(function(n){U[n]=gl.getUniformLocation(prog,n)});
+  for(var i=0;i<2;i++){var t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+i);gl.bindTexture(gl.TEXTURE_2D,t);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);texs.push(t)}
+  gl.uniform1i(U.uA,0);gl.uniform1i(U.uB,1);
+  buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,4,gl.FLOAT,false,0,0);
+  gl.disable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);
+}
+function upload(i){gl.activeTexture(gl.TEXTURE0+i);gl.bindTexture(gl.TEXTURE_2D,texs[i]);gl.texImage2D(gl.TEXTURE_2D,0,gl.RG16F,tw,th,0,gl.RG,gl.FLOAT,data)}
+
+/* ---------- layout ---------- */
+function measure(){
+  W=root.clientWidth||innerWidth;H=innerHeight;root.style.setProperty('--vh',H+'px');
+  fitName();
+  pageH=bed.offsetHeight;spacer.style.height=pageH+'px';
+  P=2*H;piv=.86*H;dpr=Math.min(devicePixelRatio||1,2);
+  stage.style.perspective=P+'px';stage.style.perspectiveOrigin=(W/2)+'px '+piv+'px';
+  lam=W<720?10.5:13;
+  if(!gl)return;
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);gl.viewport(0,0,cv.width,cv.height);
+  var far=planeAt(0,0,TMAX);
+  tileW=2*(W/2)/far[2]+140;tileH=((H-piv)*1.15+70)-far[1]+190;orgY=far[1]-110;
+  var sp=W<720?2.0:2.1;
+  N=Math.max(50000,Math.min(1300000,Math.round(tileW*tileH/(sp*sp))));
+  var g=new Float32Array(N*4);for(var i=0;i<N*4;i++)g[i]=Math.random();
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,g,gl.STATIC_DRAW);
+  texel=Math.max(2,W/900);tw=Math.ceil(W/texel);th=Math.ceil(pageH/texel);
+  fc.width=tw;fc.height=th;data=new Float32Array(tw*th*2);
+  var m=Math.max(tw,th)+2;ef=new Float64Array(m);ev=new Uint32Array(m);ez=new Float64Array(m+1);
+  rasterLetters();edtRows(0,th);buildIsles();upload(0);upload(1);
+}
+
+/* ---------- name in the sand ---------- */
+var input=$('#guestName'),nameTimer=0;
+function setName(v){
+  v=(v||'').replace(/\s+/g,' ').trim()||'Your name';
+  if(v===nameLn.textContent)return;
+  nameLn.textContent=v;fitName();
+  if(!gl)return;
+  var b=offs(nameBox);rasterLetters();
+  edtRows((b.y-RMAX-20)/texel,(b.y+b.h+RMAX+20)/texel);
+  cur=1-cur;upload(cur);
+}
+input.addEventListener('input',function(){clearTimeout(nameTimer);nameTimer=setTimeout(function(){setName(input.value)},140)});
+$('#bookForm').addEventListener('submit',function(e){e.preventDefault();clearTimeout(nameTimer);setName(input.value);
+  var v=input.value.trim();
+  if(!v){input.focus();$('#afterNote').textContent='Write a name first. The sand is waiting.';return}
+  $('#bookBtn').textContent='Dates requested';
+  $('#afterNote').textContent='Thank you, '+v+'. This is a made-up guesthouse, so nothing was sent, but the sand will keep your name until six.';
+});
+
+/* ---------- motion ---------- */
+var s=0,ptr={sx:-1,sy:-1,on:0,pres:0,ny:.5},trail=[],tilt=0,intro=reduce?1:0,t0=0,last=0,ready=false,trU=new Float32Array(NT*3);
+function sm(a,b,x){x=(x-a)/(b-a);x=x<0?0:x>1?1:x;return x*x*(3-2*x)}
+function tiltDeg(y){var smax=Math.max(1,pageH-H);var a=sm(0,.95*H,y),b=sm(smax-.9*H,smax,y);
+  return 40*(1-a)+19*a+(31-19)*b+2.5*Math.sin(y/H*1.4)*a*(1-b)+(ptr.ny-.5)*-2.4}
+addEventListener('pointermove',function(e){ptr.sx=e.clientX;ptr.sy=e.clientY;ptr.on=1},{passive:true});
+addEventListener('pointerdown',function(e){ptr.sx=e.clientX;ptr.sy=e.clientY;ptr.on=1},{passive:true});
+addEventListener('pointerup',function(e){if(e.pointerType!=='mouse')ptr.on=0},{passive:true});
+addEventListener('pointercancel',function(){ptr.on=0},{passive:true});
+document.addEventListener('mouseleave',function(){ptr.on=0});
+[].forEach.call(document.querySelectorAll('[data-to]'),function(a){a.addEventListener('click',function(e){e.preventDefault();
+  var id=a.getAttribute('data-to'),y=id==='top'?0:offs(document.getElementById(id)).y+(id==='stay'?.22:.16)*H;
+  scrollTo({top:Math.min(y,pageH-H),behavior:reduce?'auto':'smooth'})})});
+
+function frame(now){
+  requestAnimationFrame(frame);
+  var t=now/1000,dt=Math.min(.05,t-last||.016);last=t;
+  var sy=window.scrollY||0;s+=(sy-s)*(1-Math.exp(-dt*11));if(Math.abs(sy-s)<.05)s=sy;
+  if(ptr.on&&ptr.sy>=0)ptr.ny+=(ptr.sy/H-ptr.ny)*(1-Math.exp(-dt*3));
+  tilt=tiltDeg(s);var th_=tilt*Math.PI/180;
+  bed.style.transform='translate3d('+(W/2)+'px,'+piv+'px,0) rotateX('+tilt.toFixed(3)+'deg) translate3d('+(-W/2)+'px,'+(-(s+piv)).toFixed(2)+'px,0)';
+  if(!gl||!ready)return;
+  if(intro<1)intro=Math.min(1,(t-t0)/2.8);
+  var io=1-Math.pow(1-intro,3);
+  mix+=(cur-mix)*(1-Math.exp(-dt*5));
+  /* pointer and the groove it leaves */
+  ptr.pres+=((ptr.on?1:0)-ptr.pres)*(1-Math.exp(-dt*6));
+  var px=-9999,py=-9999;
+  if(ptr.sx>=0){var q=planeAt(ptr.sx,ptr.sy,th_);px=W/2+q[0];py=s+piv+q[1];
+    if(ptr.on){var l=trail[trail.length-1];if(!l||Math.hypot(l.x-px,l.y-py)>12){trail.push({x:px,y:py,t:t});if(trail.length>NT-1)trail.shift()}}}
+  while(trail.length&&t-trail[0].t>1.8)trail.shift();
+  for(var i=0;i<NT;i++){trU[i*3]=-9999;trU[i*3+1]=-9999;trU[i*3+2]=-1000}
+  trU[0]=px;trU[1]=py;trU[2]=-95+113*ptr.pres;
+  for(i=0;i<trail.length;i++){var a=(t-trail[i].t)/1.8;trU[(i+1)*3]=trail[i].x;trU[(i+1)*3+1]=trail[i].y;trU[(i+1)*3+2]=(15-110*a*a)*Math.min(1,ptr.pres+.6)}
+  gl.clearColor(.886,.855,.8,1);gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform1f(U.uMix,mix);gl.uniform1f(U.uIntro,io);gl.uniform1f(U.uS,s);gl.uniform1f(U.uTh,th_);gl.uniform1f(U.uP,P);gl.uniform1f(U.uPiv,piv);
+  gl.uniform1f(U.uDpr,dpr);gl.uniform1f(U.uLam,lam);gl.uniform1f(U.uDrift,reduce?0:-t*3.2);gl.uniform1f(U.uSize,(W<720?1.3:1.4)*sizeK);gl.uniform1f(U.uHL,W<720?12:22);gl.uniform1f(U.uWl,W<720?.5:1);
+  gl.uniform2f(U.uView,W,H);gl.uniform2f(U.uField,tw*texel,th*texel);gl.uniform2f(U.uTile,tileW,tileH);
+  gl.uniform2f(U.uOrg,W/2-tileW/2,s+piv+orgY);gl.uniform2f(U.uRev,.64*H,1.02*H);gl.uniform3fv(U.uTr,trU);
+  gl.drawArrays(gl.POINTS,0,Math.round(N*frac));
+  /* slow machine: draw fewer, slightly larger grains */
+  if(intro>=1&&probe<90){probe++;probeT+=dt;if(probe===90&&probeT/90>.03&&frac>.3){frac*=.55;sizeK*=1.32;probe=0;probeT=0}}
+}
+
+function start(){
+  try{if(gl)initGL()}catch(err){console.error(err);gl=null;root.classList.add('nogl')}
+  measure();ready=true;t0=performance.now()/1000+.15;root.classList.add('ready');
+  var rw=W,rt=0;
+  addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){
+    var nw=root.clientWidth||innerWidth;if(nw===rw&&Math.abs(innerHeight-H)<140&&innerHeight<H+1)return;rw=nw;measure()},180)});
+  requestAnimationFrame(frame);
+}
+var fontsReady=(document.fonts&&document.fonts.load)?Promise.all([document.fonts.load('800 100px "Bricolage Grotesque"'),document.fonts.ready]):Promise.resolve();
+Promise.race([fontsReady,new Promise(function(r){setTimeout(r,2500)})]).then(start,start);
+window.__hieta={lock:function(){probe=999},go:function(y){scrollTo(0,y);s=y},skip:function(){intro=1;mix=cur},name:setName};
+})();
+</script>
+
+</body></html>

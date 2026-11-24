@@ -1,33 +1,43 @@
 # 3d
 
-Small 3D experiments. Open `index.html` in a browser; there is no build step.
+Working space for the 3D web pieces built in the "3D projects" project. Every piece is one self-contained HTML page with no build step: open `<piece>/index.html` in a browser. Some load three.js 0.160 from unpkg; the rest are raw WebGL. Screenshots sit in each piece's `stills/` folder.
 
-## Three free things
+## Pieces
 
-One page, three scenes, switched from the top bar:
+Newest first, roughly.
 
-- **Poured C** (`#glass`): Clara's C as a glass tube with the brand pour running through it. Sliders for fill and frost.
-- **Helix** (`#helix`): type a DNA sequence and get B-DNA drawn to textbook scale (10.5 base pairs per turn, 0.34 nm rise), with the complementary strand, GC share, hydrogen bonds and the translated protein.
-- **126** (`#pulse`): a floor of 1,600 bars that ripples at 126 BPM, with an optional G♯ minor synth made in the browser.
+| Piece | What it is |
+|---|---|
+| [vare](vare/) | Väre: a sea-pool site laid in tile on a pool floor under refracting water with caustics; drag the lifebuoy to set the time of day. `src.html` is the same page with font placeholders. |
+| [planetary-gearbox](planetary-gearbox/) | Blender renders and an animation of a planetary gearbox (not a web page). |
+| [keha](keha/) | Kehä K116: a scroll page that takes apart a working robot joint actuator with real involute planetary gears, motor and crossed-roller bearing. |
+| [nivel](nivel/) | Nivel J120: robot joint actuator product page with real gear kinematics, section cuts and an exploded view. |
+| [laskos](laskos/) | Laskos: paper mill site where the page is one pleated sheet with a page printed on each pleat face. |
+| [untu](untu/) | Untu: down quilt page that is itself a sewn, inflated quilt; the layout is the seams. |
+| [hieta](hieta/) | Hieta: guesthouse page lying on raked sand, where type is grains and text blocks are stones. |
+| [loose-matter](loose-matter/) | Loose Matter: sand page where type and layout are sculpted from one grain bed and DOM text shares its 3D plane. |
+| [jyva](jyva/) | Jyvä: a bed of sand printed into objects layer by layer. |
+| [vire](vire/) | Vire: a playable 400-string instrument whose shape is its tuning. |
+| [kierre](kierre/) | Kierre 27: conference page with one kinetic sculpture of 150 metal blades that re-forms per section. |
+| [strand](strand/) | Strand Line One: a scroll ride up a space lift from the sea to orbit. |
+| [tyyni](tyyni/) | Tyyni: single-screen lamp product page with a live 3D configurator. |
+| [aukko](aukko/) | Aukko: ray-marched concrete light pavilion you walk through by scrolling. |
+| [microscope](microscope/) | Diatom Microscope: scroll film following the light path through a microscope, on the Flint Prism tracer. |
+| [prism](prism/) | Flint Prism: one physically exact prism where particles meet glass without clipping. |
+| [ydt-grain](ydt-grain/) | The YDT Holdings site drawn in the Kaiku Dust grain style. |
+| [kaiku-dust](kaiku-dust/) | Kaiku Dust: one point cloud of soft grains morphing between sampled forms; the grain style to reuse. |
+| [kaiku-ball](kaiku-ball/) | Kaiku Ball: only the hero ball from Kaiku, a sphere of dust that breathes and rings when clicked. |
+| [lyse](lyse/) | Lyse: light film of rays of beads through glass elements, the smooth follow-up to Sillage. |
+| [sillage](sillage/) | Sillage: particle-and-glass perfume film site. |
+| [halden](halden/) | Halden: scroll film of a made-up watch that opens onto a running movement. |
+| [kaiku](kaiku/) | Kaiku: scrolling site for an acoustics studio; 110,000 grains take a new form per section. |
+| [vuorokausi](vuorokausi/) | Vuorokausi: scroll film through a generated northern landscape from first light to the northern lights. |
+| [mercury](mercury/) | Mercury: ten ray-marched drops of liquid metal that merge into one surface. |
+| [drape](drape/) | Drape: real-time cloth simulation of 6,561 points over a sphere. |
+| [three-free-things](three-free-things/) | Poured C (glass tube), Helix (B-DNA to scale from a typed sequence) and 126 (a bar floor rippling at 126 BPM). |
 
-Drag to turn a scene, scroll to zoom. Built with three.js 0.160 loaded from unpkg.
+## Working here
 
-## Drape
-
-`drape/index.html` is a real-time cloth simulation: 6,561 points joined by 38,558 threads, held by its corners over a sphere. Drag the cloth to pull it, press Let go to drop it, Lift to pick it back up.
-
-## Mercury
-
-`mercury/index.html` is ten drops of liquid metal that merge into one surface. Press and hold to pull them toward the pointer, let go and they fall and pool. It uses no library: the picture is ray-marched in a fragment shader, so there are no polygons.
-
-## Vuorokausi
-
-`vuorokausi/index.html` is a scroll-driven film through a generated northern landscape: five scenes from first light to the northern lights, each with its own palette, sun and camera position. The land, forest, sea and sky are ray-marched in one fragment shader with no library.
-
-## Kaiku
-
-`kaiku/index.html` is a complete scrolling site for a made-up acoustics studio. One cloud of 110,000 grains sits behind the page and takes a new form per section: a ringing sphere, sand on a vibrating plate (pick the mode), two interfering waves, a cochlea, and the wordmark. No library; the grains are moved in a vertex shader.
-
-## Halden
-
-`halden/index.html` is a scroll-driven film of a made-up watch. It starts on the closed watch in the dark, with glowing hands showing the visitor's own time, then turns to the profile, turns over, unscrews its back and opens onto a running movement, moves in on the escapement, lifts the bridges off the gear train, and closes again. The light comes through blinds, from inside the movement and from film-style leaks; glow, lens fringing and grain are done in a small hand-written post-process. Uses three.js.
+- One folder per piece, page at `index.html`, screenshots in `stills/`.
+- New pieces and changes go on a branch and in through a pull request.
+- Keep large renders (video, Blender output) out unless they are the piece itself.
