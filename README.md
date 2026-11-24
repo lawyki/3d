@@ -1,6 +1,16 @@
 # 3d
 
-Working space for the 3D web pieces built in the "3D projects" project. Every piece is one self-contained HTML page with no build step: open `<piece>/index.html` in a browser. Some load three.js 0.160 from unpkg; the rest are raw WebGL. Screenshots sit in each piece's `stills/` folder.
+Working space for the 3D web pieces built in the "3D projects" project. Every piece is one self-contained HTML page with no build step. Some load three.js 0.160 from unpkg; the rest are raw WebGL. Screenshots sit in each piece's `stills/` folder.
+
+## Viewing
+
+```sh
+git clone https://github.com/lawyki/3d && cd 3d
+python3 -m http.server 8000
+# open http://localhost:8000/<piece>/  e.g. http://localhost:8000/vare/
+```
+
+Opening `index.html` straight from disk works for most pieces too. A desktop browser with a decent GPU gives the intended frame rate. Pieces are made-up brands and places unless noted.
 
 ## Pieces
 
@@ -24,7 +34,7 @@ Newest first, roughly.
 | [aukko](aukko/) | Aukko: ray-marched concrete light pavilion you walk through by scrolling. |
 | [microscope](microscope/) | Diatom Microscope: scroll film following the light path through a microscope, on the Flint Prism tracer. |
 | [prism](prism/) | Flint Prism: one physically exact prism where particles meet glass without clipping. |
-| [ydt-grain](ydt-grain/) | The YDT Holdings site drawn in the Kaiku Dust grain style. |
+| [ydt-grain](ydt-grain/) | The site of YDT Holdings Oy (a real company) drawn in the Kaiku Dust grain style. |
 | [kaiku-dust](kaiku-dust/) | Kaiku Dust: one point cloud of soft grains morphing between sampled forms; the grain style to reuse. |
 | [kaiku-ball](kaiku-ball/) | Kaiku Ball: only the hero ball from Kaiku, a sphere of dust that breathes and rings when clicked. |
 | [lyse](lyse/) | Lyse: light film of rays of beads through glass elements, the smooth follow-up to Sillage. |
@@ -36,8 +46,6 @@ Newest first, roughly.
 | [drape](drape/) | Drape: real-time cloth simulation of 6,561 points over a sphere. |
 | [three-free-things](three-free-things/) | Poured C (glass tube), Helix (B-DNA to scale from a typed sequence) and 126 (a bar floor rippling at 126 BPM). |
 
-## Working here
+## Contributing
 
-- One folder per piece, page at `index.html`, screenshots in `stills/`.
-- New pieces and changes go on a branch and in through a pull request.
-- Keep large renders (video, Blender output) out unless they are the piece itself.
+Open work is tracked in [issues](https://github.com/lawyki/3d/issues); ones marked `good first issue` need no WebGL background. See [CONTRIBUTING.md](CONTRIBUTING.md) for how the repo is laid out and how to send a change.
