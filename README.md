@@ -52,4 +52,9 @@ Open work is tracked in [issues](https://github.com/lawyki/3d/issues); ones mark
 
 ## License
 
-[MIT](LICENSE). Contributions are accepted under the same license.
+Two licenses, split by what you are reusing:
+
+- **Code** (HTML, CSS, JavaScript, shaders): [MIT](LICENSE-MIT). Take a technique, a shader or a whole page's code and use it anywhere, with credit.
+- **Visual work** (the pages as designed works, their copy and made-up brands, every `stills/` screenshot, and the `planetary-gearbox/` renders and video): [CC BY-NC 4.0](LICENSE-CC-BY-NC-4.0). Share and adapt with credit, not for commercial use.
+
+Details and third-party exceptions are in [LICENSE](LICENSE). Contributions are accepted under the same terms.
