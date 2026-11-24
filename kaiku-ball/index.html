@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Kaiku Ball</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Only the hero ball from Kaiku: one sphere of dust that breathes, turns, leans toward the pointer and rings when clicked. */
+:root { --bg: #f1f2ef; --fg: #101114; --accent: #2f45ff; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0b0c0f; --fg: #f0f0ec; --accent: #8c9cff; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0b0c0f; --fg: #f0f0ec; --accent: #8c9cff; color-scheme: dark; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); overflow: hidden; }
+canvas#ball { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+</style>
+
+<canvas id="ball" aria-label="A sphere of drifting grains that reacts to the pointer"></canvas>
+
+<script>
+(function () {
+  var canvas = document.getElementById('ball');
+  var gl = canvas.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'high-performance' });
+  if (!gl) return;
+  var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- settings ---------- */
+  var N = window.innerWidth < 760 ? 52000 : 110000;   // grains
+  var PLACE = { x: 0, y: 0, s: 1.0 }, PLACE_NARROW = { x: 0, y: 0, s: 0.6 };   // where the ball sits and how big (the hero used x: 0.95)
+  var TILT = 0.25;                                    // how far it leans toward the viewer
+
+  var seed = 9; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+
+  /* ---------- the form: grains scattered evenly over a thin shell ---------- */
+  function sphere() { var a = new Float32Array(N * 3);
+    for (var i = 0; i < N; i++) { var y = 1 - 2 * rnd(), r = Math.sqrt(1 - y * y), t = rnd() * 6.2832, R = 1.1 + (rnd() - 0.5) * 0.02;
+      a[i * 3] = Math.cos(t) * r * R; a[i * 3 + 1] = y * R; a[i * 3 + 2] = Math.sin(t) * r * R; }
+    return a; }
+
+  var VERT = [
+    'attribute vec3 p0; attribute vec4 rnd;',
+    'uniform float uTime, uPx, uAspect, uScale, uHover; uniform mat3 uRot; uniform vec3 uOff; uniform vec2 uMouse; uniform vec3 uPulse[3];',
+    'varying float vTint, vFade;',
+    'void main(){',
+    '  vec3 p = p0 * (1.0 + 0.075 * sin(p0.y * 9.0 + uTime * 1.3) * sin(atan(p0.z, p0.x) * 3.0 + uTime * 0.4));',                    // the sphere breathes in bands
+    '  p += 0.035 * sin(vec3(p.y, p.z, p.x) * 1.7 + uTime * 0.4) + 0.012 * sin(uTime * vec3(0.9, 0.7, 1.1) + rnd.yzw * 40.0);',      // never quite still: a slow swell plus each grain wandering
+    '  vec3 v = uRot * p * uScale + uOff;',
+    '  float z = 5.2 - v.z;',
+    '  vec2 ndc = vec2(v.x * 3.2 / uAspect, v.y * 3.2) / z;',
+    '  vec2 dm = ndc - uMouse; dm.x *= uAspect; float l = length(dm) + 1e-4;',
+    '  float near = exp(-l * l * 15.0) * uHover;',
+    '  vec2 push = dm / l * (sin(l * 34.0 - uTime * 6.0) * 0.011 - 0.016) * near;',                                                  // the pointer is a quiet sound source: grains lean in and ride its rings
+    '  float glow = 0.0;',
+    '  for (int k = 0; k < 3; k++) {',                                                                                               // a click sends one ring through the cloud
+    '    vec2 dp = ndc - uPulse[k].xy; dp.x *= uAspect; float lp = length(dp) + 1e-4, age = uPulse[k].z;',
+    '    float w = exp(-pow((lp - age * 1.05) * 8.0, 2.0)) * exp(-age * 1.5) * step(0.0, age);',
+    '    push += dp / lp * 0.05 * w; glow += w; }',
+    '  push.x /= uAspect; ndc += push;',
+    '  gl_Position = vec4(ndc * z, 0.0, z);',
+    '  gl_PointSize = uPx * (0.65 + 0.8 * rnd.x) * 5.2 / z * (1.0 + 0.5 * glow);',
+    '  vTint = clamp(step(0.93, rnd.w) + near * 0.6 + glow * 1.1, 0.0, 1.0); vFade = clamp(1.45 - 0.5 * (z - 4.2), 0.16, 1.0);',     // a few grains carry the accent; the far side fades
+    '}'].join('\n');
+  var FRAG = [
+    'precision mediump float;',
+    'uniform vec3 uInk, uAccent; uniform float uAlpha; varying float vTint, vFade;',
+    'void main(){ float r = length(gl_PointCoord - 0.5); float a = smoothstep(0.5, 0.18, r);',
+    '  gl_FragColor = vec4(mix(uInk, uAccent, vTint), a * uAlpha * vFade * (1.0 + 0.5 * vTint)); }'].join('\n');
+  function shader(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.error(gl.getShaderInfoLog(s)); return null; } return s; }
+  var vs = shader(gl.VERTEX_SHADER, VERT), fs = shader(gl.FRAGMENT_SHADER, FRAG), prog = gl.createProgram();
+  if (!vs || !fs) return;
+  gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+  gl.useProgram(prog);
+
+  function attr(name, data, size) { var b = gl.createBuffer(), loc = gl.getAttribLocation(prog, name);
+    gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0); }
+  var r4 = new Float32Array(N * 4); for (var i = 0; i < N * 4; i++) r4[i] = rnd();
+  attr('rnd', r4, 4);
+  attr('p0', sphere(), 3);
+  var U = {};
+  ['uTime', 'uPx', 'uAspect', 'uScale', 'uHover', 'uRot', 'uOff', 'uMouse', 'uPulse', 'uInk', 'uAccent', 'uAlpha'].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+  gl.disable(gl.DEPTH_TEST); gl.enable(gl.BLEND);
+
+  /* ---------- colours follow the page: ink on paper in light, light in the dark ---------- */
+  var ink = [0, 0, 0], accent = [0, 0, 1], bg = [1, 1, 1], dark = false;
+  function rgb(v) { var c = v.trim().replace('#', ''); return [parseInt(c.substr(0, 2), 16) / 255, parseInt(c.substr(2, 2), 16) / 255, parseInt(c.substr(4, 2), 16) / 255]; }
+  function theme() { var cs = getComputedStyle(document.documentElement);
+    bg = rgb(cs.getPropertyValue('--bg')); ink = rgb(cs.getPropertyValue('--fg')); accent = rgb(cs.getPropertyValue('--accent')); dark = (bg[0] + bg[1] + bg[2]) / 3 < 0.4; }
+  theme();
+  if (window.matchMedia) { var mq = matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', theme); }
+  new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  var dpr = 1;
+  function size() { dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(canvas.clientWidth * dpr); canvas.height = Math.round(canvas.clientHeight * dpr); gl.viewport(0, 0, canvas.width, canvas.height); }
+  window.addEventListener('resize', size); size();
+
+  /* ---------- interaction: hover leans the grains and turns the ball a little, a click or tap sends a ring ---------- */
+  var mouse = { x: 0, y: 0, on: 0, want: 0 };
+  window.addEventListener('pointermove', function (e) { mouse.x = e.clientX / window.innerWidth * 2 - 1; mouse.y = -(e.clientY / window.innerHeight * 2 - 1); mouse.want = e.pointerType === 'touch' ? 0 : 1; });
+  document.addEventListener('pointerleave', function () { mouse.want = 0; });
+  var pulses = [-1, -1, -1], pulseXY = [0, 0, 0, 0, 0, 0], nextPulse = 0, pulseData = new Float32Array(9);
+  window.addEventListener('pointerdown', function (e) {
+    pulseXY[nextPulse * 2] = e.clientX / window.innerWidth * 2 - 1; pulseXY[nextPulse * 2 + 1] = -(e.clientY / window.innerHeight * 2 - 1);
+    pulses[nextPulse] = performance.now(); nextPulse = (nextPulse + 1) % 3;
+  });
+
+  var t0 = performance.now(), last = t0;
+  function frame(now) {
+    var dt = Math.min(0.1, (now - last) / 1000); last = now;
+    var time = calm ? 0 : (now - t0) / 1000;
+    mouse.on += (mouse.want - mouse.on) * Math.min(1, dt * 4);
+    var narrow = canvas.clientWidth < 760, P = narrow ? PLACE_NARROW : PLACE;
+    var tilt = TILT + 0.03 * Math.sin(time * 0.4), turn = time * 0.16 + 0.05 * Math.sin(time * 0.3) + mouse.x * 0.06 * mouse.on;   // a slow turn
+    var c = Math.cos(tilt), s = Math.sin(tilt), C = Math.cos(turn), S = Math.sin(turn);
+    gl.uniformMatrix3fv(U.uRot, false, [C, 0, -S, S * s, c, C * s, S * c, -s, C * c]);
+    gl.uniform3f(U.uOff, P.x, P.y, 0); gl.uniform1f(U.uScale, P.s);
+    gl.uniform1f(U.uTime, time); gl.uniform1f(U.uAspect, canvas.width / canvas.height);
+    gl.uniform1f(U.uPx, (narrow ? 1.5 : 1.75) * dpr); gl.uniform1f(U.uHover, mouse.on); gl.uniform2f(U.uMouse, mouse.x, mouse.y);
+    for (var q = 0; q < 3; q++) { var age = pulses[q] < 0 ? -1 : (now - pulses[q]) / 1000; if (age > 4) { pulses[q] = -1; age = -1; }
+      pulseData[q * 3] = pulseXY[q * 2]; pulseData[q * 3 + 1] = pulseXY[q * 2 + 1]; pulseData[q * 3 + 2] = age; }
+    gl.uniform3fv(U.uPulse, pulseData);
+    gl.uniform3fv(U.uInk, ink); gl.uniform3fv(U.uAccent, accent); gl.uniform1f(U.uAlpha, dark ? 0.26 : 0.6);
+    if (dark) gl.blendFunc(gl.SRC_ALPHA, gl.ONE); else gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);   // light adds in the dark, ink covers on paper
+    gl.clearColor(bg[0], bg[1], bg[2], 1); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.POINTS, 0, N);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

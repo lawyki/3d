@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Vuorokausi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a film, not a page. The landscape fills the screen and scrolling moves the camera
+   through one day. Type sits in the lower left like a title card; a time rail runs down the right.
+   One look on purpose: every colour on screen comes from the scene's own palette. */
+:root {
+  color-scheme: dark;
+  --ink: #05070d;
+  --paper: #fbf6ee;
+  --soft: rgba(251, 246, 238, 0.72);
+  --faint: rgba(251, 246, 238, 0.34);
+  --display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --body: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+body { background: var(--ink); color: var(--paper); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+#track { height: 620vh; }
+canvas#stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+.shade { position: fixed; inset: 0; pointer-events: none; background: linear-gradient(to top, rgba(5, 7, 13, 0.5), rgba(5, 7, 13, 0) 46%); }
+
+.top {
+  position: fixed; top: 0; left: 0; right: 0;
+  padding-top: calc(22px + env(safe-area-inset-top, 0px));
+  padding-left: max(28px, env(safe-area-inset-left, 0px));
+  padding-right: max(28px, env(safe-area-inset-right, 0px));
+  display: flex; justify-content: space-between; align-items: baseline; gap: 16px; pointer-events: none;
+}
+.name { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; margin: 0; }
+.gloss { font-family: var(--mono); font-size: 12px; color: var(--soft); margin: 0; text-align: right; }
+
+.card {
+  position: fixed; left: 0; bottom: 0; width: 100%; box-sizing: border-box;
+  padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(28px, env(safe-area-inset-left, 0px));
+  padding-right: max(84px, env(safe-area-inset-right, 0px));
+  pointer-events: none; display: grid; align-items: end;
+}
+.scene { grid-area: 1 / 1; min-width: 0; opacity: 0; transform: translateY(14px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.scene.on { opacity: 1; transform: none; }
+.when { font-family: var(--mono); font-size: 13px; letter-spacing: 0.08em; color: var(--soft); margin: 0 0 10px; font-variant-numeric: tabular-nums; }
+.scene h2 { font-family: var(--display); font-weight: 400; font-size: clamp(54px, 9.5vw, 132px); line-height: 0.92; letter-spacing: -0.02em; margin: 0; text-wrap: balance; max-width: 11em; }
+.scene h2 i { font-style: italic; }
+.scene p.line { margin: 18px 0 0; max-width: 34em; color: var(--soft); font-size: 16px; }
+
+.rail {
+  position: fixed; right: max(24px, env(safe-area-inset-right, 0px)); top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 18px; align-items: flex-end;
+}
+.rail button {
+  display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 4px 0; cursor: pointer;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; color: var(--faint); font-variant-numeric: tabular-nums;
+}
+.rail button::after { content: ""; width: 14px; height: 1px; background: currentColor; transition: width 0.4s ease; }
+.rail button.on { color: var(--paper); }
+.rail button.on::after { width: 34px; }
+.rail button:hover { color: var(--paper); }
+.rail button:focus-visible { outline: 1px solid var(--paper); outline-offset: 4px; }
+.cue { position: fixed; margin: 0; right: max(24px, env(safe-area-inset-right, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px)); font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--soft); transition: opacity 0.6s; pointer-events: none; }
+.cue.off { opacity: 0; }
+.fail { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--soft); }
+@media (max-width: 640px) {
+  .gloss { display: none; }
+  .rail { gap: 12px; right: max(16px, env(safe-area-inset-right, 0px)); }
+  .rail button span { display: none; }
+  .card { padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(48px, env(safe-area-inset-right, 0px)); padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
+  .scene p.line { font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { .scene { transition: none; } }
+</style>
+
+<canvas id="stage" aria-label="A northern landscape of mountains, forest and sea that moves through one day as you scroll."></canvas>
+<div class="shade"></div>
+<div id="track"></div>
+
+<header class="top">
+  <p class="name">Vuorokausi</p>
+  <p class="gloss">Finnish, noun: one full day and night</p>
+</header>
+
+<main class="card" id="card">
+  <section class="scene on"><p class="when">05:40 · I</p><h2>First <i>light</i></h2><p class="line">The sea is still. The ridges come out of the dark one layer at a time.</p></section>
+  <section class="scene"><p class="when">12:10 · II</p><h2>The <i>long</i> view</h2><p class="line">From up here the country is mostly water, and the forest stops where the rock begins.</p></section>
+  <section class="scene"><p class="when">17:50 · III</p><h2>Everything <i>gold</i></h2><p class="line">Low sun, straight down the sound. For twenty minutes nothing has its own colour.</p></section>
+  <section class="scene"><p class="when">19:20 · IV</p><h2>Blue <i>hour</i></h2><p class="line">The sun is gone and the light has not followed it yet.</p></section>
+  <section class="scene"><p class="when">23:30 · V</p><h2><i>Revontulet</i></h2><p class="line">Fox fires. The old story says a fox runs over the fells and its tail throws sparks into the sky.</p></section>
+</main>
+
+<nav class="rail" id="rail" aria-label="Scenes">
+  <button type="button" class="on"><span>05:40</span></button>
+  <button type="button"><span>12:10</span></button>
+  <button type="button"><span>17:50</span></button>
+  <button type="button"><span>19:20</span></button>
+  <button type="button"><span>23:30</span></button>
+</nav>
+<p class="cue" id="cue">Scroll</p>
+
+<script>
+(function () {
+  var canvas = document.getElementById('stage');
+  function fail(msg) { var d = document.createElement('div'); d.className = 'fail'; d.textContent = msg; document.body.appendChild(d); }
+  var gl = canvas.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'high-performance' });
+  if (!gl) { fail('This browser could not start WebGL, so the landscape cannot draw.'); return; }
+  var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- one shared noise table: the shader and the camera read the same land ---------- */
+  var NS = 256, noise = new Uint8Array(NS * NS), seed = 20261112;
+  for (var i = 0; i < NS * NS; i++) { seed = (seed * 1664525 + 1013904223) >>> 0; noise[i] = seed >>> 24; }
+  var tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, NS, NS, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, noise);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+
+  var SEA = 150, FREQ = 0.0011, AMP = 470, BASE = -40;
+  function tx(x, y) { return noise[((y & 255) << 8) | (x & 255)] / 255; }
+  function landAt(X, Z) { // the same sum the shader runs, five octaves
+    var px = X * FREQ, py = Z * FREQ, a = 0, b = 1, dx = 0, dy = 0;
+    for (var o = 0; o < 5; o++) {
+      var ix = Math.floor(px), iy = Math.floor(py), fx = px - ix, fy = py - iy;
+      var ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
+      var A = tx(ix, iy), B = tx(ix + 1, iy), C = tx(ix, iy + 1), D = tx(ix + 1, iy + 1), k = A - B - C + D;
+      dx += 6 * fx * (1 - fx) * ((B - A) + k * uy); dy += 6 * fy * (1 - fy) * ((C - A) + k * ux);
+      a += b * (A + (B - A) * ux + (C - A) * uy + k * ux * uy) / (1 + dx * dx + dy * dy);
+      b *= 0.5;
+      var nx = (0.8 * px + 0.6 * py) * 2, ny = (-0.6 * px + 0.8 * py) * 2; px = nx; py = ny;
+    }
+    return AMP * a + BASE;
+  }
+
+  var VERT = 'attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }';
+  var FRAG = [
+    'precision highp float;',
+    'uniform vec2 uRes; uniform float uTime, uFocal, uStars, uAur, uDisc, uGlow, uCloud, uSnow;',
+    'uniform vec3 uCam, uRight, uUp, uFwd, uSun;',
+    'uniform vec3 cTop, cHor, cSun, cHaze, cNear, cLight, cWater;',
+    'uniform sampler2D uN;',
+    'const float SEA = 150.0;',
+    'const mat2 M2 = mat2(0.8, -0.6, 0.6, 0.8);',
+    'vec3 nd(vec2 x){ vec2 p = floor(x), f = fract(x); vec2 u = f * f * (3.0 - 2.0 * f), du = 6.0 * f * (1.0 - f);',
+    '  float a = texture2D(uN, (p + vec2(0.5, 0.5)) / 256.0).x, b = texture2D(uN, (p + vec2(1.5, 0.5)) / 256.0).x;',
+    '  float c = texture2D(uN, (p + vec2(0.5, 1.5)) / 256.0).x, d = texture2D(uN, (p + vec2(1.5, 1.5)) / 256.0).x;',
+    '  float k = a - b - c + d;',
+    '  return vec3(a + (b - a) * u.x + (c - a) * u.y + k * u.x * u.y, du * (vec2(b - a, c - a) + k * u.yx)); }',
+    'float nz(vec2 x){ return nd(x).x; }',
+    'float land(vec2 x, int oct){ vec2 p = x * 0.0011; float a = 0.0, b = 1.0; vec2 d = vec2(0.0);',
+    '  for (int i = 0; i < 9; i++) { if (i >= oct) break; vec3 n = nd(p); d += n.yz; a += b * n.x / (1.0 + dot(d, d)); b *= 0.5; p = M2 * p * 2.0; }',
+    '  return 470.0 * a - 40.0; }',
+    // spruce: a field of small cones on the lower slopes, so ridgelines get a forest edge
+    'float treeFade = 1.0;',
+    'float trees(vec2 x, float h){',
+    '  float m = smoothstep(SEA + 4.0, SEA + 16.0, h) * smoothstep(SEA + 150.0, SEA + 95.0, h) * smoothstep(0.42, 0.56, nz(x * 0.004));',
+    '  m *= treeFade; if (m < 0.01) return 0.0;',
+    '  vec2 q = M2 * x / 10.0, c = floor(q); vec2 j = vec2(nz(c * 1.7), nz(c * 1.7 + 31.0)) * 0.7 + 0.15;',
+    '  float r = length(fract(q) - j);',
+    '  return m * (9.0 + 9.0 * nz(c * 0.9)) * max(0.0, 1.0 - r * 2.5); }',
+    'float ground(vec2 x){ float h = land(x, 5); return h + trees(x, h); }',
+    'float fine(vec2 x){ float h = land(x, 8); return h + trees(x, h); }',
+    'float trace(vec3 ro, vec3 rd, float t, float tmax, int steps){',
+    '  for (int i = 0; i < 130; i++) { if (i >= steps) break; vec3 p = ro + rd * t; treeFade = 1.0 - smoothstep(700.0, 2200.0, t); float h = p.y - ground(p.xz);',
+    '    if (h < 0.0015 * t) return t; t += 0.36 * h; if (t > tmax) break; }',
+    '  return -1.0; }',
+    'vec3 sky(vec3 rd){',
+    '  float y = clamp(rd.y, 0.0, 1.0); vec3 c = mix(cHor, cTop, pow(y, 0.5));',
+    '  float ang = acos(clamp(dot(rd, uSun), -1.0, 1.0));',
+    '  c += cSun * uGlow * (0.42 * exp(-ang * 3.2) + 0.25 * exp(-ang * 11.0));',
+    '  float az = atan(rd.z, rd.x);',
+    '  if (uStars > 0.01) { vec2 sp = vec2(az * 60.0, rd.y * 95.0); vec2 g = floor(sp); float h = texture2D(uN, (g + 0.5) / 256.0).x;',
+    '    vec2 o = vec2(texture2D(uN, (g + vec2(37.5, 11.5)) / 256.0).x, texture2D(uN, (g + vec2(5.5, 71.5)) / 256.0).x) * 0.6 + 0.2;',
+    '    float s = step(0.955, h) * smoothstep(0.11 + 0.1 * fract(h * 57.0), 0.03, length(fract(sp) - o));',
+    '    c += vec3(0.95, 0.97, 1.0) * s * uStars * smoothstep(0.0, 0.12, rd.y); }',
+    '  if (uAur > 0.01 && rd.y > 0.02) {',   // three ribbons with a hard lower edge and long rays above it
+    '    vec2 q = rd.xz / (rd.y + 0.12); q = vec2(dot(q, uRight.xz), dot(q, uFwd.xz)); vec3 acc = vec3(0.0);',
+    '    for (int k = 0; k < 3; k++) { float fk = float(k);',
+    '      float mid = 1.5 + fk * 1.15 + 0.55 * sin(q.x * 0.8 + fk * 2.3 + uTime * 0.06) + 0.22 * sin(q.x * 2.3 - fk + uTime * 0.11);',
+    '      float d = q.y - mid; float body = d > 0.0 ? exp(-d * 2.6) : exp(d * 26.0);',
+    '      float ray = 0.45 + 0.55 * nz(vec2(q.x * 9.0 + fk * 17.0, uTime * 0.12 + fk));',
+    '      vec3 col = mix(vec3(0.25, 1.0, 0.55), vec3(0.55, 0.3, 0.95), clamp(d * 1.4, 0.0, 1.0));',
+    '      acc += col * body * ray * (1.0 - fk * 0.22); }',
+    '    c += acc * 0.62 * uAur * smoothstep(0.02, 0.14, rd.y); }',
+    '  c = mix(c, cSun, smoothstep(uDisc + 0.0035, uDisc, ang) * step(0.001, uDisc));',
+    '  float cl = nz(vec2(az * 2.4 + uTime * 0.004, rd.y * 24.0 + 3.0)); cl = smoothstep(0.6, 0.74, cl) * smoothstep(0.02, 0.09, rd.y) * smoothstep(0.5, 0.2, rd.y);',
+    '  return mix(c, mix(cHor, cLight, 0.55), cl * uCloud); }',
+    'vec3 hill(vec3 p, float t, vec3 rd){',   // flat tones: depth picks the layer, the sun picks which side is lit
+    '  float e = 0.0018 * t + 0.25; treeFade = 1.0 - smoothstep(700.0, 2200.0, t);',
+    '  vec3 n = normalize(vec3(fine(p.xz - vec2(e, 0.0)) - fine(p.xz + vec2(e, 0.0)), 2.0 * e, fine(p.xz - vec2(0.0, e)) - fine(p.xz + vec2(0.0, e))));',
+    '  float depth = 1.0 - exp(-t * 0.00042);',
+    '  vec3 col = mix(cNear, cHaze, depth);',
+    '  float lit = smoothstep(-0.05, 0.35, dot(n, uSun));',
+    '  col = mix(col, cLight, lit * 0.42 * (1.0 - 0.75 * depth));',
+    '  float snow = smoothstep(SEA + 170.0, SEA + 215.0, p.y + 40.0 * nz(p.xz * 0.01)) * smoothstep(0.5, 0.75, n.y);',
+    '  col = mix(col, mix(cHaze, vec3(1.0), 0.55) * (0.72 + 0.28 * lit), snow * uSnow);',
+    '  return mix(col, cHor, smoothstep(0.82, 1.0, depth)); }',
+    'void main(){',
+    '  vec2 uv = (gl_FragCoord.xy * 2.0 - uRes) / uRes.y;',
+    '  vec3 ro = uCam, rd = normalize(uFwd * uFocal + uRight * uv.x + uUp * uv.y);',
+    '  float tw = rd.y < 0.0 ? (SEA - ro.y) / rd.y : 1e9, far = 9000.0;',
+    '  float t = trace(ro, rd, 2.0, min(tw, far), 130);',
+    '  vec3 col;',
+    '  if (t > 0.0) col = hill(ro + rd * t, t, rd);',
+    '  else if (tw < far) {',
+    '    vec3 p = ro + rd * tw;',
+    '    float calmness = 1.0 / (1.0 + tw * 0.011);',
+    '    float w1 = nz(vec2(p.x * 0.012 + uTime * 0.05, p.z * 0.11 - uTime * 0.2)), w2 = nz(vec2(p.x * 0.05 - uTime * 0.07, p.z * 0.4 + uTime * 0.3));',
+    '    vec3 n = normalize(vec3((w2 - 0.5) * 0.05 * calmness, 1.0, (w1 - 0.5) * 0.34 * calmness + (w2 - 0.5) * 0.1 * calmness));',
+    '    vec3 rr = reflect(rd, n); rr.y = abs(rr.y) + 0.004; rr = normalize(rr);',
+    '    float t2 = trace(p + vec3(0.0, 0.3, 0.0), rr, 3.0, 3500.0, 56);',
+    '    vec3 refl = t2 > 0.0 ? hill(p + rr * t2, tw + t2, rr) : sky(rr);',
+    '    float fres = 0.22 + 0.78 * pow(1.0 - max(dot(-rd, n), 0.0), 3.0);',
+    '    float depth = 1.0 - exp(-tw * 0.00042);',
+    '    col = mix(mix(cWater, cHaze, depth * 0.7), refl, fres);',
+    '    float shore = SEA - land(p.xz, 4);',
+    '    col = mix(col, mix(cHaze, cLight, 0.5), smoothstep(2.2, 0.0, shore) * 0.55);',
+    '    col = mix(col, cHor, smoothstep(0.82, 1.0, depth));',
+    '  } else col = sky(rd);',
+    '  col *= 1.0 - 0.22 * dot(uv * vec2(0.55, 0.8), uv * vec2(0.55, 0.8));',
+    '  col += (fract(sin(dot(gl_FragCoord.xy + fract(uTime) * 61.0, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.024;',   // film grain
+    '  gl_FragColor = vec4(col, 1.0);',
+    '}'].join('\n');
+
+  function shader(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.error(gl.getShaderInfoLog(s)); return null; } return s; }
+  var vs = shader(gl.VERTEX_SHADER, VERT), fs = shader(gl.FRAGMENT_SHADER, FRAG), prog = gl.createProgram();
+  if (vs && fs) { gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog); }
+  if (!vs || !fs || !gl.getProgramParameter(prog, gl.LINK_STATUS)) { fail('This graphics card could not run the landscape shader.'); return; }
+  gl.useProgram(prog);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  var loc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  var U = {};
+  ['uRes', 'uTime', 'uFocal', 'uStars', 'uAur', 'uDisc', 'uGlow', 'uCloud', 'uSnow', 'uCam', 'uRight', 'uUp', 'uFwd', 'uSun', 'cTop', 'cHor', 'cSun', 'cHaze', 'cNear', 'cLight', 'cWater', 'uN']
+    .forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+  gl.uniform1i(U.uN, 0);
+
+  /* ---------- the five scenes: palette, sun and camera are all set by hand ---------- */
+  function hex(h) { return [parseInt(h.substr(1, 2), 16) / 255, parseInt(h.substr(3, 2), 16) / 255, parseInt(h.substr(5, 2), 16) / 255]; }
+  var SCENES = [
+    { top: '#22315a', hor: '#f4b294', sun: '#ffe3c2', haze: '#c98b93', near: '#191a35', light: '#ff9d80', water: '#2b3660',
+      sunAz: 0.16, sunEl: 0.045, disc: 0.034, glow: 1.0, cloud: 0.8, snow: 0.8, stars: 0.0, aur: 0, clear: 16, pitch: 0.035, yaw: 0 },
+    { top: '#2c79bd', hor: '#d6eaf0', sun: '#fffbe8', haze: '#a8cfe0', near: '#0f3a3c', light: '#f3f1cc', water: '#1c6a8a',
+      sunAz: -0.9, sunEl: 0.95, disc: 0.03, glow: 0.35, cloud: 0.6, snow: 0.7, stars: 0, aur: 0, clear: 300, pitch: -0.3, yaw: 0 },
+    { top: '#f3a548', hor: '#ffe6a6', sun: '#fff7d2', haze: '#f0894a', near: '#3b1422', light: '#ffc76e', water: '#a8502f',
+      sunAz: -0.1, sunEl: 0.1, disc: 0.05, glow: 1.0, cloud: 0.55, snow: 0.5, stars: 0, aur: 0, clear: 26, pitch: 0.0, yaw: 0 },
+    { top: '#0e1c44', hor: '#8a6fa8', sun: '#e08a9c', haze: '#3d4c8a', near: '#070b1e', light: '#7584d6', water: '#18234e',
+      sunAz: 0.25, sunEl: -0.06, disc: 0.0, glow: 0.9, cloud: 0.5, snow: 0.7, stars: 0.35, aur: 0, clear: 70, pitch: 0.06, yaw: 0 },
+    { top: '#02040d', hor: '#0c2130', sun: '#e6edff', haze: '#102c36', near: '#010308', light: '#2f7f68', water: '#03131a',
+      sunAz: 0.5, sunEl: 0.4, disc: 0.012, glow: 0.18, cloud: 0.0, snow: 0.9, stars: 1.0, aur: 1, clear: 34, pitch: 0.2, yaw: 0 }
+  ];
+  var COLS = ['top', 'hor', 'sun', 'haze', 'near', 'light', 'water'], NUMS = ['sunAz', 'sunEl', 'disc', 'glow', 'cloud', 'snow', 'stars', 'aur', 'clear', 'pitch', 'yaw'];
+  SCENES.forEach(function (sc) { COLS.forEach(function (c) { sc[c] = hex(sc[c]); }); });
+  function blend(x) { // x runs 0..4 across the five scenes; hold on each one, ease between
+    var i = Math.max(0, Math.min(SCENES.length - 2, Math.floor(x))), f = Math.max(0, Math.min(1, (x - i - 0.18) / 0.64));
+    f = f * f * (3 - 2 * f);
+    var A = SCENES[i], B = SCENES[i + 1], out = {};
+    COLS.forEach(function (c) { out[c] = [A[c][0] + (B[c][0] - A[c][0]) * f, A[c][1] + (B[c][1] - A[c][1]) * f, A[c][2] + (B[c][2] - A[c][2]) * f]; });
+    NUMS.forEach(function (n) { out[n] = A[n] + (B[n] - A[n]) * f; });
+    return out;
+  }
+
+  /* ---------- location scouting: each scene gets its own spot, scored for open water ahead and high ground behind it ---------- */
+  var CAND = [];
+  (function () {
+    for (var gx = -12; gx <= 12; gx++) for (var gz = -12; gz <= 12; gz++) {
+      var X = gx * 500, Z = gz * 500; if (landAt(X, Z) > SEA - 8) continue;
+      for (var a = 0; a < 8; a++) {
+        var yw = a * Math.PI / 4, dx = Math.sin(yw), dz = -Math.cos(yw), run = 0, open = true, peak = 0, walls = 0;
+        for (var d = 150; d <= 3600; d += 150) {
+          var h = landAt(X + dx * d, Z + dz * d);
+          if (open && h < SEA) run = d; else open = false;
+          if (d > run) peak = Math.max(peak, h);
+        }
+        [-1, 1].forEach(function (side) { for (var d = 500; d <= 1100; d += 300) { if (landAt(X + dx * 700 + dz * side * d, Z + dz * 700 - dx * side * d) > SEA + 40) { walls++; break; } } });
+        CAND.push({ x: X, z: Z, yaw: yw, run: run, peak: peak, walls: walls });
+      }
+    }
+  })();
+  function scout(wantRun, near, lo, hi, avoid) {
+    var best = null, bs = -1e9;
+    CAND.forEach(function (c) {
+      if (near) { var d = Math.hypot(c.x - near.x, c.z - near.z); if (d < lo || d > hi) return; }
+      for (var i = 0; i < avoid.length; i++) if (Math.hypot(c.x - avoid[i].x, c.z - avoid[i].z) < 1200) return;
+      var sc = -Math.abs(c.run - wantRun) * 0.25 + Math.min(c.peak, 430) + c.walls * 70;
+      if (sc > bs) { bs = sc; best = c; }
+    });
+    return best || { x: 0, z: 0, yaw: 0 };
+  }
+  var s1 = scout(1000, null, 0, 0, []), s3 = scout(2400, s1, 1500, 6000, [s1]), s4 = scout(1300, s3, 1200, 5000, [s1, s3]), s5 = scout(800, s4, 1200, 5000, [s1, s3, s4]);
+  var s2 = { x: (s1.x + s3.x) / 2, z: (s1.z + s3.z) / 2, yaw: Math.atan2(s3.x - s1.x, -(s3.z - s1.z)) };
+  var SPOTS = [s1, s2, s3, s4, s5];
+  function spotAt(x) {
+    var i = Math.max(0, Math.min(3, Math.floor(x))), f = Math.max(0, Math.min(1, x - i)); f = f * f * (3 - 2 * f);
+    var A = SPOTS[i], B = SPOTS[i + 1], dy = B.yaw - A.yaw;
+    while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI;
+    return { x: A.x + (B.x - A.x) * f, z: A.z + (B.z - A.z) * f, yaw: A.yaw + dy * f };
+  }
+  function floorAt(x, z, yaw) { var m = SEA; for (var d = -40; d <= 220; d += 65) m = Math.max(m, landAt(x + Math.sin(yaw) * d, z - Math.cos(yaw) * d)); return m; }
+
+  /* ---------- scroll drives everything ---------- */
+  var scenes = document.querySelectorAll('.scene'), dots = document.querySelectorAll('#rail button'), cue = document.getElementById('cue');
+  var target = 0, pos = 0, shown = 0;
+  function readScroll() { var max = document.documentElement.scrollHeight - window.innerHeight; target = max > 0 ? Math.max(0, Math.min(1, window.scrollY / max)) * 4 : 0; }
+  window.addEventListener('scroll', readScroll, { passive: true });
+  for (i = 0; i < dots.length; i++) (function (k) {
+    dots[k].addEventListener('click', function () {
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      window.scrollTo({ top: max * k / 4, behavior: calm ? 'auto' : 'smooth' });
+    });
+  })(i);
+  var look = { x: 0, y: 0, tx: 0, ty: 0 };
+  window.addEventListener('pointermove', function (e) { look.tx = e.clientX / window.innerWidth - 0.5; look.ty = e.clientY / window.innerHeight - 0.5; });
+
+  var fixed = window.__renderScale, scale = fixed || 0.75;
+  function size() {
+    var w = canvas.clientWidth || 1, h = canvas.clientHeight || 1;
+    canvas.width = Math.max(1, Math.round(w * scale)); canvas.height = Math.max(1, Math.round(h * scale));
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+  window.addEventListener('resize', function () { size(); readScroll(); });
+  size(); readScroll(); pos = target;
+
+  var camY = null, last = performance.now(), t0 = last, frames = 0, spent = 0;
+  function frame(now) {
+    var dt = Math.min(0.1, (now - last) / 1000); last = now;
+    pos += (target - pos) * Math.min(1, dt * (calm ? 30 : 2.6));
+    look.x += (look.tx - look.x) * Math.min(1, dt * 2); look.y += (look.ty - look.y) * Math.min(1, dt * 2);
+    var S = blend(pos), time = calm ? 0 : (now - t0) / 1000;
+
+    var spot = spotAt(pos), glide = 70 * Math.sin(time * 0.06);   // a slow push in and out, so a held scene still breathes
+    var p = [spot.x + Math.sin(spot.yaw) * glide, spot.z - Math.cos(spot.yaw) * glide], wantY = floorAt(p[0], p[1], spot.yaw) + S.clear;
+    camY = camY === null ? wantY : camY + (wantY - camY) * Math.min(1, dt * 1.6);
+    var tall = canvas.width < canvas.height;
+    var yaw = spot.yaw + S.yaw + look.x * 0.12, pitch = S.pitch - look.y * 0.05 + (tall ? 0.05 : 0);
+    var fwd = [Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch)];
+    var right = [Math.cos(yaw), 0, Math.sin(yaw)];
+    var up = [right[1] * fwd[2] - right[2] * fwd[1], right[2] * fwd[0] - right[0] * fwd[2], right[0] * fwd[1] - right[1] * fwd[0]];
+    var sa = spot.yaw + S.yaw + S.sunAz, ce = Math.cos(Math.asin(Math.max(-1, Math.min(1, S.sunEl))));
+    gl.uniform2f(U.uRes, canvas.width, canvas.height); gl.uniform1f(U.uTime, time);
+    gl.uniform1f(U.uFocal, tall ? 1.25 : 1.7);
+    gl.uniform1f(U.uStars, S.stars); gl.uniform1f(U.uAur, S.aur); gl.uniform1f(U.uDisc, S.disc); gl.uniform1f(U.uGlow, S.glow); gl.uniform1f(U.uCloud, S.cloud); gl.uniform1f(U.uSnow, S.snow);
+    gl.uniform3f(U.uCam, p[0], camY, p[1]); gl.uniform3fv(U.uRight, right); gl.uniform3fv(U.uUp, up); gl.uniform3fv(U.uFwd, fwd);
+    gl.uniform3f(U.uSun, Math.sin(sa) * ce, S.sunEl, -Math.cos(sa) * ce);
+    COLS.forEach(function (c) { gl.uniform3fv(U['c' + c.charAt(0).toUpperCase() + c.slice(1)], S[c]); });
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    var k = Math.max(0, Math.min(4, Math.round(pos)));
+    if (k !== shown) { scenes[shown].classList.remove('on'); dots[shown].classList.remove('on'); scenes[k].classList.add('on'); dots[k].classList.add('on'); shown = k; }
+    cue.classList.toggle('off', target > 0.08);
+
+    // keep it fluid: draw a little softer on slow machines, sharper on fast ones
+    frames++; spent += dt;
+    if (frames === 24 && fixed) { frames = 0; spent = 0; }
+    if (frames === 24) {
+      var avg = spent / frames, cap = Math.min(window.devicePixelRatio || 1, 1.5);
+      if (avg > 0.034 && scale > 0.3) { scale = Math.max(0.3, scale * 0.82); size(); }
+      else if (avg < 0.018 && scale < cap) { scale = Math.min(cap, scale * 1.12); size(); }
+      frames = 0; spent = 0;
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

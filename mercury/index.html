@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Mercury</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500&family=Inter:wght@400;500&display=swap">
+<style>
+/* Layout: an empty photo studio. One pool of metal in the middle, type kept to the corners,
+   one thin strip of controls along the bottom. Nothing sits in a box. */
+:root {
+  --bg: #e3e4e7;
+  --fg: #17181c;
+  --muted: #6c6f78;
+  --line: rgba(23, 24, 28, 0.16);
+  --display: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #17181b; --fg: #eeeef0; --muted: #8f929b; --line: rgba(238, 238, 240, 0.18); color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #17181b; --fg: #eeeef0; --muted: #8f929b; --line: rgba(238, 238, 240, 0.18); color-scheme: dark; }
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 14px; line-height: 1.45; overflow: hidden; position: relative; }
+canvas#stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+
+.head {
+  position: absolute; top: 0; left: 0; right: 0;
+  padding-block: 22px;
+  padding-left: max(24px, env(safe-area-inset-left, 0px));
+  padding-right: max(24px, env(safe-area-inset-right, 0px));
+  display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+  pointer-events: none;
+}
+h1 { font-family: var(--display); font-weight: 500; font-size: 22px; letter-spacing: -0.02em; margin: 0; }
+.how { margin: 0; color: var(--muted); text-align: right; text-wrap: balance; }
+
+.foot {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding-block: 22px;
+  padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(24px, env(safe-area-inset-left, 0px));
+  padding-right: max(24px, env(safe-area-inset-right, 0px));
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 28px;
+  pointer-events: none;
+}
+.foot > * { pointer-events: auto; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; }
+button#act {
+  font: 500 14px var(--body); color: var(--bg); background: var(--fg);
+  border: 0; border-radius: 999px; padding: 10px 20px; min-width: 92px; cursor: pointer;
+}
+button#act:hover { opacity: 0.86; }
+.slide { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.slide input { width: 120px; accent-color: var(--fg); }
+.metals { display: flex; gap: 10px; border: 0; padding: 0; margin: 0; }
+.metals label { position: relative; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; background: var(--m); box-shadow: inset 0 0 0 1px var(--line); }
+.metals input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.metals label:has(input:checked) { outline: 1.5px solid var(--fg); outline-offset: 3px; }
+.metals label:has(input:focus-visible), button:focus-visible, .slide input:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+.stats { margin: 0; font-family: var(--mono); font-size: 11px; letter-spacing: 0.02em; color: var(--muted); }
+.fail { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+@media (max-width: 640px) {
+  .head { flex-direction: column; gap: 4px; padding-block: 16px; }
+  .how { text-align: left; }
+  .stats { display: none; }
+  .foot, .controls { justify-content: center; }
+}
+</style>
+
+<canvas id="stage" aria-label="Drops of liquid metal pooled on a studio floor. Press and hold to pull them toward the pointer."></canvas>
+
+<header class="head">
+  <h1>Mercury</h1>
+  <p class="how">Press and hold. The metal comes to you. Let go and it falls.</p>
+</header>
+
+<footer class="foot">
+  <div class="controls">
+    <button id="act" type="button">Scatter</button>
+    <label class="slide" for="tension">Tension <input type="range" id="tension" min="0" max="100" value="55"></label>
+    <fieldset class="metals" aria-label="Metal">
+      <label style="--m:linear-gradient(135deg,#f4f5f7,#9da1aa)" title="Mercury"><input type="radio" name="metal" id="m-mercury" value="0.93,0.94,0.96" checked aria-label="Mercury"></label>
+      <label style="--m:linear-gradient(135deg,#ffe29a,#c98a1c)" title="Gold"><input type="radio" name="metal" id="m-gold" value="1.0,0.77,0.34" aria-label="Gold"></label>
+      <label style="--m:linear-gradient(135deg,#ffc3a6,#b8623f)" title="Copper"><input type="radio" name="metal" id="m-copper" value="0.97,0.62,0.47" aria-label="Copper"></label>
+      <label style="--m:linear-gradient(135deg,#5a5d68,#15161a)" title="Ink"><input type="radio" name="metal" id="m-ink" value="0.2,0.21,0.25" aria-label="Ink"></label>
+    </fieldset>
+  </div>
+  <p class="stats">10 drops · one surface · drawn per pixel, no polygons</p>
+</footer>
+
+<script>
+(function () {
+  var canvas = document.getElementById('stage');
+  function fail(msg) { var d = document.createElement('div'); d.className = 'fail'; d.textContent = msg; document.body.appendChild(d); }
+  var gl = canvas.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'high-performance' });
+  if (!gl) { fail('This browser could not start WebGL, so the metal cannot draw.'); return; }
+
+  var NB = 10;
+  var VERT = 'attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }';
+  var FRAG = [
+    'precision highp float;',
+    'const int NB = 10;',
+    'uniform vec2 uRes; uniform vec4 uB[NB]; uniform vec4 uBound; uniform float uK, uFocal, uDark;',
+    'uniform vec3 uBg, uTint, uCam, uRight, uUp, uFwd;',
+    'const vec3 L = vec3(-0.4588, 0.8157, 0.3528);',
+    'float smin(float a, float b, float k){ float h = max(k - abs(a - b), 0.0) / k; return min(a, b) - h * h * k * 0.25; }',
+    'float map(vec3 p){ float d = 1e9; for (int i = 0; i < NB; i++) d = smin(d, length(p - uB[i].xyz) - uB[i].w, uK); return d; }',
+    'vec3 nrm(vec3 p){ vec2 e = vec2(1.0, -1.0) * 0.0015;',
+    '  return normalize(e.xyy * map(p + e.xyy) + e.yyx * map(p + e.yyx) + e.yxy * map(p + e.yxy) + e.xxx * map(p + e.xxx)); }',
+    // soft shadow and contact shade of every drop on the floor, both analytic
+    'vec3 floorCol(vec3 p){',
+    '  float sh = 1.0, ao = 0.0;',
+    '  for (int i = 0; i < NB; i++) {',
+    '    vec3 oc = p - uB[i].xyz; float r = uB[i].w;',
+    '    float b = dot(oc, L), c = dot(oc, oc) - r * r, h = b * b - c;',
+    '    float d = -r + sqrt(max(0.0, r * r - h)), t = -b - sqrt(max(0.0, h));',
+    '    sh *= (t < 0.0) ? 1.0 : smoothstep(0.0, 1.0, 5.0 * d / t);',
+    '    float l = length(oc); ao += max(0.0, -oc.y) * r * r / (l * l * l) * clamp(1.7 - l / (r * 2.0), 0.0, 1.0);',
+    '  }',
+    '  float lit = mix(0.6, 1.0, sh) * (1.0 - 0.45 * clamp(ao, 0.0, 1.0));',
+    '  float far = smoothstep(4.0, 9.0, length(p.xz));',
+    '  return uBg * mix(lit, 1.0, far);',
+    '}',
+    // the studio the metal reflects: bright ceiling, dark flags near the horizon
+    'vec3 sky(vec3 rd){',
+    '  float az = atan(rd.z, rd.x);',
+    '  float band = smoothstep(0.03, 0.12, rd.y) * (1.0 - smoothstep(0.30, 0.46, rd.y));',
+    '  float flag = band * smoothstep(-0.5, 0.8, sin(az * 3.0 + 0.6));',
+    '  float top = smoothstep(0.78, 0.9, rd.y);',
+    '  vec3 day = mix(uBg * 0.96, vec3(1.0), smoothstep(0.0, 0.9, rd.y)) * (1.0 - 0.62 * flag);',
+    '  vec3 night = uBg * (1.6 + 3.2 * rd.y) + vec3(1.0) * top * 0.8 + vec3(0.9, 0.93, 1.0) * flag * 0.55;',
+    '  return mix(day, night, uDark);',
+    '}',
+    'vec3 env(vec3 p, vec3 rd){ if (rd.y < -0.0005) return floorCol(p + rd * (-p.y / rd.y)); return sky(rd); }',
+    'vec3 metal(vec3 p, vec3 rd){',
+    '  vec3 n = nrm(p), r = reflect(rd, n);',
+    '  vec3 q = p + n * 0.012, col; float t = 0.0; bool hit = false;',
+    '  for (int i = 0; i < 22; i++) { float d = map(q + r * t); if (d < 0.004) { hit = true; break; } t += d; if (t > 3.5) break; }',   // one bounce: drops see each other
+    '  if (hit && (q + r * t).y > 0.0) { vec3 p2 = q + r * t, n2 = nrm(p2); col = env(p2, reflect(r, n2)) * mix(uTint, vec3(1.0), 0.15); }',
+    '  else col = env(q, r);',
+    '  float f = pow(1.0 - max(dot(n, -rd), 0.0), 5.0);',
+    '  col *= mix(uTint, vec3(1.0), f);',
+    '  return col * (0.72 + 0.28 * smoothstep(0.0, 0.45, p.y));',
+    '}',
+    'void main(){',
+    '  vec2 uv = (gl_FragCoord.xy * 2.0 - uRes) / uRes.y;',
+    '  vec3 ro = uCam, rd = normalize(uFwd * uFocal + uRight * uv.x + uUp * uv.y);',
+    '  float tf = rd.y < 0.0 ? -ro.y / rd.y : 1e9;',
+    '  vec3 col = tf < 1e8 ? floorCol(ro + rd * tf) : uBg;',
+    '  vec3 oc = ro - uBound.xyz; float b = dot(oc, rd), h = b * b - (dot(oc, oc) - uBound.w * uBound.w);',
+    '  if (h > 0.0) {',
+    '    h = sqrt(h); float t = max(-b - h, 0.0), t1 = min(-b + h, tf);',
+    '    float pix = 2.0 / (uRes.y * uFocal), best = 1e9, bt = t; bool hit = false;',
+    '    for (int i = 0; i < 72; i++) {',
+    '      if (t > t1) break;',
+    '      float d = map(ro + rd * t);',
+    '      if (d < 0.0006 * t) { hit = true; break; }',
+    '      float ratio = d / t; if (ratio < best) { best = ratio; bt = t; }',
+    '      t += d;',
+    '    }',
+    '    if (hit) col = metal(ro + rd * t, rd);',
+    '    else if (best < pix) col = mix(col, metal(ro + rd * bt, rd), 1.0 - best / pix);',   // soft silhouette, so edges do not stair-step
+    '  }',
+    '  col += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) / 255.0;',   // dither, so soft shadows do not band
+    '  gl_FragColor = vec4(col, 1.0);',
+    '}'].join('\n');
+
+  function shader(type, src) {
+    var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.error(gl.getShaderInfoLog(s)); return null; }
+    return s;
+  }
+  var vs = shader(gl.VERTEX_SHADER, VERT), fs = shader(gl.FRAGMENT_SHADER, FRAG);
+  var prog = gl.createProgram();
+  if (vs && fs) { gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog); }
+  if (!vs || !fs || !gl.getProgramParameter(prog, gl.LINK_STATUS)) { fail('This graphics card could not run the metal shader.'); return; }
+  gl.useProgram(prog);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  var loc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  var U = {};
+  ['uRes', 'uB', 'uBound', 'uK', 'uFocal', 'uDark', 'uBg', 'uTint', 'uCam', 'uRight', 'uUp', 'uFwd'].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+
+  /* ---------- the drops ---------- */
+  var R = [0.52, 0.45, 0.41, 0.37, 0.34, 0.31, 0.29, 0.27, 0.25, 0.22];
+  var P = new Float32Array(NB * 3), V = new Float32Array(NB * 3), M = R.map(function (r) { return r * r * r; });
+  var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+  for (var i = 0; i < NB; i++) { P[i * 3] = (rnd() - 0.5) * 1.6; P[i * 3 + 1] = 1.3 + rnd() * 1.8; P[i * 3 + 2] = (rnd() - 0.5) * 1.2; }
+  var tension = 0.55, pull = null; // pull: {x,y,z} while the pointer is held
+  function step(dt) {
+    var coh = 4 + 30 * tension, i, j, a, b, dx, dy, dz, d, s, rest, reach, f, rv, wi, wj, ax, ay, az;
+    for (i = 0; i < NB; i++) {
+      a = i * 3; ax = 0; ay = -9.5; az = 0;
+      if (pull) {
+        dx = pull.x - P[a]; dy = pull.y - P[a + 1]; dz = pull.z - P[a + 2];
+        d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6; s = Math.min(d, 2.2) / d;
+        ax += dx * s * 20 - V[a] * 3; ay += dy * s * 20 + 9.5 * 0.6 - V[a + 1] * 3; az += dz * s * 20 - V[a + 2] * 3;
+      }
+      d = Math.sqrt(P[a] * P[a] + P[a + 2] * P[a + 2]);
+      if (d > 2.6) { ax -= P[a] / d * (d - 2.6) * 18; az -= P[a + 2] / d * (d - 2.6) * 18; }   // keep the pool on stage
+      V[a] += ax * dt; V[a + 1] += ay * dt; V[a + 2] += az * dt;
+    }
+    for (i = 0; i < NB; i++) for (j = i + 1; j < NB; j++) {
+      a = i * 3; b = j * 3;
+      dx = P[b] - P[a]; dy = P[b + 1] - P[a + 1]; dz = P[b + 2] - P[a + 2];
+      d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6; s = R[i] + R[j]; rest = s * 0.72; reach = s * 1.55;
+      if (d > reach) continue;
+      dx /= d; dy /= d; dz /= d;
+      f = d < rest ? -110 * (rest - d) : coh * (d - rest) * (1 - (d - rest) / (reach - rest));   // push apart when close, cling when near
+      rv = (V[b] - V[a]) * dx + (V[b + 1] - V[a + 1]) * dy + (V[b + 2] - V[a + 2]) * dz;
+      f += rv * 5;
+      wi = M[j] / (M[i] + M[j]) * 2 * dt; wj = M[i] / (M[i] + M[j]) * 2 * dt;
+      V[a] += dx * f * wi; V[a + 1] += dy * f * wi; V[a + 2] += dz * f * wi;
+      V[b] -= dx * f * wj; V[b + 1] -= dy * f * wj; V[b + 2] -= dz * f * wj;
+    }
+    var air = 1 - 0.5 * dt, drag = 1 - 5 * dt;
+    for (i = 0; i < NB; i++) {
+      a = i * 3;
+      V[a] *= air; V[a + 1] *= air; V[a + 2] *= air;
+      P[a] += V[a] * dt; P[a + 1] += V[a + 1] * dt; P[a + 2] += V[a + 2] * dt;
+      var low = R[i] * 0.62;   // a drop sits a little into the floor, so it reads as a dome
+      if (P[a + 1] < low) { P[a + 1] = low; if (V[a + 1] < 0) V[a + 1] *= -0.12; V[a] *= drag; V[a + 2] *= drag; }
+    }
+  }
+
+  /* ---------- camera ---------- */
+  var cam = { pos: [0, 2.5, 6.6], right: [1, 0, 0], up: [0, 1, 0], fwd: [0, 0, -1], focal: 3.2 };
+  function norm(v) { var l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; }
+  function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+  var scale = Math.min(window.devicePixelRatio || 1, 2);
+  function size() {
+    var w = canvas.clientWidth || 1, h = canvas.clientHeight || 1, tall = w < h;
+    canvas.width = Math.max(1, Math.round(w * scale)); canvas.height = Math.max(1, Math.round(h * scale));
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    cam.pos = tall ? [0, 3.4, 9.2] : [0, 2.5, 6.6];
+    cam.focal = 1 / Math.tan((tall ? 46 : 33) * Math.PI / 360);
+    cam.fwd = norm([0 - cam.pos[0], (tall ? 0.2 : 0.55) - cam.pos[1], 0 - cam.pos[2]]);
+    cam.right = norm(cross(cam.fwd, [0, 1, 0])); cam.up = cross(cam.right, cam.fwd);
+  }
+  window.addEventListener('resize', size);
+
+  /* ---------- page colours ---------- */
+  var bg = [0.89, 0.89, 0.91], dark = 0, tint = [0.93, 0.94, 0.96];
+  function theme() {
+    var c = (getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#e3e4e7').replace('#', '');
+    if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+    bg = [parseInt(c.substr(0, 2), 16) / 255, parseInt(c.substr(2, 2), 16) / 255, parseInt(c.substr(4, 2), 16) / 255];
+    dark = (bg[0] + bg[1] + bg[2]) / 3 < 0.4 ? 1 : 0;
+  }
+  theme();
+  if (window.matchMedia) { var mq = matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', theme); }
+  new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  /* ---------- controls ---------- */
+  function aim(e) { // where the pointer is, on an upright sheet through the middle of the stage
+    var r = canvas.getBoundingClientRect();
+    var x = ((e.clientX - r.left) / r.width * 2 - 1) * (r.width / r.height), y = -((e.clientY - r.top) / r.height * 2 - 1);
+    var d = norm([cam.fwd[0] * cam.focal + cam.right[0] * x + cam.up[0] * y, cam.fwd[1] * cam.focal + cam.right[1] * x + cam.up[1] * y, cam.fwd[2] * cam.focal + cam.right[2] * x + cam.up[2] * y]);
+    var t = -cam.pos[2] / d[2];
+    return { x: Math.max(-3, Math.min(3, cam.pos[0] + d[0] * t)), y: Math.max(0.45, Math.min(3.6, cam.pos[1] + d[1] * t)), z: 0 };
+  }
+  canvas.addEventListener('pointerdown', function (e) { canvas.setPointerCapture(e.pointerId); pull = aim(e); });
+  canvas.addEventListener('pointermove', function (e) { if (pull) pull = aim(e); });
+  function drop() { pull = null; }
+  canvas.addEventListener('pointerup', drop); canvas.addEventListener('pointercancel', drop);
+  document.getElementById('act').addEventListener('click', function () {
+    for (var i = 0; i < NB; i++) { var a = Math.random() * 6.283, s = 2.5 + Math.random() * 3; V[i * 3] += Math.cos(a) * s; V[i * 3 + 1] += 5 + Math.random() * 3; V[i * 3 + 2] += Math.sin(a) * s; }
+  });
+  var tIn = document.getElementById('tension');
+  function setT() { tension = tIn.value / 100; }
+  tIn.addEventListener('input', setT); setT();
+  document.querySelectorAll('input[name="metal"]').forEach(function (r) {
+    function use() { if (r.checked) tint = r.value.split(',').map(Number); }
+    use(); r.addEventListener('change', use);
+  });
+
+  /* ---------- run ---------- */
+  size();
+  var balls = new Float32Array(NB * 4), last = performance.now(), bank = 0, slow = 0, frames = 0;
+  function frame(now) {
+    var dtf = Math.min(0.05, (now - last) / 1000); last = now; bank += dtf;
+    var n = 0; while (bank >= 1 / 240 && n < 12) { step(1 / 240); bank -= 1 / 240; n++; }
+    if (n === 12) bank = 0;
+    // if the machine cannot keep up, trade a little sharpness for speed
+    frames++; if (dtf > 0.034) slow++;
+    if (frames === 45) { if (slow > 30 && scale > 0.8) { scale = Math.max(0.8, scale * 0.8); size(); } frames = 0; slow = 0; }
+
+    var cx = 0, cy = 0, cz = 0, k = 0.16 + 0.34 * tension, rad = 0, i;
+    for (i = 0; i < NB; i++) { balls[i * 4] = P[i * 3]; balls[i * 4 + 1] = P[i * 3 + 1]; balls[i * 4 + 2] = P[i * 3 + 2]; balls[i * 4 + 3] = R[i]; cx += P[i * 3]; cy += P[i * 3 + 1]; cz += P[i * 3 + 2]; }
+    cx /= NB; cy /= NB; cz /= NB;
+    for (i = 0; i < NB; i++) rad = Math.max(rad, Math.hypot(P[i * 3] - cx, P[i * 3 + 1] - cy, P[i * 3 + 2] - cz) + R[i]);
+    gl.uniform2f(U.uRes, canvas.width, canvas.height);
+    gl.uniform4fv(U.uB, balls);
+    gl.uniform4f(U.uBound, cx, cy, cz, rad + k * 0.5 + 0.05);
+    gl.uniform1f(U.uK, k); gl.uniform1f(U.uFocal, cam.focal); gl.uniform1f(U.uDark, dark);
+    gl.uniform3fv(U.uBg, bg); gl.uniform3fv(U.uTint, tint);
+    gl.uniform3fv(U.uCam, cam.pos); gl.uniform3fv(U.uRight, cam.right); gl.uniform3fv(U.uUp, cam.up); gl.uniform3fv(U.uFwd, cam.fwd);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

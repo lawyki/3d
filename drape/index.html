@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Drape</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500&family=Inter:wght@400;500&display=swap">
+<style>
+/* Layout: an empty photo studio. One object in the middle, type kept to the corners,
+   one thin strip of controls along the bottom. Nothing sits in a box. */
+:root {
+  --bg: #e3e4e7;
+  --fg: #17181c;
+  --muted: #6c6f78;
+  --line: rgba(23, 24, 28, 0.16);
+  --chip: rgba(23, 24, 28, 0.06);
+  --ball: #eceded;
+  --shadow: 0.2;
+  --display: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #17181b; --fg: #eeeef0; --muted: #8f929b; --line: rgba(238, 238, 240, 0.18); --chip: rgba(238, 238, 240, 0.07); --ball: #40424a; --shadow: 0.55; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #17181b; --fg: #eeeef0; --muted: #8f929b; --line: rgba(238, 238, 240, 0.18); --chip: rgba(238, 238, 240, 0.07); --ball: #40424a; --shadow: 0.55; color-scheme: dark; }
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 14px; line-height: 1.45; overflow: hidden; position: relative; }
+canvas#stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+.head {
+  position: absolute; top: 0; left: 0; right: 0;
+  padding-block: 22px;
+  padding-left: max(24px, env(safe-area-inset-left, 0px));
+  padding-right: max(24px, env(safe-area-inset-right, 0px));
+  display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+  pointer-events: none;
+}
+h1 { font-family: var(--display); font-weight: 500; font-size: 22px; letter-spacing: -0.02em; margin: 0; }
+.how { margin: 0; color: var(--muted); text-align: right; text-wrap: balance; }
+
+.foot {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding-block: 22px;
+  padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(24px, env(safe-area-inset-left, 0px));
+  padding-right: max(24px, env(safe-area-inset-right, 0px));
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 28px;
+  pointer-events: none;
+}
+.foot > * { pointer-events: auto; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; }
+button#act {
+  font: 500 14px var(--body); color: var(--bg); background: var(--fg);
+  border: 0; border-radius: 999px; padding: 10px 20px; min-width: 92px; cursor: pointer;
+}
+button#act:hover { opacity: 0.86; }
+.wind { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.wind input { width: 120px; accent-color: var(--fg); }
+.dyes { display: flex; gap: 10px; border: 0; padding: 0; margin: 0; }
+.dyes label { position: relative; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; background: var(--dye); box-shadow: inset 0 0 0 1px var(--line); }
+.dyes input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.dyes label:has(input:checked) { outline: 1.5px solid var(--fg); outline-offset: 3px; }
+.dyes label:has(input:focus-visible), button:focus-visible, .wind input:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+.stats { margin: 0; font-family: var(--mono); font-size: 11px; letter-spacing: 0.02em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.fail { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+@media (max-width: 640px) {
+  .head { flex-direction: column; gap: 4px; padding-block: 16px; }
+  .how { text-align: left; }
+  .stats { display: none; }
+  .foot { justify-content: center; }
+  .controls { justify-content: center; }
+}
+</style>
+
+<canvas id="stage" aria-label="A square of silk held by its corners over a sphere. Drag the cloth to pull it."></canvas>
+
+<header class="head">
+  <h1>Drape</h1>
+  <p class="how">Pull the cloth. Drag the empty space to look around.</p>
+</header>
+
+<footer class="foot">
+  <div class="controls">
+    <button id="act" type="button">Let go</button>
+    <label class="wind" for="wind">Wind <input type="range" id="wind" min="0" max="100" value="18"></label>
+    <fieldset class="dyes" aria-label="Cloth colour">
+      <label style="--dye:#0f6b54" title="Emerald"><input type="radio" name="dye" id="dye-emerald" value="#0f6b54" checked aria-label="Emerald"></label>
+      <label style="--dye:#2438b8" title="Ultramarine"><input type="radio" name="dye" id="dye-ultramarine" value="#2438b8" aria-label="Ultramarine"></label>
+      <label style="--dye:#d99a16" title="Saffron"><input type="radio" name="dye" id="dye-saffron" value="#d99a16" aria-label="Saffron"></label>
+      <label style="--dye:#e9e3d6" title="Pearl"><input type="radio" name="dye" id="dye-pearl" value="#e9e3d6" aria-label="Pearl"></label>
+    </fieldset>
+  </div>
+  <p class="stats" id="stats"></p>
+</footer>
+
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script>
+(function () {
+  var canvas = document.getElementById('stage');
+  function fail(msg) { var d = document.createElement('div'); d.className = 'fail'; d.textContent = msg; document.body.appendChild(d); }
+  if (!window.THREE) { fail('The 3D library did not load. Check the connection and reload.'); return; }
+  var T = THREE, renderer;
+  try { renderer = new T.WebGLRenderer({ canvas: canvas, antialias: true, powerPreference: 'high-performance' }); }
+  catch (e) { fail('This browser could not start WebGL, so the cloth cannot draw.'); return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.toneMapping = T.NoToneMapping;   // keeps the dyes true to their swatches
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = T.VSMShadowMap;
+  var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- the cloth: particles joined by threads ---------- */
+  var N = 81, SIZE = 3.4, GAP = SIZE / (N - 1), COUNT = N * N;
+  var BALL_R = 0.85, BALL_Y = 0.85, SKIN = 0.022, HOLD_Y = 2.3, HOLD_IN = 0.9;
+  var pos = new Float32Array(COUNT * 3), old = new Float32Array(COUNT * 3), inv = new Float32Array(COUNT);
+  var nor; // vertex normals, filled by three
+  function id(i, j) { return i * N + j; }
+  function homeOf(k, out) { // where a point sits when the cloth is held flat
+    var i = Math.floor(k / N), j = k % N;
+    out[0] = (j * GAP - SIZE / 2) * HOLD_IN; out[1] = HOLD_Y; out[2] = (i * GAP - SIZE / 2) * HOLD_IN;
+    return out;
+  }
+  var tmp = [0, 0, 0];
+  for (var k = 0; k < COUNT; k++) { homeOf(k, tmp); pos[k * 3] = old[k * 3] = tmp[0]; pos[k * 3 + 1] = old[k * 3 + 1] = tmp[1]; pos[k * 3 + 2] = old[k * 3 + 2] = tmp[2]; inv[k] = 1; }
+
+  var A = [], B = [], REST = [], STIFF = [];
+  function thread(a, b, len, s) { A.push(a); B.push(b); REST.push(len); STIFF.push(s); }
+  for (var i = 0; i < N; i++) for (var j = 0; j < N; j++) {
+    if (j + 1 < N) thread(id(i, j), id(i, j + 1), GAP, 1);
+    if (i + 1 < N) thread(id(i, j), id(i + 1, j), GAP, 1);
+    if (i + 1 < N && j + 1 < N) { thread(id(i, j), id(i + 1, j + 1), GAP * Math.SQRT2, 0.8); thread(id(i + 1, j), id(i, j + 1), GAP * Math.SQRT2, 0.8); }
+    if (j + 2 < N) thread(id(i, j), id(i, j + 2), GAP * 2, 0.6);
+    if (i + 2 < N) thread(id(i, j), id(i + 2, j), GAP * 2, 0.6);
+  }
+  var cA = new Int32Array(A), cB = new Int32Array(B), cR = new Float32Array(REST), cS = new Float32Array(STIFF), THREADS = cA.length;
+
+  // the four corners are held by pins; a pin can also travel (when the cloth is lifted)
+  var corners = [id(0, 0), id(0, N - 1), id(N - 1, 0), id(N - 1, N - 1)];
+  var pins = {}; // index -> { x, y, z } target
+  function pin(k, x, y, z) { pins[k] = { x: x, y: y, z: z }; inv[k] = 0; }
+  function unpin(k) { delete pins[k]; inv[k] = 1; }
+  corners.forEach(function (k) { homeOf(k, tmp); pin(k, tmp[0], tmp[1], tmp[2]); });
+  var lift = null; // { t, from: {k:[x,y,z]} } while corners travel back up
+
+  var wind = 0.18, clock = 0;
+  var SUB = 3, ITER = 6, DT = 1 / 60 / SUB;
+  function step() {
+    clock += DT;
+    var gust = wind * (0.55 + 0.45 * Math.sin(clock * 0.9) * Math.sin(clock * 0.37 + 1.3));
+    var wx = 9 * gust * Math.cos(clock * 0.21), wy = 1.5 * gust, wz = 9 * gust * Math.sin(clock * 0.21) + 5 * gust;
+    var g = -9.8 * DT * DT, k3, vx, vy, vz, f;
+    for (var k = 0; k < COUNT; k++) {
+      k3 = k * 3;
+      if (inv[k] === 0) continue;
+      vx = (pos[k3] - old[k3]) * 0.994; vy = (pos[k3 + 1] - old[k3 + 1]) * 0.994; vz = (pos[k3 + 2] - old[k3 + 2]) * 0.994;
+      old[k3] = pos[k3]; old[k3 + 1] = pos[k3 + 1]; old[k3 + 2] = pos[k3 + 2];
+      f = nor ? (nor[k3] * wx + nor[k3 + 1] * wy + nor[k3 + 2] * wz) * DT * DT : 0;   // wind pushes along the surface normal
+      pos[k3] += vx + (nor ? nor[k3] * f : 0);
+      pos[k3 + 1] += vy + g + (nor ? nor[k3 + 1] * f : 0);
+      pos[k3 + 2] += vz + (nor ? nor[k3 + 2] * f : 0);
+    }
+    if (lift) {
+      lift.t = Math.min(1, lift.t + DT / 1.8);
+      var e = lift.t * lift.t * (3 - 2 * lift.t);
+      corners.forEach(function (c) {
+        var fr = lift.from[c]; homeOf(c, tmp);
+        pins[c].x = fr[0] + (tmp[0] - fr[0]) * e; pins[c].y = fr[1] + (tmp[1] - fr[1]) * e + Math.sin(Math.PI * e) * 0.5; pins[c].z = fr[2] + (tmp[2] - fr[2]) * e;
+      });
+      if (lift.t >= 1) lift = null;
+    }
+    for (var p in pins) { k3 = p * 3; pos[k3] = old[k3] = pins[p].x; pos[k3 + 1] = old[k3 + 1] = pins[p].y; pos[k3 + 2] = old[k3 + 2] = pins[p].z; }
+
+    var a, b, dx, dy, dz, d, wa, wb, m;
+    for (var it = 0; it < ITER; it++) {
+      for (var c = 0; c < THREADS; c++) {
+        a = cA[c]; b = cB[c]; wa = inv[a]; wb = inv[b];
+        if (wa + wb === 0) continue;
+        a *= 3; b *= 3;
+        dx = pos[b] - pos[a]; dy = pos[b + 1] - pos[a + 1]; dz = pos[b + 2] - pos[a + 2];
+        d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
+        m = (d - cR[c]) / d / (wa + wb) * cS[c];
+        pos[a] += dx * m * wa; pos[a + 1] += dy * m * wa; pos[a + 2] += dz * m * wa;
+        pos[b] -= dx * m * wb; pos[b + 1] -= dy * m * wb; pos[b + 2] -= dz * m * wb;
+      }
+      collide();
+    }
+  }
+  function collide() {
+    var k3, x, y, z, d, s, R = BALL_R + SKIN;
+    for (var k = 0; k < COUNT; k++) {
+      if (inv[k] === 0) continue;
+      k3 = k * 3; x = pos[k3]; y = pos[k3 + 1] - BALL_Y; z = pos[k3 + 2];
+      d = x * x + y * y + z * z;
+      if (d < R * R) {
+        d = Math.sqrt(d) || 1e-6; s = R / d;
+        pos[k3] = x * s; pos[k3 + 1] = y * s + BALL_Y; pos[k3 + 2] = z * s;
+        old[k3] += (pos[k3] - old[k3]) * 0.35; old[k3 + 1] += (pos[k3 + 1] - old[k3 + 1]) * 0.35; old[k3 + 2] += (pos[k3 + 2] - old[k3 + 2]) * 0.35;   // friction
+      }
+      if (pos[k3 + 1] < SKIN) {
+        pos[k3 + 1] = SKIN;
+        old[k3] += (pos[k3] - old[k3]) * 0.6; old[k3 + 2] += (pos[k3 + 2] - old[k3 + 2]) * 0.6;
+      }
+    }
+  }
+
+  /* ---------- the studio ---------- */
+  var scene = new T.Scene();
+  var cam = new T.PerspectiveCamera(34, 1, 0.1, 100);
+  var view = { yaw: 0.62, pitch: 0.3, dist: 8.6, target: new T.Vector3(0, 1.15, 0) };
+
+  (function () { // soft boxes to give the silk something to catch
+    var s = new T.Scene(); s.background = new T.Color(0x8a8c90);
+    [[0, 5, 0, 8, 0.1, 8, 3.2], [-6, 2, 2, 0.1, 5, 6, 1.6], [6, 2, -2, 0.1, 5, 6, 1.0]].forEach(function (b) {
+      var m = new T.Mesh(new T.BoxGeometry(b[3], b[4], b[5]), new T.MeshBasicMaterial({ color: new T.Color(0xffffff).multiplyScalar(b[6]) }));
+      m.position.set(b[0], b[1], b[2]); s.add(m);
+    });
+    var p = new T.PMREMGenerator(renderer); scene.environment = p.fromScene(s, 0.04).texture; p.dispose();
+  })();
+
+  var key = new T.DirectionalLight(0xffffff, 1.7);
+  key.position.set(-3.2, 8.5, 3.6); key.target.position.set(0, 0.8, 0);
+  key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.left = -4.5; key.shadow.camera.right = 4.5; key.shadow.camera.top = 4.5; key.shadow.camera.bottom = -4.5;
+  key.shadow.camera.near = 1; key.shadow.camera.far = 20; key.shadow.bias = -0.0008; key.shadow.normalBias = 0.05; key.shadow.radius = 7; key.shadow.blurSamples = 12;
+  scene.add(key, key.target);
+  var rim = new T.DirectionalLight(0xffffff, 0.7); rim.position.set(4, 3, -5); scene.add(rim);
+  var fill = new T.HemisphereLight(0xffffff, 0xc4c6cc, 0.8); scene.add(fill);
+
+  var floorMat = new T.ShadowMaterial({ opacity: 0.26 });
+  var floor = new T.Mesh(new T.PlaneGeometry(40, 40), floorMat);
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+  var ballMat = new T.MeshStandardMaterial({ roughness: 0.75, metalness: 0, envMapIntensity: 0.35 });
+  var ball = new T.Mesh(new T.SphereGeometry(BALL_R, 96, 64), ballMat);
+  ball.position.y = BALL_Y; ball.castShadow = true; ball.receiveShadow = true; scene.add(ball);
+
+  var geo = new T.BufferGeometry();
+  var posAttr = new T.BufferAttribute(pos, 3); posAttr.setUsage(T.DynamicDrawUsage);
+  geo.setAttribute('position', posAttr);
+  var index = [];
+  for (i = 0; i < N - 1; i++) for (j = 0; j < N - 1; j++) {
+    var p00 = id(i, j), p01 = id(i, j + 1), p10 = id(i + 1, j), p11 = id(i + 1, j + 1);
+    if ((i + j) % 2) index.push(p00, p10, p01, p01, p10, p11); else index.push(p00, p10, p11, p00, p11, p01);
+  }
+  geo.setIndex(index);
+  var silk = new T.MeshPhysicalMaterial({ side: T.DoubleSide, roughness: 0.4, metalness: 0, sheen: 0.12, sheenRoughness: 0.5, envMapIntensity: 0.45, shadowSide: T.DoubleSide });
+  var cloth = new T.Mesh(geo, silk);
+  cloth.castShadow = true; cloth.receiveShadow = true; cloth.frustumCulled = false; scene.add(cloth);
+  function dye(hex) { silk.color.set(hex); silk.sheenColor.set(hex).lerp(new T.Color(0xffffff), 0.3); }
+  dye('#0f6b54');
+
+  var soft = new Float32Array(COUNT * 3);
+  function refresh() {
+    posAttr.needsUpdate = true; geo.computeVertexNormals();
+    var n = geo.attributes.normal.array, i, j, k, c, x, y, z, l;
+    for (i = 0; i < N; i++) for (j = 0; j < N; j++) {   // one smoothing pass, so folds shade as curves, not facets
+      k = (i * N + j) * 3; x = n[k] * 2; y = n[k + 1] * 2; z = n[k + 2] * 2;
+      if (i > 0) { c = k - N * 3; x += n[c]; y += n[c + 1]; z += n[c + 2]; }
+      if (i < N - 1) { c = k + N * 3; x += n[c]; y += n[c + 1]; z += n[c + 2]; }
+      if (j > 0) { c = k - 3; x += n[c]; y += n[c + 1]; z += n[c + 2]; }
+      if (j < N - 1) { c = k + 3; x += n[c]; y += n[c + 1]; z += n[c + 2]; }
+      l = Math.sqrt(x * x + y * y + z * z) || 1; soft[k] = x / l; soft[k + 1] = y / l; soft[k + 2] = z / l;
+    }
+    n.set(soft); geo.attributes.normal.needsUpdate = true; nor = n;
+  }
+
+  function theme() { // the studio takes its colours from the page
+    var cs = getComputedStyle(document.documentElement);
+    var bg = cs.getPropertyValue('--bg').trim() || '#e3e4e7';
+    scene.background = new T.Color(bg);
+    ballMat.color.set(cs.getPropertyValue('--ball').trim() || '#eceded');
+    floorMat.opacity = parseFloat(cs.getPropertyValue('--shadow')) || 0.26;
+    var dark = scene.background.getHSL({}).l < 0.4;
+    fill.intensity = dark ? 0.6 : 0.7; key.intensity = dark ? 1.6 : 1.7;
+  }
+  theme();
+  if (window.matchMedia) { var mq = matchMedia('(prefers-color-scheme: dark)'); if (mq.addEventListener) mq.addEventListener('change', theme); }
+  new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  /* ---------- controls ---------- */
+  var act = document.getElementById('act'), held = true;
+  act.addEventListener('click', function () {
+    if (held) { corners.forEach(function (c) { if (c !== grabbed) unpin(c); }); lift = null; held = false; act.textContent = 'Lift'; }
+    else {
+      var from = {};
+      corners.forEach(function (c) { from[c] = [pos[c * 3], pos[c * 3 + 1], pos[c * 3 + 2]]; pin(c, pos[c * 3], pos[c * 3 + 1], pos[c * 3 + 2]); });
+      lift = { t: 0, from: from }; held = true; act.textContent = 'Let go';
+    }
+  });
+  var windIn = document.getElementById('wind');
+  function setWind() { wind = windIn.value / 100; }
+  windIn.addEventListener('input', setWind);
+  if (calm) windIn.value = 0;
+  setWind();
+  document.querySelectorAll('input[name="dye"]').forEach(function (r) {
+    if (r.checked) dye(r.value);
+    r.addEventListener('change', function () { if (r.checked) dye(r.value); });
+  });
+  document.getElementById('stats').textContent =
+    COUNT.toLocaleString('en') + ' points · ' + THREADS.toLocaleString('en') + ' threads · solved ' + (60 * SUB * ITER).toLocaleString('en') + ' times a second';
+
+  var ray = new T.Raycaster(), ndc = new T.Vector2(), plane = new T.Plane(), hit = new T.Vector3(), fwd = new T.Vector3();
+  var grabbed = -1, wasPinned = false, orbit = null;
+  function aim(e) { var r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(ndc, cam); }
+  canvas.addEventListener('pointerdown', function (e) {
+    canvas.setPointerCapture(e.pointerId);
+    aim(e); geo.computeBoundingSphere();
+    var h = ray.intersectObject(cloth, false)[0];
+    if (h) {
+      var best = h.face.a, bd = Infinity;
+      [h.face.a, h.face.b, h.face.c].forEach(function (v) {
+        var d = Math.pow(pos[v * 3] - h.point.x, 2) + Math.pow(pos[v * 3 + 1] - h.point.y, 2) + Math.pow(pos[v * 3 + 2] - h.point.z, 2);
+        if (d < bd) { bd = d; best = v; }
+      });
+      grabbed = best; wasPinned = !!pins[best];
+      cam.getWorldDirection(fwd); plane.setFromNormalAndCoplanarPoint(fwd, h.point);
+      if (!wasPinned) pin(best, pos[best * 3], pos[best * 3 + 1], pos[best * 3 + 2]);
+      canvas.style.cursor = 'grabbing';
+    } else { orbit = { x: e.clientX, y: e.clientY }; }
+  });
+  canvas.addEventListener('pointermove', function (e) {
+    if (grabbed >= 0) {
+      aim(e);
+      if (ray.ray.intersectPlane(plane, hit) && !(wasPinned && lift)) { pins[grabbed].x = hit.x; pins[grabbed].y = Math.max(0.05, hit.y); pins[grabbed].z = hit.z; }
+    } else if (orbit) {
+      view.yaw -= (e.clientX - orbit.x) * 0.006;
+      view.pitch = Math.max(0.03, Math.min(1.25, view.pitch + (e.clientY - orbit.y) * 0.005));
+      orbit.x = e.clientX; orbit.y = e.clientY;
+    }
+  });
+  function release() {
+    if (grabbed >= 0) {
+      if (!wasPinned || !held) unpin(grabbed);
+      else if (!lift) { homeOf(grabbed, tmp); lift = { t: 0, from: {} }; corners.forEach(function (c) { lift.from[c] = [pins[c].x, pins[c].y, pins[c].z]; }); }
+      grabbed = -1; canvas.style.cursor = '';
+    }
+    orbit = null;
+  }
+  canvas.addEventListener('pointerup', release); canvas.addEventListener('pointercancel', release);
+  canvas.addEventListener('wheel', function (e) { e.preventDefault(); view.dist = Math.max(4.5, Math.min(16, view.dist * Math.exp(e.deltaY * 0.001))); }, { passive: false });
+
+  function size() {
+    var w = canvas.clientWidth || 1, h = canvas.clientHeight || 1, tall = w < h;
+    renderer.setSize(w, h, false);
+    cam.aspect = w / h; cam.fov = tall ? 50 : 34; cam.updateProjectionMatrix();
+    view.dist = tall ? 10.5 : 7.8; view.target.y = tall ? 0.9 : 1.15;
+  }
+  window.addEventListener('resize', size);
+
+  /* ---------- run ---------- */
+  var w0 = wind; wind = 0;
+  for (i = 0; i < 420; i++) { step(); if (i % 30 === 0) refresh(); }   // let it settle before the first frame
+  wind = w0; refresh(); size();
+
+  var last = performance.now(), bank = 0;
+  function frame(now) {
+    bank += Math.min(0.05, (now - last) / 1000); last = now;
+    var n = 0;
+    while (bank >= DT && n < SUB * 3) { step(); bank -= DT; n++; }
+    if (n === SUB * 3) bank = 0;
+    refresh();
+    var cp = Math.cos(view.pitch);
+    cam.position.set(view.target.x + view.dist * cp * Math.sin(view.yaw), view.target.y + view.dist * Math.sin(view.pitch), view.target.z + view.dist * cp * Math.cos(view.yaw));
+    cam.lookAt(view.target);
+    renderer.render(scene, cam);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

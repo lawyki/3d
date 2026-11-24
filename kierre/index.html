@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Kierre 27</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg: #060608; --ink: #f1f0ec; --soft: rgba(241, 240, 236, 0.6); --faint: rgba(241, 240, 236, 0.36); --hair: rgba(241, 240, 236, 0.14); --hot: #ff6a3d;
+  --sans: "Schibsted Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif; --gx: max(32px, env(safe-area-inset-left, 0px)); --gxr: max(32px, env(safe-area-inset-right, 0px)); color-scheme: dark; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #060608; } }
+:root[data-theme="dark"] { --bg: #060608; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+canvas#stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; background: var(--bg); }
+a { color: inherit; text-decoration: none; }
+p, h1, h2, h3, ul, ol, dl, dd { margin: 0; padding: 0; } li { list-style: none; }
+.num { font-variant-numeric: tabular-nums; }
+
+nav { position: fixed; z-index: 5; top: env(safe-area-inset-top, 0px); left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px var(--gxr) 0 var(--gx); font-size: 13px; }
+.logo { font-weight: 600; font-size: 16px; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; }
+.logo i { width: 9px; height: 9px; border-radius: 50%; background: var(--hot); box-shadow: 0 0 14px var(--hot); }
+.links { display: flex; gap: 26px; color: var(--soft); } .links a:hover { color: var(--ink); }
+.cta { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; font-size: 13px; color: #0a0a0c; background: var(--ink); border-radius: 999px; padding: 9px 16px; }
+.cta.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--hair); }
+a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 4px; }
+
+.form { position: fixed; z-index: 4; right: var(--gxr); bottom: max(26px, env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 14px; font-size: 12px; color: var(--soft); pointer-events: none; }
+.form b { font-weight: 500; color: var(--ink); min-width: 4.6em; }
+.rail { width: 120px; height: 1px; background: var(--hair); position: relative; } .rail i { position: absolute; inset: 0; background: var(--ink); transform-origin: 0 50%; transform: scaleX(0); }
+
+main { position: relative; z-index: 2; }
+section { min-height: 100vh; min-height: 100svh; padding: 110px var(--gxr) 90px var(--gx); display: flex; flex-direction: column; justify-content: center; }
+.col { width: min(470px, 100%); } .right { align-self: flex-end; } .wide { width: min(1080px, 100%); align-self: center; }
+.tag { font-size: 12px; font-weight: 500; letter-spacing: 0.02em; color: var(--soft); margin-bottom: 22px; display: flex; gap: 12px; align-items: center; }
+.tag::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--hot); }
+h1 { font-weight: 500; font-size: clamp(40px, 5.2vw, 76px); line-height: 0.98; letter-spacing: -0.045em; text-wrap: balance; }
+h2 { font-weight: 500; font-size: clamp(28px, 3vw, 42px); line-height: 1.05; letter-spacing: -0.035em; text-wrap: balance; }
+.lede { margin-top: 22px; color: var(--soft); max-width: 31em; text-wrap: pretty; }
+.row { display: flex; gap: 10px; margin-top: 30px; flex-wrap: wrap; }
+#hero { justify-content: flex-end; padding-bottom: max(72px, 9vh); }
+.facts { display: flex; gap: 44px; margin-top: 44px; font-size: 13px; color: var(--soft); } .facts b { display: block; font-weight: 500; font-size: 15px; color: var(--ink); margin-bottom: 2px; }
+
+.list { margin-top: 34px; border-top: 1px solid var(--hair); }
+.list li { display: grid; grid-template-columns: 2.2em 1fr auto; gap: 14px; align-items: baseline; padding: 13px 0; border-bottom: 1px solid var(--hair); transition: padding 0.35s, color 0.35s; color: var(--ink); }
+.list li span:first-child { color: var(--faint); font-size: 12px; } .list li span:last-child { color: var(--soft); font-size: 13px; text-align: right; }
+.list li:hover { padding-left: 8px; }
+#programme { justify-content: flex-end; }
+.days { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; margin-top: 34px; }
+.days h3 { font-weight: 500; font-size: 13px; color: var(--soft); padding-bottom: 12px; border-bottom: 1px solid var(--hair); display: flex; justify-content: space-between; }
+.days li { display: grid; grid-template-columns: 4.2em 1fr; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--hair); } .days li span { color: var(--faint); font-size: 13px; } .days li em { font-style: normal; color: var(--soft); }
+.tiers { display: grid; gap: 0; margin-top: 34px; border-top: 1px solid var(--hair); }
+.tiers a { display: grid; grid-template-columns: 1fr auto auto; gap: 18px; align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--hair); transition: padding 0.35s; }
+.tiers a:hover { padding-left: 8px; } .tiers small { display: block; font-size: 13px; color: var(--soft); } .tiers b { font-weight: 500; font-size: 20px; letter-spacing: -0.02em; } .tiers i { font-style: normal; color: var(--soft); transition: transform 0.35s, color 0.35s; } .tiers a:hover i { transform: translateX(4px); color: var(--ink); }
+footer { position: relative; z-index: 2; display: flex; justify-content: space-between; gap: 20px; padding: 0 var(--gxr) max(28px, env(safe-area-inset-bottom, 0px)) var(--gx); font-size: 12px; color: var(--faint); }
+.rise { opacity: 0; transform: translateY(18px); transition: opacity 0.9s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1); transition-delay: calc(var(--d, 0) * 70ms); }
+.in .rise { opacity: 1; transform: none; }
+.fail { position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 3; color: var(--soft); text-align: center; padding: 20px; }
+@media (max-width: 860px) {
+  :root { --gx: max(22px, env(safe-area-inset-left, 0px)); --gxr: max(22px, env(safe-area-inset-right, 0px)); }
+  .links, .form { display: none; }
+  section { justify-content: flex-end; padding: 54vh var(--gxr) 56px var(--gx); background: linear-gradient(to bottom, rgba(6, 6, 8, 0) 30vh, rgba(6, 6, 8, 0.82) 62vh); }
+  .right, .wide { align-self: stretch; } h1 { font-size: 40px; } h2 { font-size: 28px; }
+  .days { grid-template-columns: 1fr; gap: 30px; } .facts { gap: 28px; margin-top: 30px; }
+  footer { flex-direction: column; gap: 4px; }
+}
+@media (prefers-reduced-motion: reduce) { .rise { transition: none; opacity: 1; transform: none; } }
+</style>
+
+<canvas id="stage" aria-label="A kinetic sculpture of 150 metal blades with a glowing core. It re-forms for every part of the page: a twisted loop, a spiral column, an iris, a wall of louvres, a sliced sphere and a burst."></canvas>
+
+<nav><a class="logo" href="#hero"><i></i>Kierre 27</a>
+  <div class="links"><a href="#about">About</a><a href="#speakers">Speakers</a><a href="#programme">Programme</a><a href="#venue">Venue</a></div>
+  <a class="cta" href="#tickets">Tickets</a></nav>
+<div class="form" aria-hidden="true"><span class="num" id="fno">01 / 06</span><b id="fname">Loop</b><span class="rail"><i id="rail"></i></span></div>
+
+<main>
+<section id="hero"><div class="col">
+  <p class="tag rise">Helsinki · 3 and 4 June 2027</p>
+  <h1 class="rise" style="--d:1">Two days on things that move.</h1>
+  <p class="lede rise" style="--d:2">Kierre is a conference about motion as a material. Kinetic sculpture, interface choreography, robotics and type that refuses to sit still, in one room.</p>
+  <div class="row rise" style="--d:3"><a class="cta" href="#tickets">Get a ticket</a><a class="cta ghost" href="#programme">See the programme</a></div>
+  <div class="facts rise" style="--d:4"><span><b class="num">24</b>speakers</span><span><b class="num">2</b>days</span><span><b class="num">600</b>seats</span></div>
+</div></section>
+
+<section id="about"><div class="col right">
+  <p class="tag rise">About</p>
+  <h2 class="rise" style="--d:1">One hundred and fifty blades, one idea.</h2>
+  <p class="lede rise" style="--d:2">The object on this page is the whole identity. It has no fixed shape. It is a set of identical parts and a rule for how they turn, and every part of the conference gets its own arrangement.</p>
+  <p class="lede rise" style="--d:3">Move across it and the blades answer. Press and a wave runs through all of them. Drag to turn it in your hands.</p>
+</div></section>
+
+<section id="speakers"><div class="col">
+  <p class="tag rise">Speakers</p>
+  <h2 class="rise" style="--d:1">People who make things turn, fold and travel.</h2>
+  <ul class="list rise" style="--d:2">
+    <li><span class="num">01</span><span>Ines Okafor</span><span>Kinetic sculpture</span></li>
+    <li><span class="num">02</span><span>Tuomas Vehkala</span><span>Interface motion</span></li>
+    <li><span class="num">03</span><span>Mirei Tanabe</span><span>Variable type</span></li>
+    <li><span class="num">04</span><span>Jonas Abendroth</span><span>Stage machinery</span></li>
+    <li><span class="num">05</span><span>Leila Farrokh</span><span>Soft robotics</span></li>
+    <li><span class="num">06</span><span>Oskar Lindqvist</span><span>Sound and movement</span></li>
+    <li><span class="num">07</span><span>Camille Durand</span><span>Title sequences</span></li>
+  </ul>
+  <p class="lede rise" style="--d:3">Seventeen more are announced in March.</p>
+</div></section>
+
+<section id="programme"><div class="wide">
+  <p class="tag rise">Programme</p>
+  <h2 class="rise" style="--d:1">Mornings to listen, afternoons to build.</h2>
+  <div class="days rise" style="--d:2">
+    <div><h3><span>Thursday 3 June</span><span>Day one</span></h3><ol>
+      <li><span class="num">09:30</span><p>Opening: the case against stillness</p></li>
+      <li><span class="num">10:15</span><p>Ines Okafor <em>· A sculpture is a schedule</em></p></li>
+      <li><span class="num">11:30</span><p>Tuomas Vehkala <em>· Forty milliseconds of trust</em></p></li>
+      <li><span class="num">14:00</span><p>Workshops <em>· Linkages, easing, rigs</em></p></li>
+    </ol></div>
+    <div><h3><span>Friday 4 June</span><span>Day two</span></h3><ol>
+      <li><span class="num">09:30</span><p>Mirei Tanabe <em>· Letters with joints</em></p></li>
+      <li><span class="num">10:45</span><p>Leila Farrokh <em>· Machines that give way</em></p></li>
+      <li><span class="num">13:30</span><p>Open floor <em>· Bring a thing that moves</em></p></li>
+      <li><span class="num">18:00</span><p>Closing and the long dinner</p></li>
+    </ol></div>
+  </div>
+</div></section>
+
+<section id="venue"><div class="col right">
+  <p class="tag rise">Venue</p>
+  <h2 class="rise" style="--d:1">A turbine hall on the harbour.</h2>
+  <p class="lede rise" style="--d:2">Voimala 3 made electricity for the city until 1976. The main room is 80 metres long and 19 high, with the crane still on its rails. Ten minutes by tram from the central station.</p>
+  <div class="facts rise" style="--d:3"><span><b class="num">60.16° N</b>latitude</span><span><b class="num">22:31</b>sunset on day one</span></div>
+</div></section>
+
+<section id="tickets"><div class="col">
+  <p class="tag rise">Tickets</p>
+  <h2 class="rise" style="--d:1">One ticket, the whole thing.</h2>
+  <div class="tiers rise" style="--d:2">
+    <a href="#tickets"><span>Two days<small>Talks, workshops, lunches</small></span><b class="num">€ 490</b><i>→</i></a>
+    <a href="#tickets"><span>Two days and the dinner<small>120 seats at the long table</small></span><b class="num">€ 620</b><i>→</i></a>
+    <a href="#tickets"><span>Student<small>With a valid card, 80 places</small></span><b class="num">€ 180</b><i>→</i></a>
+  </div>
+  <p class="lede rise" style="--d:3">Early prices hold until 28 February.</p>
+</div></section>
+</main>
+<footer><span>Kierre 27 is an invented conference, made as a design study.</span><span>Move, press and drag the object.</span></footer>
+
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script>
+(function () {
+  var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, $ = function (id) { return document.getElementById(id); };
+  var secs = Array.prototype.slice.call(document.querySelectorAll('main section')), NF = secs.length, NAMES = ['Loop', 'Column', 'Iris', 'Louvre', 'Sphere', 'Burst'];
+  if ('IntersectionObserver' in window) { var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) e.target.classList.add('in'); }); }, { threshold: 0.25 }); secs.forEach(function (s) { io.observe(s); }); } else secs.forEach(function (s) { s.classList.add('in'); });
+  function fail(msg) { var d = document.createElement('div'); d.className = 'fail'; d.textContent = msg; document.body.appendChild(d); }
+  if (!window.THREE) { fail('The 3D library did not load. Check the connection and reload.'); return; }
+  var T = THREE, canvas = $('stage'), renderer;
+  try { renderer = new T.WebGLRenderer({ canvas: canvas, antialias: false, alpha: false, powerPreference: 'high-performance' }); } catch (e) { fail('This browser could not start WebGL.'); return; }
+  var PR = window.__pr || Math.min(window.devicePixelRatio || 1, 2);
+  renderer.setPixelRatio(PR); renderer.toneMapping = T.NoToneMapping; renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; renderer.setClearColor(0x000000, 0);
+  var scene = new T.Scene(), camera = new T.PerspectiveCamera(24, 1, 1, 80);
+
+  /* ---------- light: a dark studio with soft boxes, one key with shadows, and the core inside the object ---------- */
+  (function () { var s = new T.Scene(); s.background = new T.Color(0x020203);
+    [[0, 14, 2, 22, 0.3, 10, 0xffffff, 5], [-16, 3, 4, 0.3, 14, 5, 0x8fb0ff, 5], [16, 1, -2, 0.3, 10, 3, 0xffb38a, 3.2], [0, 2, 17, 9, 5, 0.3, 0xffffff, 1.5], [-7, -9, 6, 10, 0.3, 4, 0x9fb4ff, 1.4], [9, 8, -15, 16, 1.2, 0.3, 0xffffff, 4], [-10, -2, -15, 1.0, 12, 0.3, 0xbfd0ff, 3]].forEach(function (b) {
+      var m = new T.Mesh(new T.BoxGeometry(b[3], b[4], b[5]), new T.MeshBasicMaterial({ color: new T.Color(b[6]).multiplyScalar(b[7]) })); m.position.set(b[0], b[1], b[2]); s.add(m); });
+    var p = new T.PMREMGenerator(renderer); scene.environment = p.fromScene(s, 0.02).texture; p.dispose(); })();
+  var key = new T.DirectionalLight(0xfff4e8, 2.5); key.position.set(-6, 9, 8); key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
+  var sc = key.shadow.camera; sc.left = sc.bottom = -7.5; sc.right = sc.top = 7.5; sc.near = 1; sc.far = 30; key.shadow.bias = -0.0006; key.shadow.normalBias = 0.012; key.shadow.radius = 5; scene.add(key);
+  var rim = new T.DirectionalLight(0x86a8ff, 1.6); rim.position.set(7, -2, -8); scene.add(rim);
+
+  /* ---------- the blade: one rounded bar whose size is set per copy, so the corners stay crisp at any proportion ---------- */
+  var N = 150, NC = 260, rig = new T.Group(); scene.add(rig);
+  var geo = (function () { var U = [[-1, -1], [-0.5, -1], [0, -1], [0, 1], [0.5, 1], [1, 1]], pos = [], sg = [], idx = [], v = new T.Vector3();
+    for (var f = 0; f < 6; f++) { var ax = f >> 1, sgn = f & 1 ? 1 : -1, a1 = (ax + 1) % 3, a2 = (ax + 2) % 3, base = pos.length / 3;
+      for (var j = 0; j < 6; j++) for (var i = 0; i < 6; i++) { var c = [0, 0, 0], s = [0, 0, 0]; c[ax] = sgn; s[ax] = sgn; c[a1] = U[i][0]; s[a1] = U[i][1]; c[a2] = U[j][0]; s[a2] = U[j][1]; v.set(c[0], c[1], c[2]).normalize(); pos.push(v.x, v.y, v.z); sg.push(s[0], s[1], s[2]); }
+      for (j = 0; j < 5; j++) for (i = 0; i < 5; i++) { var a = base + j * 6 + i, b = a + 1, d = a + 6, e = d + 1; if (sgn > 0) idx.push(a, b, e, a, e, d); else idx.push(a, e, b, a, d, e); } }
+    var g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('aSign', new T.Float32BufferAttribute(sg, 3)); g.setIndex(idx); return g; })();
+  var sizes = new T.InstancedBufferAttribute(new Float32Array(N * 3), 3); sizes.setUsage(T.DynamicDrawUsage); geo.setAttribute('aSize', sizes);
+  function bevel(sh) { sh.vertexShader = 'attribute vec3 aSign; attribute vec3 aSize;\n' + sh.vertexShader.replace('#include <begin_vertex>', 'float rr = min(0.016, 0.8 * min(aSize.x, min(aSize.y, aSize.z))); vec3 transformed = aSign * (aSize - rr) + normal * rr;'); }
+  var metal = new T.MeshStandardMaterial({ color: 0xffffff, metalness: 0.82, roughness: 0.27, envMapIntensity: 1.15 }); var lampU = { value: [] }, hotU = { value: new T.Color() }; for (var li = 0; li < 8; li++) lampU.value.push(new T.Vector3());
+  metal.onBeforeCompile = function (sh) { bevel(sh); sh.uniforms.uLamp = lampU; sh.uniforms.uHot = hotU;
+    sh.fragmentShader = 'uniform vec3 uLamp[8]; uniform vec3 uHot;\n' + sh.fragmentShader.replace('#include <opaque_fragment>', 'float glowK = 0.0; for (int li = 0; li < 8; li++) { vec3 Lv = uLamp[li] + vViewPosition; float d2 = dot(Lv, Lv); glowK += (0.12 + 0.88 * max(dot(normal, Lv * inversesqrt(d2 + 1e-5)), 0.0)) / (d2 * d2 * 0.6 + d2 + 0.3); } outgoingLight += uHot * glowK * (0.06 + 0.9 * diffuseColor.rgb + 0.5 * material.specularColor);\n#include <opaque_fragment>'); };
+  var depthM = new T.MeshDepthMaterial({ depthPacking: T.RGBADepthPacking }); depthM.onBeforeCompile = bevel;
+  var blades = new T.InstancedMesh(geo, metal, N); blades.customDepthMaterial = depthM; blades.castShadow = blades.receiveShadow = true; blades.frustumCulled = false; blades.instanceMatrix.setUsage(T.DynamicDrawUsage); rig.add(blades);
+  var cA = new T.Color(0xf2f3f6), cB = new T.Color(0x9097a8), cc = new T.Color();
+  for (var i = 0; i < N; i++) { var w = 0.5 - 0.5 * Math.cos(i / (N - 1) * Math.PI * 2); blades.setColorAt(i, cc.copy(cA).lerp(cB, w * 0.8)); }
+  // the core: a line of light the blades are built around
+  var HOT = new T.Color(1.0, 0.27, 0.1), coreM = new T.MeshBasicMaterial({ color: HOT.clone().multiplyScalar(7), toneMapped: false });
+  var core = new T.InstancedMesh(new T.SphereGeometry(1, 10, 8), coreM, NC); core.frustumCulled = false; core.instanceMatrix.setUsage(T.DynamicDrawUsage); rig.add(core);
+  
+
+  /* ---------- six arrangements of the same parts ---------- */
+  var PI = Math.PI, TAU = PI * 2, sin = Math.sin, cos = Math.cos;
+  function A() { return { p: new T.Vector3(), x: new T.Vector3(), y: new T.Vector3(), s: new T.Vector3() }; }
+  var FORMS = [
+    function (o, i, a, t) { var th = TAU * i / N, ps = th * 1.5 + t * 0.32, R = 2.05; o.p.set(cos(th) * R, sin(th) * R, 0); o.y.set(-sin(th), cos(th), 0); o.x.set(cos(th) * cos(ps), sin(th) * cos(ps), sin(ps)); o.s.set(0.7, 0.017, 0.24); },
+    function (o, i, a, t) { var c = a - 0.5, ps = c * 5.2 * (1 + 0.22 * sin(t * 0.45)) + t * 0.22; o.p.set(0, c * 6.6, 0); o.y.set(0, 1, 0); o.x.set(cos(ps), 0, sin(ps)); o.s.set(1.45, 0.017, 0.22); },
+    function (o, i, a, t) { var th = TAU * i / N, ph = 0.95 + 0.55 * sin(th * 3 - t * 0.8); o.p.set(cos(th) * 2.3, sin(th) * 2.3, 0); o.x.set(cos(th), sin(th), 0); o.y.set(-sin(th) * sin(ph), cos(th) * sin(ph), cos(ph)); o.s.set(1.0, 0.016, 0.3); },
+    function (o, i, a, t) { var x = (a - 0.5) * 13.4, ph = 0.75 + 0.62 * sin(x * 0.62 - t * 0.9); o.p.set(x, 0.18 * sin(x * 0.4 + t * 0.5), 0); o.x.set(0, 1, 0); o.y.set(sin(ph), 0, cos(ph)); o.s.set(1.55, 0.014, 0.043); },
+    function (o, i, a, t) { var c = a - 0.5, R = 1.95, y = c * 2 * R * 0.985, h = Math.sqrt(Math.max(0.0004, R * R - y * y)) * 0.74, ps = c * 3.4 * (1 + 0.3 * sin(t * 0.4)) + t * 0.25; o.p.set(0, y, 0); o.y.set(0, 1, 0); o.x.set(cos(ps), 0, sin(ps)); o.s.set(h, 0.0105, h); },
+    function (o, i, a, t) { var yy = 1 - 2 * (i + 0.5) / N, rr = Math.sqrt(1 - yy * yy), th = i * 2.399963 + t * 0.12, br = 1.38 + 0.16 * sin(t * 0.9 + i * 0.7), tw = t * 0.5 + i; o.x.set(cos(th) * rr, yy, sin(th) * rr); o.p.copy(o.x).multiplyScalar(br); o.y.set(-sin(th), 0, cos(th)); z.crossVectors(o.x, o.y); o.y.multiplyScalar(cos(tw)).addScaledVector(z, sin(tw)); o.s.set(0.86, 0.014, 0.085); }
+  ];
+  var CORES = [
+    function (v, b, t) { var th = TAU * b; v.set(cos(th) * 2.05, sin(th) * 2.05, 0); return 0.024; },
+    function (v, b, t) { v.set(0, (b - 0.5) * 6.4, 0); return 0.024; },
+    function (v, b, t) { var th = TAU * b; v.set(cos(th) * 1.02, sin(th) * 1.02, -0.05); return 0.016; },
+    function (v, b, t) { v.set((b - 0.5) * 13, 0, -0.42); return 0.028; },
+    function (v, b, t) { v.set(0, (b - 0.5) * 2.2, 0); return 0.05; },
+    function (v, b, t) { var yy = 1 - 2 * b, rr = Math.sqrt(1 - yy * yy), th = b * NC * 2.399963; v.set(cos(th) * rr * 0.3, yy * 0.3, sin(th) * rr * 0.3); return 0.03; }
+  ];
+  // how each arrangement is held and framed: tilt x, turn y, roll z, camera distance, place on screen x, y, core strength
+  var KEY = [[-0.62, 0.5, 0.0, 17, 0.2, 0.02, 1.0], [0.18, 0.0, 0.62, 19.5, -0.23, 0, 1.0], [0.16, -0.62, 0.0, 18.5, 0.22, -0.02, 1.2], [0.2, 0.3, 0.0, 18.5, 0, -0.29, 1.4], [0.42, 0.0, 0.34, 15.5, -0.22, 0, 1.2], [0.3, 0.4, 0.0, 17.5, 0.23, 0, 1.5]];
+  var KEYN = [[-0.62, 0.5, 0.0, 30, 0, -0.2, 1.0], [0.18, 0.0, 0.62, 34, 0, -0.2, 1.0], [0.16, -0.5, 0.0, 38, 0, -0.2, 1.3], [0.2, 0.5, 0.0, 22, 0, -0.22, 1.4], [0.42, 0.0, 0.34, 27, 0, -0.2, 1.2], [0.5, 0.72, 0.0, 30, 0, -0.2, 1.2]];
+
+  /* ---------- picture finishing: backdrop glow, bloom, grain ---------- */
+  var qScene = new T.Scene(), qCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1), quad = new T.Mesh(new T.PlaneGeometry(2, 2)); quad.frustumCulled = false; qScene.add(quad);
+  var VS = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+  function shader(fs, u) { return new T.ShaderMaterial({ vertexShader: VS, fragmentShader: fs, uniforms: u, depthTest: false, depthWrite: false }); }
+  var downM = shader('uniform sampler2D t; uniform vec2 px; uniform float thr; varying vec2 vUv; void main(){ vec3 c = (texture2D(t, vUv + px * vec2(-1.0, -1.0)).rgb + texture2D(t, vUv + px * vec2(1.0, -1.0)).rgb + texture2D(t, vUv + px * vec2(-1.0, 1.0)).rgb + texture2D(t, vUv + px).rgb) * 0.25; c = min(c, vec3(20.0)); float l = max(c.r, max(c.g, c.b)); if (thr > 0.0) c *= smoothstep(thr, thr + 0.9, l); gl_FragColor = vec4(c, 1.0); }', { t: { value: null }, px: { value: new T.Vector2() }, thr: { value: 0 } });
+  var blurM = shader('uniform sampler2D t; uniform vec2 dir; varying vec2 vUv; void main(){ vec3 c = texture2D(t, vUv).rgb * 0.227; c += (texture2D(t, vUv + dir * 1.385).rgb + texture2D(t, vUv - dir * 1.385).rgb) * 0.316; c += (texture2D(t, vUv + dir * 3.231).rgb + texture2D(t, vUv - dir * 3.231).rgb) * 0.0703; gl_FragColor = vec4(c, 1.0); }', { t: { value: null }, dir: { value: new T.Vector2() } });
+  var outM = shader([
+    'uniform sampler2D tScene, tB1, tB2, tB3; uniform float uTime, uAsp, uGlow; uniform vec2 uC; varying vec2 vUv;',
+    'vec3 aces(vec3 x){ return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }',
+    'float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }',
+    'void main(){ vec4 s = texture2D(tScene, vUv); vec2 d = (vUv - uC) * vec2(uAsp, 1.0); float r2 = dot(d, d);',
+    '  vec3 bg = vec3(0.0035, 0.0036, 0.0046) + vec3(0.02, 0.023, 0.034) * exp(-r2 * 3.2) + vec3(0.05, 0.014, 0.006) * uGlow * exp(-r2 * 9.0);',
+    '  vec3 c = s.rgb + bg * (1.0 - clamp(s.a, 0.0, 1.0));',
+    '  c += texture2D(tB1, vUv).rgb * 0.16 + texture2D(tB2, vUv).rgb * 0.22 + texture2D(tB3, vUv).rgb * 0.3;',
+    '  c = aces(c * 1.05); c = pow(c, vec3(1.0 / 2.2)); vec2 e = vUv - 0.5; c *= 1.0 - dot(e, e) * 0.55;',
+    '  c += (h(gl_FragCoord.xy + fract(uTime) * 91.7) - 0.5) * 0.028; gl_FragColor = vec4(c, 1.0); }'].join('\n'),
+    { tScene: { value: null }, tB1: { value: null }, tB2: { value: null }, tB3: { value: null }, uTime: { value: 0 }, uAsp: { value: 1 }, uGlow: { value: 1 }, uC: { value: new T.Vector2(0.5, 0.5) } });
+  var W = 1, H = 1, rtScene, rtB = [], narrow = false;
+  function rt(w, h, o) { o = o || {}; o.type = T.HalfFloatType; o.minFilter = o.magFilter = T.LinearFilter; return new T.WebGLRenderTarget(Math.max(2, w), Math.max(2, h), o); }
+  function size() { W = canvas.clientWidth || 1; H = canvas.clientHeight || 1; narrow = W < 860; renderer.setSize(W, H, false); camera.aspect = W / H;
+    var w = Math.round(W * PR), h = Math.round(H * PR); if (rtScene) { rtScene.dispose(); rtB.forEach(function (p) { p[0].dispose(); p[1].dispose(); }); }
+    rtScene = rt(w, h, { samples: window.__nomsaa ? 0 : 4, depthBuffer: true }); rtB = [2, 4, 8].map(function (k) { return [rt(w / k | 0, h / k | 0, { depthBuffer: false }), rt(w / k | 0, h / k | 0, { depthBuffer: false })]; }); measure(); }
+  var mids = [];
+  function measure() { mids = secs.map(function (s) { return s.offsetTop + s.offsetHeight / 2; }); mids[0] = Math.min(mids[0], window.innerHeight / 2); }
+  function posAt(y) { var yc = y + window.innerHeight / 2; for (var k = 0; k < NF - 1; k++) if (yc < mids[k + 1] || k === NF - 2) return Math.max(0, Math.min(NF - 1, k + (yc - mids[k]) / (mids[k + 1] - mids[k]))); return 0; }
+  window.__go = function (p) { measure(); var k = Math.min(NF - 2, Math.floor(p)); window.scrollTo(0, mids[k] + (p - k) * (mids[k + 1] - mids[k]) - window.innerHeight / 2); pos = goal = posAt(window.scrollY); vel = 0; };
+  window.addEventListener('resize', size); window.addEventListener('load', measure); if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  function pass(mat, target) { quad.material = mat; renderer.setRenderTarget(target); renderer.render(qScene, qCam); }
+  function draw() { renderer.setRenderTarget(rtScene); renderer.render(scene, camera); var src = rtScene.texture;
+    for (var i = 0; i < 3; i++) { var a = rtB[i][0], b = rtB[i][1];
+      downM.uniforms.t.value = src; downM.uniforms.px.value.set(0.5 / a.width, 0.5 / a.height); downM.uniforms.thr.value = i ? 0 : 1.15; pass(downM, a);
+      blurM.uniforms.t.value = a.texture; blurM.uniforms.dir.value.set((i === 2 ? 2.4 : 1.3) / a.width, 0); pass(blurM, b);
+      blurM.uniforms.t.value = b.texture; blurM.uniforms.dir.value.set(0, 1.0 / a.height); pass(blurM, a); src = a.texture; }
+    outM.uniforms.tScene.value = rtScene.texture; outM.uniforms.tB1.value = rtB[0][0].texture; outM.uniforms.tB2.value = rtB[1][0].texture; outM.uniforms.tB3.value = rtB[2][0].texture; pass(outM, null); }
+
+  /* ---------- scroll, pointer, press, drag ---------- */
+  var pos = 0, goal = 0, vel = 0; size(); goal = pos = posAt(window.scrollY);
+  window.addEventListener('scroll', function () { goal = posAt(window.scrollY); }, { passive: true });
+  var ptr = { x: -9999, y: -9999, on: false, nx: 0, ny: 0 }, drag = null, spin = { yaw: 0, pit: 0, vy: 0, vp: 0 }, pulses = [], ex = new Float32Array(N), sx = new Float32Array(N), sy = new Float32Array(N);
+  window.addEventListener('pointermove', function (e) { ptr.x = e.clientX; ptr.y = e.clientY; ptr.on = e.pointerType !== 'touch'; ptr.nx = e.clientX / W * 2 - 1; ptr.ny = e.clientY / H * 2 - 1;
+    if (drag && drag.id === e.pointerId) { var dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.x = e.clientX; drag.y = e.clientY; drag.moved += Math.abs(dx) + Math.abs(dy); spin.vy = dx * 0.4; spin.vp = dy * 0.4; spin.yaw += dx * 0.007; spin.pit += dy * 0.007; } }, { passive: true });
+  window.addEventListener('pointerdown', function (e) { if (e.target.closest && e.target.closest('a, button')) return; if (e.pointerType !== 'touch') drag = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: 0 };
+    var best = 0, bd = 1e9; for (var i = 0; i < N; i++) { var d = (sx[i] - e.clientX) * (sx[i] - e.clientX) + (sy[i] - e.clientY) * (sy[i] - e.clientY); if (d < bd) { bd = d; best = i; } }
+    pulses.push({ t: clock, at: best / (N - 1) }); if (pulses.length > 4) pulses.shift(); });
+  window.addEventListener('pointerup', function () { drag = null; }); window.addEventListener('pointercancel', function () { drag = null; });
+  document.addEventListener('pointerleave', function () { ptr.on = false; });
+
+  var a0 = A(), a1 = A(), m4 = new T.Matrix4(), q0 = new T.Quaternion(), q1 = new T.Quaternion(), qx = new T.Quaternion(), X = new T.Vector3(1, 0, 0), z = new T.Vector3(), v0 = new T.Vector3(), v1 = new T.Vector3(), one = new T.Vector3(1, 1, 1), sv = new T.Vector3(), proj = new T.Vector3();
+  function sm(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
+  function quat(o, q) { z.crossVectors(o.x, o.y); m4.makeBasis(o.x, o.y, z); q.setFromRotationMatrix(m4); }
+  var clock = 0, last = performance.now(), lastName = -1;
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000); last = now; if (!calm) clock += dt; var t = clock;
+    if (calm) { pos = goal; } else { vel += ((goal - pos) * 26 - vel * 10.2) * dt; pos += vel * dt; }
+    var k = Math.max(0, Math.min(NF - 2, Math.floor(pos))), u = Math.max(0, Math.min(1, pos - k)), m = sm((u - 0.16) / 0.68), K = narrow ? KEYN : KEY, ka = K[k], kb = K[k + 1], kv = [];
+    for (var c = 0; c < 7; c++) kv[c] = ka[c] + (kb[c] - ka[c]) * sm(m);
+    if (!drag) { spin.yaw += spin.vy * dt * 0.02; spin.pit += spin.vp * dt * 0.02; spin.vy *= Math.exp(-dt * 3); spin.vp *= Math.exp(-dt * 3); var back = 1 - Math.exp(-dt * 1.3); spin.yaw -= spin.yaw * back; spin.pit -= spin.pit * back; }
+    rig.rotation.set(kv[0] + spin.pit + ptr.ny * 0.05 + 0.03 * sin(t * 0.31), kv[1] + spin.yaw + ptr.nx * 0.08 + 0.06 * sin(t * 0.23) + m * (1 - m) * 1.6, kv[2]);
+    camera.position.set(0, 0, kv[3]); camera.lookAt(0, 0, 0); camera.setViewOffset(W, H, -kv[4] * W, -kv[5] * H, W, H); camera.updateProjectionMatrix(); rig.updateMatrixWorld(true); camera.updateMatrixWorld(true);
+
+    var fa = FORMS[k], fb = FORMS[k + 1], S = 0.75, arr = sizes.array, reach = narrow ? 110 : 150;
+    for (var i = 0; i < N; i++) { var a = i / (N - 1), e = sm(m * (1 + S) - S * a), o = a0;
+      if (e <= 0) { fa(a0, i, a, t); quat(a0, q0); } else if (e >= 1) { fb(a0, i, a, t); quat(a0, q0); }
+      else { fa(a0, i, a, t); fb(a1, i, a, t); quat(a0, q0); quat(a1, q1); q0.slerp(q1, e); a0.p.lerp(a1.p, e); a0.s.lerp(a1.s, e); var lift = sin(e * PI); a0.p.z += lift * 0.9 * sin(a * 37.0); a0.p.x += lift * 0.5 * cos(a * 23.0); }
+      // the pointer: blades near it turn on their long axis and ease back after it leaves
+      proj.copy(o.p).applyMatrix4(rig.matrixWorld).project(camera); sx[i] = (proj.x * 0.5 + 0.5) * W; sy[i] = (0.5 - proj.y * 0.5) * H;
+      var dx = sx[i] - ptr.x, dy = sy[i] - ptr.y, tg = ptr.on ? Math.exp(-(dx * dx + dy * dy) / (reach * reach)) : 0; ex[i] += (tg - ex[i]) * Math.min(1, dt * (tg > ex[i] ? 9 : 1.8));
+      var turn = ex[i] * 1.0; for (var p = 0; p < pulses.length; p++) { var age = t - pulses[p].t, dd = Math.abs(a - pulses[p].at) - age * 0.55; turn += 1.9 * Math.exp(-dd * dd / 0.004) * Math.exp(-age * 0.9); }
+      if (turn > 0.0005) { qx.setFromAxisAngle(X, turn); q0.multiply(qx); }
+      m4.compose(o.p, q0, one); blades.setMatrixAt(i, m4); arr[i * 3] = o.s.x; arr[i * 3 + 1] = o.s.y; arr[i * 3 + 2] = o.s.z; }
+    blades.instanceMatrix.needsUpdate = true; sizes.needsUpdate = true;
+    var ca = CORES[k], cb = CORES[k + 1], em = sm(m);
+    for (i = 0; i < NC; i++) { var b = (i + 0.5) / NC, r0 = ca(v0, b, t), r1 = cb(v1, b, t), r = (r0 + (r1 - r0) * em) * (1 + 0.25 * sin(t * 1.3 + b * 40)); v0.lerp(v1, em); m4.compose(v0, q1.identity(), sv.set(r, r, r)); core.setMatrixAt(i, m4); }
+    core.instanceMatrix.needsUpdate = true;
+    for (i = 0; i < 8; i++) { b = (i + 0.5) / 8; ca(v0, b, t); cb(v1, b, t); lampU.value[i].copy(v0.lerp(v1, em)).applyMatrix4(rig.matrixWorld).applyMatrix4(camera.matrixWorldInverse); } hotU.value.copy(HOT).multiplyScalar(0.42 * kv[6]);
+    coreM.color.copy(HOT).multiplyScalar(7 * kv[6]);
+    var u2 = outM.uniforms; u2.uTime.value = calm ? 0 : t; u2.uAsp.value = W / H; u2.uC.value.set(0.5 + kv[4], 0.5 - kv[5]); u2.uGlow.value = kv[6];
+    draw();
+    var nm = Math.round(pos); if (nm !== lastName) { lastName = nm; $('fname').textContent = NAMES[nm]; $('fno').textContent = '0' + (nm + 1) + ' / 0' + NF; }
+    $('rail').style.transform = 'scaleX(' + (pos / (NF - 1)).toFixed(4) + ')';
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
